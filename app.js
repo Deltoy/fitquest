@@ -683,25 +683,44 @@ function downscale(file, max = 1024) {
     }; img.onerror = () => rej(new Error('사진을 열 수 없어요')); img.src = URL.createObjectURL(file);
   });
 }
+/* 0927 제미나이 모델: 기본 gemini-3.5-flash → 안 되면 내 키로 쓸 수 있는 더 낮은 flash 로 차례로 (모델 목록을 물어봐 7일 기억, 되는 모델은 다음에 먼저) */
+const GEM_PREF = 'gemini-3.5-flash';
+async function gemModels(key) {
+  let found = [];
+  try {
+    const c = JSON.parse(localStorage.getItem('fq.gmodels') || 'null');
+    if (c && Date.now() - c.at < 7 * 864e5) found = c.list;
+    else {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(key)}`), j = await r.json().catch(() => ({}));
+      const ver = n => (n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1] * 1;
+      found = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => String(m.name).replace(/^models\//, ''))
+        .filter(n => /^gemini-\d+(\.\d+)?-flash(-lite)?$/.test(n)).sort((a, b) => (/lite/.test(a) - /lite/.test(b)) || ver(b) - ver(a));
+      if (found.length) localStorage.setItem('fq.gmodels', JSON.stringify({ at: Date.now(), list: found }));
+    }
+  } catch (e) {}
+  const ok = localStorage.getItem('fq.gmodelOK');
+  return [...new Set([DB.settings.gmodel, ok, GEM_PREF, ...found, 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean))];
+}
+async function gemCall(key, parts, errMsg) {
+  let lastErr = '쓸 수 있는 제미나이 모델을 찾지 못했어요';
+  for (const m of await gemModels(key)) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }], generationConfig: { response_mime_type: 'application/json', temperature: .2 } }) });
+    const j = await r.json().catch(() => ({})), em = (j.error && j.error.message) || '';
+    if (r.status === 404 || (r.status === 400 && /not (found|supported)|is not available|unsupported model/i.test(em))) { lastErr = `${m} 없음`; continue; }   // 이 키로 없는 모델 → 다음(낮은) 모델
+    if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? (em || errMsg).slice(0, 120) : r.status === 429 ? '무료 사용량을 넘었어요. 잠시 후 다시' : em || r.status);
+    try { localStorage.setItem('fq.gmodelOK', m); } catch (e) {}
+    const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
+    return JSON.parse(txt.replace(/^```json|```$/g, ''));
+  }
+  throw new Error(lastErr);
+}
 async function geminiFood(file) {
   const b64 = await downscale(file), key = DB.settings.gkey.trim();
   const prompt = '이 음식 사진을 한국 음식 기준으로 항목별로 추정해 줘. 보이는 양 그대로(1인분이라고 가정하지 말 것). JSON만 출력: {"items":[{"n":"음식 이름(한국어)","g":그램,"k":kcal,"p":단백질g,"c":탄수화물g,"f":지방g,"conf":1~3}]} conf 3=확실 2=보통 1=불확실. 음식이 아니면 {"items":[]}.';
-  const models = [DB.settings.gmodel, 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean);
-  let lastErr = '모델을 찾지 못했어요';
-  for (const m of models) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }], generationConfig: { response_mime_type: 'application/json', temperature: .2 } })
-    });
-    const j = await r.json().catch(() => ({}));
-    if (r.status === 404) { lastErr = `${m} 없음`; continue; }
-    if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? '키를 확인해 주세요' : r.status === 429 ? '무료 사용량을 넘었어요. 잠시 후 다시' : (j.error && j.error.message) || r.status);
-    const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
-    const data = JSON.parse(txt.replace(/^```json|```$/g, ''));
-    const num = (v, a, b) => Math.min(b, Math.max(a, +v || 0));
-    return (data.items || []).slice(0, 8).map(x => ({ n: String(x.n || '음식').slice(0, 30), g: num(x.g, 0, 2000), k: num(x.k, 0, 3000), p: num(x.p, 0, 250), c: num(x.c, 0, 400), f: num(x.f, 0, 200), conf: Math.round(num(x.conf, 1, 3)) || 2 }));
-  }
-  throw new Error(lastErr);
+  const data = await gemCall(key, [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }], '키를 확인해 주세요');
+  const num = (v, a, b) => Math.min(b, Math.max(a, +v || 0));
+  return (data.items || []).slice(0, 8).map(x => ({ n: String(x.n || '음식').slice(0, 30), g: num(x.g, 0, 2000), k: num(x.k, 0, 3000), p: num(x.p, 0, 250), c: num(x.c, 0, 400), f: num(x.f, 0, 200), conf: Math.round(num(x.conf, 1, 3)) || 2 }));
 }
 
 /* ================= WORKOUT TAB ================= */
@@ -769,18 +788,7 @@ async function geminiVideo(url) {
   const prompt = `이 유튜브 운동 영상을 보고 영상 속 운동 루틴을 정리해 줘. 영상에서 실제로 말하거나 화면에 보인 것만 쓰고, 없으면 null. JSON만 출력:
 {"title":"짧은 루틴 이름(한국어, 20자 이내)","part":"back|chest|shoulder|arms|legs|full 중 하나","exercises":[{"exId":"아래 목록의 id 중 같은 운동이면 그 id, 없으면 null","name":"운동 이름(한국어)","sets":정수|null,"reps":[최소,최대]|null,"rest":초|null,"tip":"영상에서 강조한 자세 팁 한 문장(한국어, 60자 이내)|null","t":"그 운동이 처음 나오는 시각 MM:SS|null","conf":"high|med|low"}],"style":["이 사람 운동 방식 특징 3개(한국어 짧게)"],"diet":["식단 관련 조언이 있으면 최대 2개, 없으면 빈 배열"]}
 운동 목록(id=이름): ${cat}`;
-  const models = [DB.settings.gmodel, 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean);
-  let lastErr = '모델을 찾지 못했어요';
-  for (const m of models) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ file_data: { file_uri: url } }, { text: prompt }] }], generationConfig: { response_mime_type: 'application/json', temperature: .2 } }) });
-    const j = await r.json().catch(() => ({}));
-    if (r.status === 404) { lastErr = `${m} 없음`; continue; }
-    if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? (j.error && j.error.message || '키나 링크를 확인해 주세요').slice(0, 120) : r.status === 429 ? '무료 사용량을 넘었어요. 잠시 후 다시' : (j.error && j.error.message) || r.status);
-    const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
-    return JSON.parse(txt.replace(/^```json|```$/g, ''));
-  }
-  throw new Error(lastErr);
+  return gemCall(key, [{ file_data: { file_uri: url } }, { text: prompt }], '키나 링크를 확인해 주세요');
 }
 const PART_OK = ['back', 'chest', 'shoulder', 'arms', 'legs', 'full'];
 const PART_MUS = { back: ['lats'], chest: ['chest'], shoulder: ['delt-side'], arms: ['biceps'], legs: ['quads'], full: ['quads'] };
@@ -1164,7 +1172,7 @@ R.set = () => {
     <section class="fq-card stack" style="gap:10px"><span class="fq-t-heading">사진 AI (제미나이)</span>
       <p class="note" style="margin:0">aistudio.google.com/apikey 에서 무료 키를 받아 붙여 넣으면 음식 사진을 읽어요. 키는 이 폰에만 저장돼요.</p>
       <input id="gkey" class="inp" type="password" autocomplete="off" placeholder="AIza…" value="${esc(S.gkey)}" aria-label="제미나이 API 키">
-      <input id="gmodel" class="inp" placeholder="모델 (비우면 gemini-2.5-flash)" value="${esc(S.gmodel)}" aria-label="제미나이 모델">
+      <input id="gmodel" class="inp" placeholder="모델 (비우면 gemini-3.5-flash → 안 되면 낮은 버전)" value="${esc(S.gmodel)}" aria-label="제미나이 모델">
       <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="saveKey">저장</button></section>
     ${bkSection()}
     ${fwSection()}
