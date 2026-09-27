@@ -222,28 +222,36 @@ function checkDaily3() {
   if (q.every(Boolean)) addXP('daily3', 30);
   return q;
 }
-function tplFor(k) {
+/* 그날 계획 루틴 — 이번 주 줄·홈 오늘·달력·주간 루틴 미리보기가 모두 이것 하나를 쓴다. raw: 어제 부위 확인용(재귀 방지) */
+function tplFor(k, raw) {
   const ok = t => t && TPL[t] ? t : null;
   const o = DB.overrides[k]; if (o === 'rest') return null; if (ok(o)) return o;
   const d = dow(k);
   if (DB.pins && ok(DB.pins[d])) return DB.pins[d];
-  if (DB.rot && DB.rot.on) return ok(rotFor(k));
+  if (DB.rot && DB.rot.on) return ok(rotFor(k, raw));
   return ok(DB.schedule[d]);
 }
 function rotCands(part) {
   const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []);
-  const base = ROT[part].concat(Object.keys((DB.custom && DB.custom.tpls) || {}).filter(k => { const t = TPL[k]; return t && !t.off && t.parts && t.parts.includes(part === 'full' ? 'legs' : part); }));
+  // 첫 부위(partOf)가 그 요일 부위인 루틴만 — 로테이션은 루틴만 바꾸고 부위는 절대 안 바꾼다
+  const base = ROT[part].concat(Object.keys((DB.custom && DB.custom.tpls) || {}).filter(k => TPL[k] && !TPL[k].off)).filter(t => TPL[t] && partOf(t) === part);
   const mine = base.filter(t => picks.includes(t)), rest = base.filter(t => !picks.includes(t));
   if (!mine.length) return base;
   return mine.length >= 2 ? mine.concat(rest.filter(t => !TPL[t].pro).slice(0, 1)) : [mine[0], rest[0], mine[0]].filter(Boolean);
 }
 function rotWeek(k) { return Math.max(0, Math.floor(daysBetween(DB.rot.start, mondayOf(k)) / 7)); }
-function rotFor(k) {
+function rotFor(k, raw) {
   const d = dow(k), part = DB.rot.slots[d]; if (!part) return null;
-  const mon = mondayOf(k), order = [1, 2, 3, 4, 5, 6, 0]; let j = 0;
-  for (const x of order) { if (x === d) break; if (DB.rot.slots[x] === part) j++; }
-  const c = rotCands(part), fresh = j ? null : c.filter(t => TPL[t].day && mondayOf(addDays(TPL[t].day, 7)) === mon).sort((a, b) => TPL[b].at - TPL[a].at)[0];
-  return fresh || c[(rotWeek(k) + j) % c.length];   // 새로 자동 추가된 루틴은 다음 주 그 부위 첫날에 꼭 들어감
+  const c = rotCands(part), base = DB.schedule[d]; if (!c.length) return base;
+  const mon = mondayOf(k), w = rotWeek(k), j = [1, 2, 3, 4, 5, 6, 0].filter(x => DB.rot.slots[x] === part).indexOf(d);
+  const fresh = c.filter(t => TPL[t].day && mondayOf(addDays(TPL[t].day, 7)) === mon).sort((a, b) => TPL[b].at - TPL[a].at)[0];   // 새로 자동 추가된 루틴은 다음 주 그 부위 첫날에 꼭 들어감
+  const used = [];   // 같은 주 같은 부위 둘째 날부터는 앞에서 쓴 루틴을 건너뜀 (새 루틴 중복 방지)
+  for (let i = 0; i <= j; i++) { const r = c.map((_, n) => c[(w + i + n) % c.length]); used.push((!i && fresh) || r.find(x => !used.includes(x)) || r[0]); }
+  const t = used[j]; if (raw) return t;
+  // 어제(고정·미루기 포함)와 부위가 겹치면 그 요일 기본 루틴으로 (부위가 다를 때만).
+  // ponytail: 요일 부위는 안 바꾸므로, 사용자가 같은 부위를 이웃 요일에 고정·지정하면 겹침이 남는다 — 막으려면 주간 루틴 화면에서 경고
+  const y = tplFor(addDays(k, -1), 1);
+  return y && partOf(y) === part && TPL[base] && partOf(base) !== part ? base : t;
 }
 function settleStreak() {
   const S = DB.streak, today = dayKey();
@@ -452,7 +460,7 @@ function rotFromDays(days) {
   return { on: true, start: mondayOf(dayKey()), slots };
 }
 function assignDays(days) {
-  const order = [1, 2, 3, 4, 5, 6, 0].filter(x => days.includes(x)), seq = { 3: ['A', 'B', 'C'], 4: ['A', 'B', 'C', 'D'], 5: ['A', 'B', 'C', 'E', 'D'], 6: ['A', 'B', 'C', 'D', 'E', 'B'], 7: ['A', 'B', 'C', 'D', 'E', 'B', 'A'] }[order.length] || ['A', 'C'];
+  const order = [1, 2, 3, 4, 5, 6, 0].filter(x => days.includes(x)), seq = { 3: ['A', 'B', 'C'], 4: ['A', 'B', 'C', 'D'], 5: ['A', 'B', 'C', 'D', 'E'], 6: ['A', 'B', 'C', 'D', 'E', 'B'], 7: ['A', 'B', 'C', 'D', 'E', 'B', 'D'] }[order.length] || ['A', 'C'];
   const s = {}; order.forEach((d, i) => s[d] = seq[i % seq.length]); return s;
 }
 
