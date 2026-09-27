@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style>html,body{touch-action:manipulation}</style>
+<script>/* 0927 앱처럼: 두 손가락 확대·두 번 탭 확대 막기 (iOS 는 viewport 무시하므로 제스처도 막음) */document.addEventListener('gesturestart',function(e){e.preventDefault()},{passive:false});</script>
 <title>FITQUEST</title>
 <meta name="description" content="게임처럼 나를 성장시키는 AI 트레이너">
 <meta name="theme-color" content="#ECEDF1" id="themeColor">
