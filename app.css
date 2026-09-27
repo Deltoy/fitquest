@@ -248,6 +248,9 @@ body[data-mode="logger"] .tabbar { display: none; }
 .rewards { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
 /* ================= forms (app) ================= */
+*, *::before, *::after { box-sizing: border-box; }
+.tape-steps { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 14.5px; line-height: 1.5; }
+.tape-steps li::marker { color: var(--fq-text-2); }
 .inp { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--fq-line-strong); border-radius: 8px; background: var(--fq-bg); color: var(--fq-text); font-size: 16px; font-variant-numeric: tabular-nums; }
 .inp:focus { outline: 2px solid var(--fq-focus); outline-offset: 1px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

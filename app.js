@@ -416,6 +416,22 @@ R.home = () => {
 };
 function weekDone() { const mon = mondayOf(dayKey()); return Object.keys(DB.done).filter(k => daysBetween(mon, k) >= 0).length; }
 const wLabel = (id, w) => EX[id].kind === 'as' ? `보조 ${w}` : `${w}`;
+const TAPE_SVG = `<svg viewBox="0 0 240 284" role="img" aria-label="어깨 둘레는 삼각근 가장 튀어나온 곳, 허리 둘레는 배꼽 높이에서 잰다는 그림" style="display:block;width:100%;max-width:260px;margin:0 auto">
+  <g fill="rgba(159,190,231,.06)" stroke="rgba(159,190,231,.6)" stroke-width="1.2" stroke-linejoin="round">
+    <ellipse cx="120" cy="34" rx="17" ry="21"/><path d="M111 54h18v12h-18z"/>
+    <path d="M110 64 72 76Q54 82 51 102L45 168 42 222 55 224 63 170 69 128 76 150 82 198 86 252H154L158 198 164 150 171 128 177 170 185 224 198 222 195 168 189 102Q186 82 168 76L130 64Z"/>
+  </g>
+  <path d="M69 128Q120 150 171 128" fill="none" stroke="rgba(159,190,231,.35)"/>
+  <path d="M46 100A74 11 0 0 1 194 100" fill="none" stroke="#F68D1F" stroke-width="2.5" stroke-dasharray="4 4" opacity=".7"/>
+  <path d="M46 100A74 11 0 0 0 194 100" fill="none" stroke="#F68D1F" stroke-width="3.5"/>
+  <path d="M82 190A38 7 0 0 1 158 190" fill="none" stroke="#9FBEE7" stroke-width="2.5" stroke-dasharray="4 4" opacity=".7"/>
+  <path d="M82 190A38 7 0 0 0 158 190" fill="none" stroke="#9FBEE7" stroke-width="3.5"/>
+  <circle cx="120" cy="196" r="2.4" fill="#F5F5F5"/>
+  <g font-family="Pretendard Variable, sans-serif" font-size="12" font-weight="700">
+    <path d="M186 95 176 48" stroke="#F68D1F"/><text x="146" y="28" fill="#F68D1F">① 어깨</text><text x="146" y="42" fill="#C8C8CC" font-weight="500" font-size="10.5">삼각근 가장 넓은 곳</text>
+    <path d="M156 194 166 250" stroke="#9FBEE7"/><text x="160" y="264" fill="#9FBEE7">② 허리</text><text x="160" y="277" fill="#C8C8CC" font-weight="500" font-size="10.5">배꼽 높이</text>
+  </g>
+</svg>`;
 const vRatio = () => { const t = DB.tape[DB.tape.length - 1]; return t ? t.sh / t.wa : null; };
 
 /* 챕터 0 — 정직한 2주 (4-9) */
@@ -918,7 +934,9 @@ document.addEventListener('click', ev => {
     ch0Done: () => { DB.flags.tdee = +a.dataset.t; const rec = recChapter(DB.profile.sex, ib().pbf); DB.profile.chapter = rec; DB.profile.chapterStart = dayKey(); DB.xp += 500; const L = levelOf(DB.xp); if (L > levelOf(DB.xp - 500)) pendingLevel = L; save(); SFX.pr(); R.home(); showLevelUp(); },
     inbody: () => sheet(`<h2 class="fq-t-title">새 인바디</h2><div class="grid2">${[['ibW', '체중 kg'], ['ibS', '골격근량 kg'], ['ibP', '체지방률 %'], ['ibB', '기초대사량 (선택)']].map(([id, l]) => `<label class="stack" for="${id}" style="gap:6px"><span class="fq-t-label">${l}</span><input id="${id}" class="inp" inputmode="decimal"></label>`).join('')}</div><label class="stack" for="ibD" style="gap:6px"><span class="fq-t-label">측정일</span><input id="ibD" class="inp" type="date" value="${new Date().toISOString().slice(0, 10)}"></label><button class="fq-btn fq-btn--lg fq-btn--block" data-act="ibSave">저장</button>`),
     ibSave: () => { const v = id => parseFloat(($('#' + id).value || '').replace(',', '.')); const e = { date: $('#ibD').value, w: v('ibW'), smm: v('ibS'), pbf: v('ibP'), bmr: v('ibB') || null }; if (!(e.w > 30 && e.pbf > 2 && e.smm > 5)) return toast('<span>체중·골격근량·체지방률을 넣어 주세요.</span>'); DB.inbody.push(e); DB.inbody.sort((x, y) => x.date < y.date ? -1 : 1); DB.xp += 20; save(); closeSheet(); R.grow(); toast('<span>인바디 저장 · 목표가 새로 계산됐어요 · +20 XP</span>'); },
-    tape: () => sheet(`<h2 class="fq-t-title">줄자로 V 비율</h2><p class="fq-t-caption" style="margin:-6px 0 0">어깨: 양쪽 어깨 가장 넓은 곳을 한 바퀴. 허리: 배꼽 높이, 숨을 편하게 내쉰 상태.</p><div class="grid2"><label class="stack" for="tSh" style="gap:6px"><span class="fq-t-label">어깨 둘레 cm</span><input id="tSh" class="inp" inputmode="decimal"></label><label class="stack" for="tWa" style="gap:6px"><span class="fq-t-label">허리 둘레 cm</span><input id="tWa" class="inp" inputmode="decimal"></label></div><button class="fq-btn fq-btn--lg fq-btn--block" data-act="tapeSave">저장</button>`),
+    tape: () => sheet(`<div class="row row--between"><h2 class="fq-t-title">줄자로 V 비율</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+      <div class="fq-blueprint" style="padding:12px">${TAPE_SVG}</div>
+      <ol class="tape-steps"><li><b>① 어깨 둘레</b> 팔을 몸 옆에 편하게 내리고, 양쪽 어깨(삼각근)의 <b>가장 튀어나온 곳</b>을 지나게 한 바퀴. 가슴 위쪽을 지나요.</li><li><b>② 허리 둘레</b> <b>배꼽 높이</b>에서 한 바퀴. 숨을 편하게 내쉰 상태, 배에 힘 주지 않기.</li><li>줄자는 바닥과 <b>수평</b>, 살에 닿되 조이지 않게. 거울을 보거나 다른 사람이 재 주면 정확해요. 2번 재서 평균.</li></ol><div class="grid2"><label class="stack" for="tSh" style="gap:6px"><span class="fq-t-label">어깨 둘레 cm</span><input id="tSh" class="inp" inputmode="decimal"></label><label class="stack" for="tWa" style="gap:6px"><span class="fq-t-label">허리 둘레 cm</span><input id="tWa" class="inp" inputmode="decimal"></label></div><button class="fq-btn fq-btn--lg fq-btn--block" data-act="tapeSave">저장</button>`),
     tapeSave: () => { const sh = parseFloat($('#tSh').value), wa = parseFloat($('#tWa').value); if (!(sh > 60 && wa > 40)) return toast('<span>둘레를 cm로 넣어 주세요.</span>'); DB.tape.push({ date: dayKey(), sh, wa }); save(); closeSheet(); R.grow(); },
     sound: () => { DB.settings.sound = a.dataset.v === '1'; save(); R.set(); if (DB.settings.sound) SFX.set(); },
     sfxTest: () => { const seq = ['start', 'set', 'combo', 'ready', 'pr', 'food']; seq.forEach((s, i) => setTimeout(() => SFX[s](), i * 650)); },
