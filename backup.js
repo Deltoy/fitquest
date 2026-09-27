@@ -4,7 +4,9 @@
 const BK_KEY = 'fitquest.backup';
 const BK = (() => { try { return JSON.parse(localStorage.getItem(BK_KEY)) || {}; } catch (e) { return {}; } })(); // { url, token, at, hash, weeks: { '2026-W39': createdAt } }
 const bkStore = () => { try { localStorage.setItem(BK_KEY, JSON.stringify(BK)); } catch (e) {} };
-const bkOn = () => !!(BK.url && BK.token);
+const BK_DEFAULT = 'https://script.google.com/macros/s/AKfycbzV6NiDcEOG_4cGorp0d-aGrl5e_ibqvzII33rQZVSqbcf8NG6SPtvC0V4tyL01ovcJdg/exec';   // 0927 기본은 트렌드랩 서버가 같이 받아 준다 (따로 설치 없음)
+const bkUrl = () => BK.url || BK_DEFAULT;
+const bkOn = () => !!BK.token;
 const BK_URL = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/;
 const hashOf = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) | 0; return h; };
 /* ISO 주차: 그 주 목요일이 속한 해 기준 */
@@ -12,12 +14,12 @@ const isoWeek = k => { const th = addDays(mondayOf(k), 3), y = +th.slice(0, 4); 
 const isoMonday = w => addDays(mondayOf(w.slice(0, 4) + '-01-04'), (+w.slice(6) - 1) * 7);
 
 async function bkCall(body) {
-  const r = await fetch(BK.url, { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ token: BK.token, ...body }) });
+  const r = await fetch(bkUrl(), { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fq: 1, token: BK.token, ...body }) });
   const j = await r.json().catch(() => null);
   if (!j || !j.ok) throw new Error((j && j.err) || 'http_' + r.status);
   return j;
 }
-const bkErr = e => e && e.message === 'token' ? '토큰이 백업 서버와 달라요. 설정에서 확인해 주세요' : '드라이브에 연결하지 못했어요. 다음에 다시 시도할게요';
+const bkErr = e => e && e.message === 'token' ? '백업 암호가 처음 정한 것과 달라요. 설정에서 확인해 주세요' : '드라이브에 연결하지 못했어요. 다음에 다시 시도할게요';
 const toDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
 async function jpegURL(blob) { const bmp = await createImageBitmap(blob); const j = await toJpeg(bmp, bmp.width, bmp.height, false); bmp.close && bmp.close(); return toDataURL(j.blob); }
 
@@ -47,25 +49,25 @@ function bkRun(manual) {
 const bkAuto = () => { bkRun(false).catch(() => {}); };
 
 /* ---------- 설정 섹션 ---------- */
-const bkStatText = () => { if (!BK.at) return bkOn() ? '아직 백업하지 않았어요' : '주소와 토큰을 넣으면 자동으로 백업해요'; const d = new Date(BK.at); return `마지막 백업 ${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())} · 사진 ${Object.keys(BK.weeks || {}).length}장`; };
+const bkStatText = () => { if (!BK.at) return bkOn() ? '아직 백업하지 않았어요' : '백업 암호를 정하면 자동으로 백업해요'; const d = new Date(BK.at); return `마지막 백업 ${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())} · 사진 ${Object.keys(BK.weeks || {}).length}장`; };
 function bkStat() { const s = $('#bkStat'); if (s) s.textContent = bkStatText(); }
-const bkFields = () => `<label class="stack" for="bkUrl" style="gap:6px"><span class="fq-t-label">백업 주소</span><input id="bkUrl" class="inp" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(BK.url || '')}"></label>
-  <label class="stack" for="bkTok" style="gap:6px"><span class="fq-t-label">토큰</span><input id="bkTok" class="inp" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(BK.token || '')}"></label>`;
+const bkFields = () => `<label class="stack" for="bkTok" style="gap:6px"><span class="fq-t-label">백업 암호 (직접 정해요 · 4자 이상)</span><input id="bkTok" class="inp" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" value="${esc(BK.token || '')}"></label>
+  <details><summary class="fq-t-caption">다른 백업 서버 쓰기 (보통은 비워 두세요)</summary><input id="bkUrl" class="inp" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(BK.url || '')}" style="margin-top:8px"></details>`;
 function bkSection() {
   return `<section class="fq-card stack" style="gap:12px" aria-labelledby="bkH"><span class="fq-t-heading" id="bkH">구글 드라이브 자동 백업</span>
-    <p class="note" style="margin:0">앱을 열 때와 운동을 마칠 때 기록과 주간 몸 사진을 내 드라이브 "FITQUEST 백업" 폴더에 저장해요. 설치 방법은 맥 바탕화면 "핏퀘스트_백업서버" 폴더의 설치방법.txt를 봐 주세요.</p>
+    <p class="note" style="margin:0">앱을 열 때와 운동을 마칠 때 기록과 주간 몸 사진을 내 드라이브 "FITQUEST 백업" 폴더에 저장해요. 처음 넣은 암호로 백업이 잠겨요. 다시 설치하면 같은 암호로 불러와요 — 잊지 않게 적어 두세요.</p>
     ${bkFields()}
     <p class="fq-t-caption" id="bkStat" role="status" style="margin:0">${bkStatText()}</p>
     <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="bkNow">${ico('cup')}지금 백업</button><button class="fq-btn fq-btn--secondary fq-btn--block" data-act="bkLoad">${ico('cdown')}드라이브에서 불러오기</button></section>`;
 }
 /* 입력칸 → BK. 잘못된 주소면 false */
 function bkRead() {
-  const u = $('#bkUrl'), t = $('#bkTok'); if (!u) return bkOn();
-  const url = u.value.trim(), token = t.value.trim();
-  if (!url && !token && BK.url) { delete BK.url; delete BK.token; bkStore(); bkStat(); toast('<span>자동 백업을 껐어요</span>'); return false; }
-  if (!url || !token) { toast('<span>백업 주소와 토큰을 모두 넣어 주세요</span>'); return false; }
-  if (!BK_URL.test(url)) { toast('<span>주소는 https://script.google.com/macros/s/…/exec 모양이에요</span>', 5000); return false; }
-  if (url !== BK.url || token !== BK.token) { BK.url = url; BK.token = token; BK.at = 0; BK.hash = 0; BK.weeks = {}; bkStore(); } // 다른 서버면 처음부터 다시 올림
+  const u = $('#bkUrl'), t = $('#bkTok'); if (!t) return bkOn();
+  const url = u ? u.value.trim() : '', token = t.value.trim();
+  if (!token && BK.token) { delete BK.url; delete BK.token; bkStore(); bkStat(); toast('<span>자동 백업을 껐어요</span>'); return false; }
+  if (token.length < 4) { toast('<span>백업 암호를 4자 이상 넣어 주세요</span>'); return false; }
+  if (url && !BK_URL.test(url)) { toast('<span>주소는 https://script.google.com/macros/s/…/exec 모양이에요</span>', 5000); return false; }
+  if ((url || '') !== (BK.url || '') || token !== BK.token) { if (url) BK.url = url; else delete BK.url; BK.token = token; BK.at = 0; BK.hash = 0; BK.weeks = {}; bkStore(); }   // 다른 서버·암호면 처음부터 다시 올림
   return true;
 }
 
