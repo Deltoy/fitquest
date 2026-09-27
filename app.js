@@ -170,12 +170,18 @@ function tplFor(k) {
   if (DB.rot && DB.rot.on) return rotFor(k);
   return DB.schedule[d] || null;
 }
+function rotCands(part) {
+  const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []), base = ROT[part];
+  const mine = base.filter(t => picks.includes(t)), rest = base.filter(t => !picks.includes(t));
+  if (!mine.length) return base;
+  return mine.length >= 2 ? mine.concat(rest.filter(t => !TPL[t].pro).slice(0, 1)) : [mine[0], rest[0], mine[0]].filter(Boolean);
+}
 function rotWeek(k) { return Math.max(0, Math.floor(daysBetween(DB.rot.start, mondayOf(k)) / 7)); }
 function rotFor(k) {
   const d = dow(k), part = DB.rot.slots[d]; if (!part) return null;
   const mon = mondayOf(k), order = [1, 2, 3, 4, 5, 6, 0]; let j = 0;
   for (const x of order) { if (x === d) break; if (DB.rot.slots[x] === part) j++; }
-  const c = ROT[part]; return c[(rotWeek(k) + j) % c.length];
+  const c = rotCands(part); return c[(rotWeek(k) + j) % c.length];
 }
 function settleStreak() {
   const S = DB.streak, today = dayKey();
@@ -333,7 +339,7 @@ function mealCells(T) {
 }
 
 /* ================= ONBOARDING ================= */
-const OB = { sex: 'M', steps: 1, meals: 4, min: 60, level: 'beginner', days: [1, 2, 4, 5, 6], lunch: 1 };
+const OB = { sex: 'M', steps: 1, meals: 4, min: 60, level: 'beginner', days: [1, 2, 4, 5, 6], lunch: 1, cr: ['idohwang'] };
 R.onb = () => {
   const ch = (k, v, label) => `<button class="fq-chip" aria-pressed="${OB[k] === v}" data-act="ob" data-k="${k}" data-v="${v}">${label}</button>`;
   const inp = (id, label, ph, extra = '') => `<label class="stack" for="${id}" style="gap:6px"><span class="fq-t-label">${label}</span><input id="${id}" class="inp" inputmode="decimal" placeholder="${ph}" ${extra}></label>`;
@@ -354,6 +360,9 @@ R.onb = () => {
       <span class="fq-t-label">점심</span><div class="chips">${ch('lunch', 1, '회사·식당 일반식')}${ch('lunch', 0, '도시락·직접 조절')}</div>
       <span class="fq-t-label">한 번 운동 시간</span><div class="chips">${[45, 60, 75, 90].map(n => ch('min', n, n + '분')).join('')}</div>
       <span class="fq-t-label">웨이트 경력</span><div class="chips">${ch('level', 'beginner', '6개월 미만 · 쉬었다 복귀')}${ch('level', 'intermediate', '6개월 이상 꾸준히')}</div></section>
+    <section class="fq-card stack" style="gap:14px"><h2 class="fq-t-heading">되고 싶은 몸 (롤모델)</h2>
+      <p class="note" style="margin:0">고른 유튜버의 루틴과 방식이 내 무게에 맞춰 더 자주 들어와요. 여러 명 골라도 돼요.</p>
+      <div class="stack">${CREATORS.map(c => `<button class="pro-card" data-act="obCr" data-v="${c.id}" aria-pressed="${OB.cr.includes(c.id)}" style="${OB.cr.includes(c.id) ? 'box-shadow:inset 0 0 0 2px var(--fq-text)' : ''}"><div class="who"><span class="fq-badge">${c.name}</span><span class="fq-t-caption">${c.tag}</span></div><span class="fq-t-body" style="font-size:15px">${c.body}</span></button>`).join('')}</div></section>
     <section class="fq-card stack" style="gap:14px"><h2 class="fq-t-heading">운동 요일</h2>
       <div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" aria-pressed="${OB.days.includes(d)}" data-act="obDay" data-v="${d}" style="min-width:48px;justify-content:center">${DOW[d]}</button>`).join('')}</div>
       <p class="note" style="margin:0">매일 하던 분은 주 5회를 추천해요(나머지 이틀은 걷기). 요일별 루틴은 나중에 바꿀 수 있어요.</p></section>
@@ -635,6 +644,7 @@ R.work = () => {
   const ws = weekSets();
   $('#scr-work').innerHTML = `
     <header class="topbar"><h1 class="fq-t-title">운동</h1><button class="linkbtn" data-act="schedule">${DB.rot && DB.rot.on ? `로테이션 ${rotWeek(k) + 1}주차 · 바꾸기` : '요일 바꾸기'}</button></header>
+    ${roleStrip()}
     <ol class="week" aria-label="이번 주 루틴">${week.map(w => `<li class="day" data-s="${w.s}" aria-label="${DOW[dow(w.d)]}요일, ${w.t ? TPL[w.t].code : '휴식'}"><small>${DOW[dow(w.d)]}</small>${w.t ? `<b>${TPL[w.t].code.replace('·', '<br>')}</b>` : ico('moon', 'ico--16')}</li>`).join('')}</ol>
     <section class="fq-card stack" style="gap:6px"><div class="row row--between"><span class="fq-t-heading">이번 주 우선 부위</span><span class="fq-t-caption">완료 / 목표 세트</span></div>
       ${[['측면 삼각근', 'delt-side'], ['광배근', 'lats'], ['윗가슴', 'chest-upper']].map(p => `<div class="stack" style="gap:4px"><div class="row row--between"><span class="fq-t-label">${p[0]}</span><span class="fq-t-caption">${ws[p[1]] || 0}/${BP_T[p[1]]}</span></div><div class="bar" style="--p:${Math.min(100, (ws[p[1]] || 0) / BP_T[p[1]] * 100)};--_c:var(--fq-sky)"><i></i></div></div>`).join('')}</section>
@@ -647,6 +657,27 @@ R.work = () => {
 };
 const PART_KO = { back: '등', chest: '가슴', shoulder: '어깨', arms: '팔', legs: '하체' };
 let proAll = false;
+function roleStrip() {
+  const mine = (DB.profile.creators || []).map(id => CREATORS.find(c => c.id === id)).filter(Boolean);
+  return `<section class="fq-card stack" style="gap:8px" aria-label="롤모델"><div class="row row--between"><span class="fq-t-heading">내 롤모델</span><button class="linkbtn" style="min-height:0;padding:0" data-act="crPick">바꾸기</button></div>
+    ${mine.length ? `<div class="fav-row">${mine.map(c => `<button class="fav" data-act="crCard" data-v="${c.id}"><b>${c.name}</b><span>${c.tag} · 스타일 보기</span></button>`).join('')}</div>` : '<p class="note" style="margin:0">되고 싶은 몸의 유튜버를 고르면 그 사람 루틴이 더 자주 들어와요.</p>'}</section>`;
+}
+function crCard(id) {
+  const c = CREATORS.find(x => x.id === id);
+  sheet(`<div class="row row--between"><span class="fq-badge">${c.tag}</span><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <h2 class="fq-t-title">${c.name} 스타일</h2><p class="fq-t-caption" style="margin:-6px 0 0">${c.body} · 영상 ${c.videos}개 분석</p>
+    <section class="fq-card stack"><span class="fq-eyebrow">운동 방식</span>${c.style.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}</section>
+    <section class="fq-card stack"><span class="fq-eyebrow">식단 방식</span>${c.diet.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}<span class="fq-t-caption">숫자 목표는 내 인바디 기준으로 앱이 계산해요.</span></section>
+    <section class="fq-card stack"><span class="fq-eyebrow">내 로테이션에 들어가는 루틴</span>${c.tpls.map(t => `<button class="linkbtn" style="color:var(--fq-text);text-align:left;min-height:44px" data-act="proGo" data-t="${t}">${esc(TPL[t].ko)} · 지금 하기</button>`).join('')}</section>
+    <a class="src" href="https://www.youtube.com/${c.ch}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${c.name} 채널 · 루틴 출처</span></a>`);
+}
+function crPickSheet() {
+  const cur = DB.profile.creators || [];
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">되고 싶은 몸</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <p class="fq-t-caption" style="margin:-6px 0 0">고른 사람의 루틴이 매주 로테이션에 더 자주 들어와요.</p>
+    ${CREATORS.map(c => `<button class="pro-card" data-act="crToggle" data-v="${c.id}" aria-pressed="${cur.includes(c.id)}" style="${cur.includes(c.id) ? 'box-shadow:inset 0 0 0 2px var(--fq-text)' : ''}"><div class="who"><span class="fq-badge">${c.name}</span><span class="fq-t-caption">${cur.includes(c.id) ? '선택됨' : c.tag}</span></div><span class="fq-t-body" style="font-size:15px">${c.body}</span></button>`).join('')}
+    <p class="note" style="margin:0">새 유튜버 추가(영상 링크로 학습)는 곧 열려요.</p>`);
+}
 function proSection(tpl) {
   const want = tpl ? TPL_PARTS[tpl] : null, card = (r, i) => `<button class="pro-card" data-act="pro" data-i="${i}"><div class="who"><span class="fq-badge">${esc(r.creator)}</span><span class="fq-t-caption">${esc(r.meta || '')}</span></div><h4>${esc(r.title)}</h4><span class="fq-t-caption">${esc(r.sub || '')}</span></button>`;
   const idx = ROUTINES.map((r, i) => i), mine = want ? idx.filter(i => ROUTINES[i].parts.some(p => want.includes(p))) : [], rest = idx.filter(i => !mine.includes(i));
@@ -945,13 +976,14 @@ document.addEventListener('click', ev => {
   const H = {
     close: closeSheet,
     ob: () => { OB[a.dataset.k] = isNaN(+a.dataset.v) ? a.dataset.v : +a.dataset.v; a.parentElement.querySelectorAll('.fq-chip').forEach(c => c.setAttribute('aria-pressed', c === a)); },
+    obCr: () => { const v = a.dataset.v; OB.cr = OB.cr.includes(v) ? OB.cr.filter(x => x !== v) : OB.cr.concat(v); const y = scrollY; R.onb(); scrollTo(0, y); },
     obDay: () => { const d = +a.dataset.v; OB.days = OB.days.includes(d) ? OB.days.filter(x => x !== d) : OB.days.concat(d); a.setAttribute('aria-pressed', OB.days.includes(d)); },
     obCalc: () => {
       const { d, bad } = obRead();
       if (bad.length) { $('#obResult').innerHTML = `<p class="fq-card" style="color:var(--fq-danger);margin:0">${bad.join(', ')} 값을 확인해 주세요.</p>`; return; }
       if (OB.days.length < 2) { $('#obResult').innerHTML = `<p class="fq-card" style="margin:0">운동 요일을 2일 이상 골라 주세요.</p>`; return; }
       const rec = recChapter(OB.sex, d.pbf);
-      DB.profile = { sex: OB.sex, age: d.age, height: d.h, steps: OB.steps, meals: OB.meals, sessionMin: OB.min, level: OB.level, lunchOut: OB.lunch === 1, chapter: 0, chapterStart: dayKey(), rec };
+      DB.profile = { sex: OB.sex, age: d.age, height: d.h, steps: OB.steps, meals: OB.meals, sessionMin: OB.min, level: OB.level, lunchOut: OB.lunch === 1, creators: OB.cr.slice(), chapter: 0, chapterStart: dayKey(), rec };
       DB.inbody = [{ date: d.date, w: d.w, smm: d.smm, pbf: d.pbf, bmr: d.bmr }]; DB.schedule = assignDays(OB.days); DB.rot = rotFromDays(OB.days);
       DB.flags.obDraft = true;
       const t0 = targets(); const save0 = DB.profile.chapter; DB.profile.chapter = rec; const tr = targets(); DB.profile.chapter = save0;
@@ -1000,6 +1032,8 @@ document.addEventListener('click', ev => {
     lunch: () => lunchSheet(a.dataset.n), lunchAll: () => lunchAllSheet(),
     lunchRice: () => lunchPrev(a.dataset.n, +a.dataset.r),
     lunchSave: () => { const x = LUNCH.find(l => l.n === a.dataset.n), r = RICE[+a.dataset.r]; closeSheet(); addFood({ n: `${x.n}${+a.dataset.r === 1 ? '' : ' (' + r[0] + ')'}`, p: x.p + r[3], k: x.k + r[1], c: x.c + r[2], f: x.f }); },
+    crPick: () => crPickSheet(), crCard: () => crCard(a.dataset.v),
+    crToggle: () => { const v = a.dataset.v, cur = DB.profile.creators || []; DB.profile.creators = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v); save(); crPickSheet(); R[TAB] && R[TAB](); },
     proGo: () => condSheet(a.dataset.t),
     proDay: () => sheet(`<h2 class="fq-t-title">어느 요일에 고정할까요?</h2><p class="fq-t-caption" style="margin:-6px 0 0">${esc(TPL[a.dataset.t].ko)} · 로테이션과 상관없이 매주 이 요일은 이 루틴</p><div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" style="min-width:52px;justify-content:center" data-act="proDaySet" data-d="${d}" data-t="${a.dataset.t}">${DOW[d]}</button>`).join('')}</div>`),
     proDaySet: () => { DB.pins = DB.pins || {}; DB.pins[+a.dataset.d] = a.dataset.t; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${DOW[+a.dataset.d]}요일은 ${esc(TPL[a.dataset.t].ko)}로 고정했어요</span>`); },
@@ -1037,4 +1071,4 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ================= boot ================= */
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); }); }
+else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); }); }
