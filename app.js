@@ -31,6 +31,8 @@ const I = {
   repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
   search: '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
   skip: '<polygon points="5 4 15 12 5 20 5 4"/><path d="M19 5v14"/>',
+  cup: '<path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/>',
+  cdown: '<path d="M12 13v8l-4-4"/><path d="m12 21 4-4"/><path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284"/>',
   utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>'
 };
 const ico = (n, c = 'ico--20') => `<svg class="ico ${c}" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`;
@@ -407,6 +409,7 @@ R.onb = () => {
   $('#scr-onb').innerHTML = `
     <header class="onb-head pop">${coach('happy', 56)}<div><p class="brand">FITQUEST</p><h1 class="fq-t-title">넓은 프레임을 같이 만들어요</h1></div></header>
     <p class="fq-t-body onb-lead">어깨·등은 넓게, 허리는 얇게. 인바디 숫자를 넣으면 끼니마다 먹을 양과 오늘 할 운동을 제가 정해 드릴게요.</p>
+    <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="bkSetup">${ico('cdown')}예전 기록 드라이브에서 불러오기</button>
     <section class="fq-card stack" style="gap:14px"><h2 class="fq-t-heading">기본 정보</h2>
       <div class="chips">${ch('sex', 'M', '남성')}${ch('sex', 'F', '여성')}</div>
       <div class="grid2">${inp('obAge', '나이', '예: 32', 'inputmode="numeric"')}${inp('obH', '키 (cm)', '예: 175')}</div></section>
@@ -1010,7 +1013,7 @@ function finish() {
   W.ex.forEach(e => { const d = e.sets.filter(s => s.done); if (d.length) { applyProgress(e.id, d.map(s => ({ w: s.w, r: s.r })), e.sets.filter(s => !s.bonus).length, W.feels[e.id], e.range); const st = prog(e.id); st.best = Math.max(st.best || 0, ...d.map(s => EX[e.id].kind === 'as' ? 0 : e1(s.w, s.r))); } });
   if (done) DB.sessions.push({ id: uid(), day: k, tpl: W.tpl, cond: W.c, t0: W.t0, t1: Date.now(), xp: W.xp, prs: W.prList, complete: completed, ex: W.ex.map(e => ({ id: e.id, sets: e.sets.filter(s => s.done).map(s => ({ w: s.w, r: s.r, pr: !!s.pr })) })).filter(e => e.sets.length) });
   if (completed) DB.done[k] = true;
-  checkDaily3(); save();
+  checkDaily3(); save(); bkAuto();
   const L1 = levelOf(DB.xp), gain = [...new Set(W.ex.filter(e => e.sets.some(s => s.done)).flatMap(e => EX[e.id].mus))];
   const mins = Math.max(1, Math.round((Date.now() - W.t0) / 60000)), { left, nt, cur } = nextTarget(), prs = W.prList, xp = W.xp, T0 = TPL[W.tpl], nEx = W.ex.filter(e => e.sets.some(s => s.done)).length;
   clearInterval(clockT); keepAwake(false); W = null;
@@ -1150,7 +1153,8 @@ R.set = () => {
       <input id="gkey" class="inp" type="password" autocomplete="off" placeholder="AIza…" value="${esc(S.gkey)}" aria-label="제미나이 API 키">
       <input id="gmodel" class="inp" placeholder="모델 (비우면 gemini-2.5-flash)" value="${esc(S.gmodel)}" aria-label="제미나이 모델">
       <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="saveKey">저장</button></section>
-    <section class="fq-card stack" style="gap:10px"><span class="fq-t-heading">백업</span>
+    ${bkSection()}
+    <section class="fq-card stack" style="gap:10px"><span class="fq-t-heading">파일로 백업</span>
       <p class="note" style="margin:0">기록은 이 폰 브라우저에만 있어요. 가끔 내보내 두세요 (카톡 나에게 보내기 등).</p>
       <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="export">내보내기</button><label class="fq-btn fq-btn--secondary" style="position:relative">불러오기<input type="file" id="importFile" accept="application/json,.json" style="position:absolute;inset:0;opacity:0"></label></div>
       <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="phExport">몸 사진 내보내기 (jpg 파일로)</button>
@@ -1304,7 +1308,7 @@ document.addEventListener('click', ev => {
     resetAsk: () => sheet(`<h2 class="fq-t-title">전체 초기화할까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">모든 기록·레벨·몸 사진이 지워지고 되돌릴 수 없어요. 먼저 내보내기를 권해요.</p><button class="fq-btn fq-btn--lg fq-btn--block"  data-act="reset">초기화</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
     reset: () => { DB = fresh(); save(); PH.clear().catch(() => {}); PHOTOS = []; closeSheet(); go('onb'); }
   };
-  if (H[act]) H[act](); else if (PH_ACTS[act]) PH_ACTS[act](a);
+  if (H[act]) H[act](); else if (PH_ACTS[act]) PH_ACTS[act](a); else if (BK_ACTS[act]) BK_ACTS[act](a);
 });
 function adj(kk, d) { const { e, k } = curSet(); if (k < 0) return; const s = e.sets[k], inc = incOf(e.id); if (kk === 'w') { const nw = Math.max(0, +(s.w + d * inc).toFixed(2)); e.sets.forEach((x, i) => { if (!x.done && i >= k) x.w = nw; }); } else s.r = Math.max(1, s.r + d); SFX.tap(); buzz(6); R.logger(); bump($(kk === 'w' ? '#wV' : '#rV')); }
 /* 화면 밝기: auto = 운동 화면(세트·휴식·클리어·촬영)만 헬스장 모드, light = 항상 밝게, dark = 항상 헬스장 모드 */
@@ -1314,10 +1318,10 @@ function applyTheme() {
   const m = $('#themeColor'); if (m) m.content = on ? '#121317' : '#ECEDF1';
 }
 $('#lvl').addEventListener('click', e => { if (e.target === $('#lvl')) $('#lvl').close(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
 
 /* ================= boot ================= */
 $('#lvl-coach').innerHTML = COACH_SVG;
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); }); }
+else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); }); }
