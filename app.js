@@ -248,12 +248,14 @@ function blueprintSVG(L, gain = []) {
 }
 
 /* ================= router & shared UI ================= */
-const R = {};
+const R = { shoot: () => renderShoot(), cmp: () => renderCmp() };
 let TAB = 'home';
 function go(tab) {
+  if (TAB === 'shoot' && tab !== 'shoot') stopCam();
+  if (tab === 'shoot') $('#toast').innerHTML = '';
   TAB = tab;
-  ['onb', 'home', 'diet', 'cam', 'work', 'grow', 'set', 'logger', 'sum'].forEach(s => { $('#scr-' + s).hidden = s !== tab; });
-  $('#tabbar').hidden = tab === 'onb' || tab === 'logger';
+  ['onb', 'home', 'diet', 'cam', 'work', 'grow', 'set', 'logger', 'sum', 'shoot', 'cmp'].forEach(s => { $('#scr-' + s).hidden = s !== tab; });
+  $('#tabbar').hidden = tab === 'onb' || tab === 'logger' || tab === 'shoot';
   document.querySelectorAll('.tabbar button').forEach(b => b.dataset.go === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
   R[tab] && R[tab]();
   window.scrollTo(0, 0);
@@ -264,6 +266,7 @@ function sheet(html) {
 const closeSheet = () => { $('#overlay').innerHTML = ''; };
 function toast(html, ms = 3500) {
   const t = TAB === 'logger' && $('#dockToast') || $('#toast');
+  t.style.bottom = TAB === 'shoot' ? 'calc(150px + env(safe-area-inset-bottom, 0px))' : '';
   t.innerHTML = `<div class="fq-toast">${html}</div>`;
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.innerHTML = ''; }, ms);
 }
@@ -403,6 +406,7 @@ R.home = () => {
     ${quest}
     <section class="fq-card daily" aria-label="일일 퀘스트"><div class="row row--between"><span class="fq-t-heading">일일 퀘스트</span><span class="fq-t-caption">3개 모두 +30 XP</span></div>
       <ul>${dq.map(x => `<li><span class="tick" ${x[2] ? 'data-on' : ''}>${ico('check', 'ico--16')}</span><span>${x[0]}<br><span class="fq-t-caption">${x[1]}</span></span><span class="fq-badge fq-badge--xp">+${x[3]}</span></li>`).join('')}</ul></section>
+    ${photoHomeCard()}
     <section class="fq-card stack" aria-label="체중 기록"><div class="row row--between"><span class="fq-t-heading">오늘 체중</span><span class="fq-t-caption">7일 평균 ${curWeight().toFixed(1)}kg</span></div>
       <div class="row"><input id="wIn" class="inp" inputmode="decimal" placeholder="${DB.weights[k] || curWeight().toFixed(1)}" aria-label="오늘 체중 kg" style="flex:1"><button class="fq-btn fq-btn--secondary" data-act="weigh">기록 +5 XP</button></div></section>
     <section class="fq-blueprint bp-mini" aria-label="바디 설계도 요약">${blueprintSVG(L)}
@@ -743,7 +747,7 @@ R.grow = () => {
   const ach = [
     ['첫 자재 반입', DB.foods.length >= 1], ['첫 벽돌', DB.sessions.length >= 1], ['첫 신기록', DB.sessions.some(s => s.prs.length)],
     ['진실의 거울', !!DB.flags.tdee, 'epic'], ['일주일 개근', DB.streak.best >= 7 || streakNow() >= 7, 'rare'], ['한 달의 약속', [Math.max(DB.streak.best, streakNow()), 30]],
-    ['어깨 공사 착공', [cumSets('delt-side'), 100]], ['날개 펴기', [cumSets('lats'), 100]], ['백일', [Math.max(DB.streak.best, streakNow()), 100]]
+    ['어깨 공사 착공', [cumSets('delt-side'), 100]], ['날개 펴기', [cumSets('lats'), 100]], ['백일', [Math.max(DB.streak.best, streakNow()), 100]], ['첫 몸 기록', PHOTOS.length > 0], ['12주 타임랩스', [new Set(PHOTOS.map(p => weekOf(p.date))).size, 12]]
   ];
   $('#scr-grow').innerHTML = `
     <header class="topbar"><h1 class="fq-t-title">성장</h1><span class="fq-badge">LV ${L} · ${titleOf(L)}</span></header>
@@ -760,6 +764,7 @@ R.grow = () => {
         <div class="fq-vgauge__scale" role="meter" aria-valuemin="1.2" aria-valuemax="1.8" aria-valuenow="${v.toFixed(2)}" aria-valuetext="V 비율 ${v.toFixed(2)}, 목표 1.60" style="margin-top:12px"><span class="fq-vgauge__run"></span><span class="fq-vgauge__now"></span><span class="fq-vgauge__goal"></span></div><div class="fq-vgauge__labels" style="color:#9E9EA0"><span>1.2</span><span>1.4</span><span>1.6</span><span>1.8</span></div></div>` : ''}
       <button class="fq-btn fq-btn--secondary" style="--_bg:#1F2547;--_fg:#F5F5F5" data-act="tape">${v ? '줄자 다시 재기' : '어깨·허리 둘레 재고 V 비율 열기'}</button>
       <p class="fq-t-caption" style="color:var(--fq-ondark-2);margin:0">주황 윤곽 = 우선 부위(측면 삼각근 · 광배 · 윗가슴). 이번 주 목표 세트만큼 면이 채워지고 월요일에 새로 시작해요.</p></section>
+    ${photoSection()}
     <div class="stats">
       <div class="fq-card"><span class="fq-eyebrow">Streak</span><span class="fq-t-num-lg">${streakNow()}<span class="fq-unit">일</span></span><span class="fq-t-caption">최장 ${Math.max(DB.streak.best, streakNow())}일 · 휴식일 포함</span></div>
       <div class="fq-card"><span class="fq-eyebrow">Total days</span><span class="fq-t-num-lg">${Object.keys(DB.done).length}<span class="fq-unit">일</span></span><span class="fq-t-caption">총 운동일, 영원히 남아요</span></div>
@@ -768,6 +773,7 @@ R.grow = () => {
     <div class="sec-title"><h2 class="fq-t-heading">업적</h2><span class="fq-t-caption">${ach.filter(a => a[1] === true).length} / ${ach.length}</span></div>
     <div class="ach">${ach.map(([n, s, r]) => s === true ? `<div class="fq-plate" data-r="${r || ''}"><span style="color:${r === 'epic' ? 'var(--fq-levelup-text)' : r === 'rare' ? 'var(--fq-xp-text)' : 'var(--fq-plate-label)'}">${px('star', 1)}</span><b style="font-size:14px">${n}</b></div>`
       : `<div class="fq-halftone locked"><span style="color:#9E9EA0">${px('lock', 1)}</span><div class="stack" style="gap:6px"><b style="font-size:14px">${n}</b>${Array.isArray(s) ? `<div class="fq-xp" style="--p:${Math.min(100, s[0] / s[1] * 100)};--cells:10;height:10px"><div class="fq-xp__fill"></div></div><span class="fq-t-caption" style="color:var(--fq-ondark-2)">${s[0]} / ${s[1]}</span>` : ''}</div></div>`).join('')}</div>`;
+  loadPhotos().then(() => { const el = $('#bodyLog'); if (el && TAB === 'grow') el.outerHTML = photoSection(); });
 };
 
 /* ================= SETTINGS ================= */
@@ -793,6 +799,7 @@ R.set = () => {
     <section class="fq-card stack" style="gap:10px"><span class="fq-t-heading">백업</span>
       <p class="note" style="margin:0">기록은 이 폰 브라우저에만 있어요. 가끔 내보내 두세요 (카톡 나에게 보내기 등).</p>
       <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="export">내보내기</button><label class="fq-btn fq-btn--secondary" style="position:relative">불러오기<input type="file" id="importFile" accept="application/json,.json" style="position:absolute;inset:0;opacity:0"></label></div>
+      <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="phExport">몸 사진 내보내기 (jpg 파일로)</button>
       <button class="fq-btn fq-btn--ghost fq-btn--block" data-act="resetAsk" style="color:var(--fq-danger)">전체 초기화</button></section>
     <p class="note center">FITQUEST v0.1 · 운동 사진 free-exercise-db(퍼블릭 도메인) · 루틴 출처는 각 영상 링크</p>`;
   $('#importFile').addEventListener('change', async e => {
@@ -911,10 +918,10 @@ document.addEventListener('click', ev => {
     prof: () => { const kk = a.dataset.k; DB.profile[kk] = isNaN(+a.dataset.v) ? a.dataset.v : +a.dataset.v; save(); R.set(); },
     saveKey: () => { DB.settings.gkey = $('#gkey').value.trim(); DB.settings.gmodel = $('#gmodel').value.trim(); save(); toast('<span>저장했어요. 음식 기록에서 사진을 올려 보세요.</span>'); },
     export: () => { const blob = new Blob([JSON.stringify(DB)], { type: 'application/json' }), u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = `fitquest-backup-${dayKey()}.json`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); },
-    resetAsk: () => sheet(`<h2 class="fq-t-title">전체 초기화할까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">모든 기록·레벨이 지워지고 되돌릴 수 없어요. 먼저 내보내기를 권해요.</p><button class="fq-btn fq-btn--lg fq-btn--block" style="--_bg:var(--fq-danger-fill);--_fg:#fff" data-act="reset">초기화</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
-    reset: () => { DB = fresh(); save(); closeSheet(); go('onb'); }
+    resetAsk: () => sheet(`<h2 class="fq-t-title">전체 초기화할까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">모든 기록·레벨·몸 사진이 지워지고 되돌릴 수 없어요. 먼저 내보내기를 권해요.</p><button class="fq-btn fq-btn--lg fq-btn--block" style="--_bg:var(--fq-danger-fill);--_fg:#fff" data-act="reset">초기화</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
+    reset: () => { DB = fresh(); save(); PH.clear().catch(() => {}); PHOTOS = []; closeSheet(); go('onb'); }
   };
-  (H[act] || (() => {}))();
+  if (H[act]) H[act](); else if (PH_ACTS[act]) PH_ACTS[act](a);
 });
 function adj(kk, d) { const { e, k } = curSet(); if (k < 0) return; const s = e.sets[k], inc = incOf(e.id); if (kk === 'w') { const nw = Math.max(0, +(s.w + d * inc).toFixed(2)); e.sets.forEach((x, i) => { if (!x.done && i >= k) x.w = nw; }); } else s.r = Math.max(1, s.r + d); SFX.tap(); buzz(6); R.logger(); }
 function applyTheme() { const t = DB.settings.theme, h = document.documentElement; if (t === 'auto') delete h.dataset.theme; else h.dataset.theme = t; }
@@ -924,4 +931,4 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ================= boot ================= */
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { settleStreak(); go('home'); }
+else { settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); }); }

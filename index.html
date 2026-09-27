@@ -30,6 +30,8 @@
   <main id="scr-set" class="scr" hidden></main>
   <main id="scr-logger" class="lg" hidden></main>
   <main id="scr-sum" class="scr" hidden></main>
+  <main id="scr-shoot" hidden></main>
+  <main id="scr-cmp" class="scr" hidden></main>
 </div>
 
 <nav class="tabbar" aria-label="메인" id="tabbar" hidden>
@@ -55,6 +57,7 @@
 </dialog>
 
 <script src="data.js"></script>
+<script src="photos.js"></script>
 <script src="app.js"></script>
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
