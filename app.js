@@ -33,6 +33,8 @@ const I = {
   skip: '<polygon points="5 4 15 12 5 20 5 4"/><path d="M19 5v14"/>',
   cup: '<path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/>',
   cdown: '<path d="M12 13v8l-4-4"/><path d="m12 21 4-4"/><path d="M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284"/>',
+  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
   utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>'
 };
 const ico = (n, c = 'ico--20') => `<svg class="ico ${c}" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`;
@@ -101,6 +103,7 @@ function mergeCustom() {
   Object.assign(EX, c.ex || {}); Object.assign(TPL, c.tpls || {});
   Object.entries(c.tpls || {}).forEach(([k, t]) => { TPL_PARTS[k] = t.parts; });
   (c.creators || []).forEach(cr => { if (!CREATORS.some(x => x.id === cr.id)) CREATORS.push(cr); else Object.assign(CREATORS.find(x => x.id === cr.id), cr); });
+  Object.entries(c.tpls || {}).forEach(([k, t]) => { const cr = t.cr && CREATORS.find(x => x.id === t.cr); if (cr && !cr.tpls.includes(k)) cr.tpls.push(k); });   // 기존 유튜버에 붙는 새 루틴 (follow.js)
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { toast('<span>저장 공간이 부족해요. 설정에서 백업을 내보내 주세요.</span>', 5000); } }
 
@@ -229,7 +232,7 @@ function tplFor(k) {
 }
 function rotCands(part) {
   const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []);
-  const base = ROT[part].concat(Object.keys((DB.custom && DB.custom.tpls) || {}).filter(k => { const t = TPL[k]; return t && t.parts && t.parts.includes(part === 'full' ? 'legs' : part); }));
+  const base = ROT[part].concat(Object.keys((DB.custom && DB.custom.tpls) || {}).filter(k => { const t = TPL[k]; return t && !t.off && t.parts && t.parts.includes(part === 'full' ? 'legs' : part); }));
   const mine = base.filter(t => picks.includes(t)), rest = base.filter(t => !picks.includes(t));
   if (!mine.length) return base;
   return mine.length >= 2 ? mine.concat(rest.filter(t => !TPL[t].pro).slice(0, 1)) : [mine[0], rest[0], mine[0]].filter(Boolean);
@@ -239,7 +242,8 @@ function rotFor(k) {
   const d = dow(k), part = DB.rot.slots[d]; if (!part) return null;
   const mon = mondayOf(k), order = [1, 2, 3, 4, 5, 6, 0]; let j = 0;
   for (const x of order) { if (x === d) break; if (DB.rot.slots[x] === part) j++; }
-  const c = rotCands(part); return c[(rotWeek(k) + j) % c.length];
+  const c = rotCands(part), fresh = j ? null : c.filter(t => TPL[t].day && mondayOf(addDays(TPL[t].day, 7)) === mon).sort((a, b) => TPL[b].at - TPL[a].at)[0];
+  return fresh || c[(rotWeek(k) + j) % c.length];   // 새로 자동 추가된 루틴은 다음 주 그 부위 첫날에 꼭 들어감
 }
 function settleStreak() {
   const S = DB.streak, today = dayKey();
@@ -506,6 +510,7 @@ R.home = () => {
     ${comeback}
     ${quest}
     ${rescue}
+    ${fwHomeCards()}
     ${P.chapter === 0 ? ch0Card(ch0Status()) : ''}
     ${photoHomeCard()}
     </div></div>`;
@@ -733,7 +738,7 @@ function crCard(id) {
     <h2 class="fq-t-title">${c.name} 스타일</h2><p class="fq-t-caption" style="margin:-6px 0 0">${c.body} · 영상 ${c.videos}개 분석</p>
     <section class="fq-card stack"><span class="fq-eyebrow">운동 방식</span>${c.style.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}</section>
     <section class="fq-card stack"><span class="fq-eyebrow">식단 방식</span>${c.diet.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}<span class="fq-t-caption">숫자 목표는 내 인바디 기준으로 앱이 계산해요.</span></section>
-    <section class="fq-card stack"><span class="fq-eyebrow">내 로테이션에 들어가는 루틴</span>${c.tpls.map(t => `<button class="linkbtn ink" data-act="proGo" data-t="${t}">${esc(TPL[t].ko)} · 지금 하기</button>`).join('')}</section>
+    <section class="fq-card stack"><span class="fq-eyebrow">내 로테이션에 들어가는 루틴</span>${c.tpls.filter(t => TPL[t]).map(t => TPL[t].cr ? `<button class="linkbtn ink" data-act="fwView" data-t="${t}">${esc(TPL[t].ko)} · 새 루틴${TPL[t].off ? ' · 쉬는 중' : ''}</button>` : `<button class="linkbtn ink" data-act="proGo" data-t="${t}">${esc(TPL[t].ko)} · 지금 하기</button>`).join('')}</section>
     ${c.ch ? `<a class="src" href="https://www.youtube.com/${c.ch}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${c.name} 채널 · 루틴 출처</span></a>` : ''}
     ${c.user ? `<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="crDel" data-v="${c.id}" style="--_fg:var(--red-ink)">${esc(c.name)} 학습 데이터 지우기</button>` : ''}`);
 }
@@ -745,13 +750,15 @@ function crPickSheet() {
     <button class="add" data-act="crAdd"><span class="pl">${ico('plus')}</span><span><b>내 유튜버 추가</b><span>영상 링크를 붙여 넣으면 루틴을 배워서 로테이션에 넣어요.</span></span></button>`);
 }
 /* ---------- 유튜버 추가 (BYO): 제미나이가 유튜브 링크를 직접 보고 루틴으로 정리 — 영상은 내려받지 않음 ---------- */
-function crAddSheet(msg = '') {
-  const has = !!DB.settings.gkey;
+let CR_PRE = null; // { name, url, cr } — 새 영상 카드에서 열면 채워 둠
+function crAddSheet(msg = '', pre) {
+  const has = !!DB.settings.gkey; if (pre !== undefined) CR_PRE = pre;
+  const P = CR_PRE || {};
   sheet(`<div class="row row--between"><h2 class="fq-t-title">내 유튜버 추가</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
     <p class="fq-t-caption" style="margin:-6px 0 0">좋아하는 유튜버의 루틴 영상 링크를 넣으면 앱이 학습해서 내 로테이션에 넣어요. 영상은 내려받지 않고, 운동 중 "동작 보기"는 원본 영상으로 재생돼요.</p>
     ${has ? '' : '<p class="fq-card" style="margin:0">먼저 설정 → 사진 AI에 제미나이 무료 키를 넣어 주세요 (aistudio.google.com/apikey).</p>'}
-    <label class="stack" for="crName" style="gap:6px"><span class="fq-t-label">유튜버 이름</span><input id="crName" class="inp" placeholder="예: 김계란"></label>
-    <label class="stack" for="crUrls" style="gap:6px"><span class="fq-t-label">루틴 영상 링크 (한 줄에 하나, 최대 5개)</span><textarea id="crUrls" class="inp" rows="4" style="padding:12px;min-height:110px" placeholder="https://youtu.be/…"></textarea></label>
+    <label class="stack" for="crName" style="gap:6px"><span class="fq-t-label">유튜버 이름</span><input id="crName" class="inp" placeholder="예: 김계란" value="${esc(P.name || '')}"></label>
+    <label class="stack" for="crUrls" style="gap:6px"><span class="fq-t-label">루틴 영상 링크 (한 줄에 하나, 최대 5개)</span><textarea id="crUrls" class="inp" rows="4" style="padding:12px;min-height:110px" placeholder="https://youtu.be/…">${esc(P.url || '')}</textarea></label>
     ${msg ? `<p class="fq-t-body err">${esc(msg)}</p>` : ''}
     <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="crLearn" ${has ? '' : 'disabled'}>학습 시작</button>
     <p class="note" style="margin:0">영상 1개에 30초~1분 걸려요. 영상에서 말하지 않은 세트·횟수는 비워 두고 앱 기본값으로 채워요. 학습한 루틴은 이 폰에만 저장돼요.</p>`);
@@ -791,7 +798,7 @@ async function crLearn() {
     const pg = $('#crProg'); if (pg) pg.textContent = `영상 ${i + 1} / ${urls.length}`;
   }
   if (!out.length) return crAddSheet(errs.join(' / ') || '학습하지 못했어요.');
-  CR_DRAFT = { name, out, errs };
+  CR_DRAFT = { name, out, errs, cr: CR_PRE && CR_PRE.name === name && CREATORS.some(c => c.id === CR_PRE.cr) ? CR_PRE.cr : null };
   crReview();
 }
 function crReview() {
@@ -804,29 +811,35 @@ function crReview() {
     <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="crSave">내 로테이션에 추가</button>
     <p class="note" style="margin:0">"새 운동"은 사진 대신 원본 영상으로 동작을 보여 줘요.</p>`);
 }
+/* 제미나이 결과 하나 → DB.custom.tpls 에 루틴 저장, 키 반환 (운동 못 찾으면 null). extra 는 auto·cr 등 표시 */
+function crTpl(name, d, url, extra = {}) {
+  const c = DB.custom = DB.custom || { ex: {}, tpls: {}, creators: [] };
+  const part = PART_OK.includes(d.part) ? d.part : 'full', vid = ytId(url), key = 'U' + uid();
+  const ex = (d.exercises || []).slice(0, 10).map(e => {
+    let id = e.exId && EX[e.exId] && !String(e.exId).startsWith('X') ? e.exId : null;
+    const reps = Array.isArray(e.reps) && e.reps.length === 2 && e.reps[0] > 0 && e.reps[1] >= e.reps[0] && e.reps[1] <= 50 ? e.reps.map(Math.round) : null;
+    if (!id) { id = 'X' + uid(); c.ex[id] = { n: String(e.name || '운동').slice(0, 24), img: null, eq: '영상 참고', kind: 'mc', inc: 2.5, rest: Math.min(180, Math.max(45, +e.rest || 90)), range: reps || [8, 12], mus: PART_MUS[part], def: 10, v: null }; EX[id] = c.ex[id]; }
+    const t = /^\d{1,2}:\d{2}$/.test(e.t || '') ? e.t.padStart(5, '0') : null, sec = t ? +t.slice(0, 2) * 60 + +t.slice(3) : 0;
+    const o = { t: { u: `https://youtu.be/${vid}${sec ? '?t=' + sec : ''}`, t: t || '00:00', who: name, label: d.title || '' } };
+    if (e.tip) o.tip = String(e.tip).slice(0, 80); if (reps) o.r = reps; if (!e.sets || !reps) o.d = 1;
+    return [id, Math.min(6, Math.max(1, Math.round(+e.sets || 3))), o];
+  }).filter(Boolean);
+  if (!ex.length) return null;
+  c.tpls[key] = { code: PART_NAME[part] || '맞춤', ko: `${name} · ${String(d.title || '루틴').slice(0, 20)}`, by: name, video: url, pro: 1, user: 1, parts: [part === 'full' ? 'legs' : part], ex, ...extra };
+  return key;
+}
 function crSave() {
-  const { name, out } = CR_DRAFT, c = DB.custom = DB.custom || { ex: {}, tpls: {}, creators: [] };
-  const cid = 'u_' + uid(), tpls = [], styles = [], diets = [];
+  const { name, out, cr } = CR_DRAFT, tpls = [], styles = [], diets = [];
   out.forEach(({ d, url }) => {
-    const part = PART_OK.includes(d.part) ? d.part : 'full', vid = ytId(url), key = 'U' + uid();
-    const ex = (d.exercises || []).slice(0, 10).map(e => {
-      let id = e.exId && EX[e.exId] && !String(e.exId).startsWith('X') ? e.exId : null;
-      const reps = Array.isArray(e.reps) && e.reps.length === 2 && e.reps[0] > 0 && e.reps[1] >= e.reps[0] && e.reps[1] <= 50 ? e.reps.map(Math.round) : null;
-      if (!id) { id = 'X' + uid(); c.ex[id] = { n: String(e.name || '운동').slice(0, 24), img: null, eq: '영상 참고', kind: 'mc', inc: 2.5, rest: Math.min(180, Math.max(45, +e.rest || 90)), range: reps || [8, 12], mus: PART_MUS[part], def: 10, v: null }; EX[id] = c.ex[id]; }
-      const t = /^\d{1,2}:\d{2}$/.test(e.t || '') ? e.t.padStart(5, '0') : null, sec = t ? +t.slice(0, 2) * 60 + +t.slice(3) : 0;
-      const o = { t: { u: `https://youtu.be/${vid}${sec ? '?t=' + sec : ''}`, t: t || '00:00', who: name, label: d.title || '' } };
-      if (e.tip) o.tip = String(e.tip).slice(0, 80); if (reps) o.r = reps; if (!e.sets || !reps) o.d = 1;
-      return [id, Math.min(6, Math.max(1, Math.round(+e.sets || 3))), o];
-    }).filter(Boolean);
-    if (!ex.length) return;
-    c.tpls[key] = { code: PART_NAME[part] || '맞춤', ko: `${name} · ${String(d.title || '루틴').slice(0, 20)}`, by: name, video: url, pro: 1, user: 1, parts: [part === 'full' ? 'legs' : part], ex };
+    const key = crTpl(name, d, url, cr ? { cr, from: ytId(url), at: Date.now(), day: dayKey() } : {}); if (!key) return;
     tpls.push(key); (d.style || []).slice(0, 3).forEach(x => styles.push(String(x).slice(0, 60))); (d.diet || []).slice(0, 2).forEach(x => diets.push(String(x).slice(0, 60)));
   });
   if (!tpls.length) return crAddSheet('영상에서 운동을 찾지 못했어요. 루틴 영상 링크인지 확인해 주세요.');
-  c.creators.push({ id: cid, name, ch: '', tag: '내가 추가', body: `영상 ${out.length}개로 학습한 ${name} 스타일`, mark: name, style: [...new Set(styles)].slice(0, 4), diet: [...new Set(diets)].slice(0, 3), tpls, videos: out.length, user: 1 });
-  DB.profile.creators = (DB.profile.creators || []).concat(cid);
+  const c = DB.custom;
+  if (cr) out.forEach(({ url }) => fwDone(ytId(url)));   // 기존 유튜버에 붙임 (새 영상 카드에서 배우기)
+  else { const cid = 'u_' + uid(); c.creators.push({ id: cid, name, ch: '', tag: '내가 추가', body: `영상 ${out.length}개로 학습한 ${name} 스타일`, mark: name, style: [...new Set(styles)].slice(0, 4), diet: [...new Set(diets)].slice(0, 3), tpls, videos: out.length, user: 1 }); DB.profile.creators = (DB.profile.creators || []).concat(cid); }
   DB.flags['cradd_' + dayKey()] = (DB.flags['cradd_' + dayKey()] || 0) + 1;
-  mergeCustom(); save(); CR_DRAFT = null; closeSheet(); SFX.pr(); R[TAB] && R[TAB]();
+  mergeCustom(); save(); CR_DRAFT = null; CR_PRE = null; closeSheet(); SFX.pr(); R[TAB] && R[TAB]();
   toast(`<span>${esc(name)} 루틴 ${tpls.length}개를 로테이션에 넣었어요</span>`, 4000);
 }
 function proSection(tpl) {
@@ -1154,6 +1167,7 @@ R.set = () => {
       <input id="gmodel" class="inp" placeholder="모델 (비우면 gemini-2.5-flash)" value="${esc(S.gmodel)}" aria-label="제미나이 모델">
       <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="saveKey">저장</button></section>
     ${bkSection()}
+    ${fwSection()}
     <section class="fq-card stack" style="gap:10px"><span class="fq-t-heading">파일로 백업</span>
       <p class="note" style="margin:0">기록은 이 폰 브라우저에만 있어요. 가끔 내보내 두세요 (카톡 나에게 보내기 등).</p>
       <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="export">내보내기</button><label class="fq-btn fq-btn--secondary" style="position:relative">불러오기<input type="file" id="importFile" accept="application/json,.json" style="position:absolute;inset:0;opacity:0"></label></div>
@@ -1278,7 +1292,7 @@ document.addEventListener('click', ev => {
     lunchRice: () => lunchPrev(a.dataset.n, +a.dataset.r),
     lunchSave: () => { const x = LUNCH.find(l => l.n === a.dataset.n), r = RICE[+a.dataset.r]; closeSheet(); addFood({ n: `${x.n}${+a.dataset.r === 1 ? '' : ' (' + r[0] + ')'}`, p: x.p + r[3], k: x.k + r[1], c: x.c + r[2], f: x.f }); },
     crPick: () => crPickSheet(), crCard: () => crCard(a.dataset.v),
-    crAdd: () => crAddSheet(), crLearn: () => crLearn(), crSave: () => crSave(),
+    crAdd: () => crAddSheet('', null), crLearn: () => crLearn(), crSave: () => crSave(),
     crDel: () => { const id = a.dataset.v, c = DB.custom, cr = c.creators.find(x => x.id === id); (cr.tpls || []).forEach(k => { delete c.tpls[k]; delete TPL[k]; delete TPL_PARTS[k]; Object.keys(DB.pins || {}).forEach(d => { if (DB.pins[d] === k) delete DB.pins[d]; }); }); c.creators = c.creators.filter(x => x.id !== id); const i = CREATORS.findIndex(x => x.id === id); if (i >= 0) CREATORS.splice(i, 1); DB.profile.creators = (DB.profile.creators || []).filter(x => x !== id); save(); closeSheet(); R[TAB] && R[TAB](); toast('<span>지웠어요.</span>'); },
     crToggle: () => { const v = a.dataset.v, cur = DB.profile.creators || []; DB.profile.creators = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v); save(); crPickSheet(); R[TAB] && R[TAB](); },
     proGo: () => condSheet(a.dataset.t),
@@ -1308,7 +1322,7 @@ document.addEventListener('click', ev => {
     resetAsk: () => sheet(`<h2 class="fq-t-title">전체 초기화할까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">모든 기록·레벨·몸 사진이 지워지고 되돌릴 수 없어요. 먼저 내보내기를 권해요.</p><button class="fq-btn fq-btn--lg fq-btn--block"  data-act="reset">초기화</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
     reset: () => { DB = fresh(); save(); PH.clear().catch(() => {}); PHOTOS = []; closeSheet(); go('onb'); }
   };
-  if (H[act]) H[act](); else if (PH_ACTS[act]) PH_ACTS[act](a); else if (BK_ACTS[act]) BK_ACTS[act](a);
+  if (H[act]) H[act](); else if (PH_ACTS[act]) PH_ACTS[act](a); else if (BK_ACTS[act]) BK_ACTS[act](a); else if (FW_ACTS[act]) FW_ACTS[act](a);
 });
 function adj(kk, d) { const { e, k } = curSet(); if (k < 0) return; const s = e.sets[k], inc = incOf(e.id); if (kk === 'w') { const nw = Math.max(0, +(s.w + d * inc).toFixed(2)); e.sets.forEach((x, i) => { if (!x.done && i >= k) x.w = nw; }); } else s.r = Math.max(1, s.r + d); SFX.tap(); buzz(6); R.logger(); bump($(kk === 'w' ? '#wV' : '#rV')); }
 /* 화면 밝기: auto = 운동 화면(세트·휴식·클리어·촬영)만 헬스장 모드, light = 항상 밝게, dark = 항상 헬스장 모드 */
@@ -1318,10 +1332,10 @@ function applyTheme() {
   const m = $('#themeColor'); if (m) m.content = on ? '#121317' : '#ECEDF1';
 }
 $('#lvl').addEventListener('click', e => { if (e.target === $('#lvl')) $('#lvl').close(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); fwAuto(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
 
 /* ================= boot ================= */
 $('#lvl-coach').innerHTML = COACH_SVG;
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); }); }
+else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); }); }
