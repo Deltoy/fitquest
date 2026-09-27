@@ -829,17 +829,18 @@ const TAPE_SVG = `<svg class="tape-svg" viewBox="0 0 240 284" role="img" aria-la
 </svg>`;
 const vRatio = () => { const t = DB.tape[DB.tape.length - 1]; return t ? t.sh / t.wa : null; };
 
-/* 챕터 0 — 정직한 2주 (4-9) */
+/* 챕터 0 — 정직한 2주 (4-9) · 계산 대기 음식이 있는 날은 칼로리가 모자라니 빼고 셈 */
+const fullDay = d => { const fs = dayFoods(d); return fs.length >= 2 && !fs.some(f => f.est === 'w'); };
 function ch0Status() {
   const P = DB.profile, start = P.chapterStart, today = dayKey(), n = Math.min(14, daysBetween(start, today) + 1);
   const days = Array.from({ length: n }, (_, i) => addDays(start, i));
-  const wDays = days.filter(d => DB.weights[d]).length, fDays = days.filter(d => dayFoods(d).length >= 2).length;
+  const wDays = days.filter(d => DB.weights[d]).length, fDays = days.filter(fullDay).length;
   let tdee = null;
   if (daysBetween(start, today) >= 14 && wDays >= 8 && fDays >= 10) {
     const pts = days.filter(d => DB.weights[d]).map(d => [daysBetween(start, d), DB.weights[d]]);
     const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length, my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
     const slope = pts.reduce((a, p) => a + (p[0] - mx) * (p[1] - my), 0) / Math.max(1e-9, pts.reduce((a, p) => a + (p[0] - mx) ** 2, 0));
-    const fd = days.filter(d => dayFoods(d).length >= 2), intake = fd.reduce((a, d) => a + daySum(d).k, 0) / fd.length;
+    const fd = days.filter(fullDay), intake = fd.reduce((a, d) => a + daySum(d).k, 0) / fd.length;
     tdee = Math.round(intake - slope * 7700);
   }
   return { n, wDays, fDays, tdee, ready: tdee != null };
@@ -885,7 +886,7 @@ function mealsCard(attrs = '') {
     ${names.map((n, i) => { const items = dayFoods().filter(f => f.slot === i), got = items.reduce((a, f) => a + f.p, 0);
       return `<div class="meal" aria-label="${n}"><div class="meal-h"><h3 class="fq-t-heading">${n}</h3><i class="lead"></i><span class="fq-t-label num"><b>${Math.round(got)}</b> / ${tgs[i]}g</span>
         <button class="addb" data-act="mealAdd" data-slot="${i}" aria-label="${n} 기록">${ico('plus', 'ico--20')}</button></div>
-        ${items.map(f => `<div class="fi"><span class="fi-n">${esc(f.n)}</span><i class="lead"></i><span class="fi-v num">${f.p}g<small>${f.k}kcal</small></span><button class="xbtn" data-act="delFood" data-id="${f.id}" aria-label="${esc(f.n)} 삭제">${ico('x', 'ico--16')}</button></div>`).join('')}</div>`; }).join('')}
+        ${items.map(f => `<div class="fi">${f.est ? `<button class="fi-n fi-e" data-act="foodEdit" data-id="${f.id}" aria-label="${esc(f.n)} ${estTag(f)}, 숫자 고치기"><span>${esc(f.n)}</span><span class="chip ${f.est === 'w' ? 'rd' : 'cy'}">${estTag(f)}</span></button>` : `<span class="fi-n">${esc(f.n)}</span>`}<i class="lead"></i>${f.est === 'w' ? '' : `<span class="fi-v num">${f.p}g<small>${f.k}kcal</small></span>`}<button class="xbtn" data-act="delFood" data-id="${f.id}" aria-label="${esc(f.n)} 삭제">${ico('x', 'ico--16')}</button></div>`).join('')}</div>`; }).join('')}
   </section>`;
 }
 /* 식단 맨 위 "기록하기": 단백질 숫자 + 끼니 막대 + 사진(주 버튼)·글로·단골 (+ 점심 메뉴) */
@@ -906,7 +907,7 @@ function mealAddSheet(slot) {
 }
 function favList() {
   const cutoff = addDays(dayKey(), -30), cnt = {};
-  DB.foods.filter(f => daysBetween(cutoff, f.day) >= 0).forEach(f => { const c = cnt[f.n] = cnt[f.n] || { ...f, count: 0 }; c.count++; });
+  DB.foods.filter(f => f.est !== 'w' && daysBetween(cutoff, f.day) >= 0).forEach(f => { const c = cnt[f.n] = cnt[f.n] || { ...f, count: 0 }; c.count++; });
   const mine = Object.values(cnt).filter(c => c.count >= 3).sort((a, b) => b.count - a.count).map(c => ({ n: c.n, p: c.p, k: c.k, c: c.c, f: c.f, mine: 1 }));
   return mine.concat(BASE_FAVS.filter(b => !mine.some(m => m.n === b.n))).slice(0, 10);
 }
@@ -915,7 +916,7 @@ let countFrom = null;   // 기록 직후 단백질 숫자가 올라가는 애니
 function addFood(x, bonusKind, slot = curSlot()) {
   SLOT_PICK = null;
   const k = dayKey(), T = targets(), before = daySum().p, slotBefore = slotSum(slot), tg = mealTargets(T)[slot] || 0, nt0 = nextTarget().nt;
-  DB.foods.push({ id: uid(), day: k, t: Date.now(), slot, n: x.n, p: Math.round(x.p), k: Math.round(x.k), c: Math.round(x.c || 0), f: Math.round(x.f || 0) });
+  const id = uid(); DB.foods.push({ id, day: k, t: Date.now(), slot, n: x.n, p: Math.round(x.p), k: Math.round(x.k), c: Math.round(x.c || 0), f: Math.round(x.f || 0), ...(x.est ? { est: x.est, g: Math.round(x.g || 0) } : {}) });
   let xp = addXP('meal', 10);
   if (slotBefore < tg - 10 && slotBefore + x.p >= tg - 10) xp += addXP('mealhit', 10);
   const cleared = before < T.p * .9 && before + x.p >= T.p * .9;
@@ -927,7 +928,10 @@ function addFood(x, bonusKind, slot = curSlot()) {
   if (TAB === 'cam' || TAB === 'home') go('home'); else R[TAB] && R[TAB]();
   countUp(); countFrom = null;
   const n2 = nextTarget();
-  toast(`<span>${esc(String(x.n).slice(0, 14))} +${Math.round(x.p)}g${cleared ? ' 단백질 클리어' : ''}${xp ? ` <em>+${xp} XP</em>` : ''}</span><span class="sub" data-v="next">${nextShort(n2)}</span>`);
+  const nm = esc(String(x.n).length > 14 ? String(x.n).slice(0, 13) + '…' : x.n), XP = xp ? ` <em>+${xp} XP</em>` : '';
+  toast(x.est === 'w' ? `<span class="t2">${nm} 기록 · 계산 대기${XP}</span><span class="sub">${DB.settings.gkey ? '온라인이 되면 채워요' : '숫자는 나중에'}</span>`
+    : x.est ? `<span class="t2">${nm} 단백질 ${Math.round(x.p)}g · ${fmt(x.k)}kcal ${x.est === 'ai' ? 'AI 추정' : '추정'}${cleared ? ' 단백질 클리어' : ''}${XP}</span><button data-act="foodEdit" data-id="${id}">수정</button>`
+    : `<span>${nm} +${Math.round(x.p)}g${cleared ? ' 단백질 클리어' : ''}${XP}</span><span class="sub" data-v="next">${nextShort(n2)}</span>`, x.est ? 5000 : 3500);
   showLevelUp();
 }
 /* 숫자 올라가기 (300ms) — 줄인 동작 설정이면 바로 최종값 */
@@ -1046,9 +1050,102 @@ async function gemCall(key, parts, errMsg) {
 async function geminiFood(file) {
   const b64 = await downscale(file), key = DB.settings.gkey.trim();
   const prompt = '이 음식 사진을 한국 음식 기준으로 항목별로 추정해 줘. 보이는 양 그대로(1인분이라고 가정하지 말 것). JSON만 출력: {"items":[{"n":"음식 이름(한국어)","g":그램,"k":kcal,"p":단백질g,"c":탄수화물g,"f":지방g,"conf":1~3}]} conf 3=확실 2=보통 1=불확실. 음식이 아니면 {"items":[]}.';
-  const data = await gemCall(key, [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }], '키를 확인해 주세요');
+  return gemItems(await gemCall(key, [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }], '키를 확인해 주세요'));
+}
+function gemItems(data) {   // 사진·글 공통: 최대 8개, 값 범위 제한
   const num = (v, a, b) => Math.min(b, Math.max(a, +v || 0));
   return (data.items || []).slice(0, 8).map(x => ({ n: String(x.n || '음식').slice(0, 30), g: num(x.g, 0, 2000), k: num(x.k, 0, 3000), p: num(x.p, 0, 250), c: num(x.c, 0, 400), f: num(x.f, 0, 200), conf: Math.round(num(x.conf, 1, 3)) || 2 }));
+}
+
+/* ================= 글로 기록: 이름만 → 단백질·칼로리 =================
+   1) 앱 안 음식표(FOOD_DB)로 바로 (오프라인) 2) 키가 있으면 제미나이 3) 둘 다 안 되면 "계산 대기"로 저장 → 다음에 온라인+키면 채움 */
+const Q_UNIT = '개|팩|공기|그릇|컵|스쿱|인분|병|줄|잔|모|조각|토막|마리|봉지|장|알|큰술|판|캔|볼';
+const Q_RE = new RegExp(`(\\d+(?:\\.\\d+)?\\s*/\\s*\\d+|\\d+(?:\\.\\d+)?)\\s*(g|그램|ml|㎖|${Q_UNIT})?|(한|두|세|석|네|넉|다섯)\\s*(?:${Q_UNIT})|반\\s*(?:${Q_UNIT})|(?<=^|\\s)반(?=\\s|$)`, 'gi');
+const K_NUM = { 한: 1, 두: 2, 세: 3, 석: 3, 네: 4, 넉: 4, 다섯: 5 };
+const fNorm = s => s.toLowerCase().replace(/정도|쯤|[\s·.,()~\-]/g, '');
+let FOOD_IDX = null;
+function foodFind(nm) {   // 이름이 같으면 그것, 아니면 글 안에 든 가장 긴 이름 (글의 60% 이상일 때만)
+  FOOD_IDX = FOOD_IDX || FOOD_DB.flatMap(x => x.names.map(n => [fNorm(n), x]));
+  let best = null, bl = 0;
+  for (const [k, x] of FOOD_IDX) { if (k === nm) return x; if (k.length > bl && k.length >= nm.length * .6 && nm.includes(k)) { best = x; bl = k.length; } }
+  return best;
+}
+function foodParse(t) {   // "현미밥 반 공기" → { x: 현미밥, q: .5 }
+  const m = [...t.matchAll(Q_RE)][0], x = foodFind(fNorm(t.replace(Q_RE, ' ')));
+  if (!x) return null;
+  let q = 1;
+  if (m && m[1]) { const [a, b] = m[1].split('/').map(Number), v = b ? a / b : a; q = /^(g|그램|ml|㎖)$/i.test(m[2] || '') ? (x.g ? v / x.g : 1) : v; }
+  else if (m && m[3]) q = K_NUM[m[3]]; else if (m) q = .5;
+  return { x, q: q > 0 && q < 50 ? q : 1 };
+}
+const foodSplit = t => t.split(/\s*(?:[,，、+&\n]|\band\b|그리고|및)\s*/i).filter(Boolean);
+function localFood(t) {   // 모든 항목이 표에 있을 때만 합계, 하나라도 없으면 null
+  const its = foodSplit(t).map(foodParse); if (!its.length || its.some(i => !i)) return null;
+  const s = kk => its.reduce((a, { x, q }) => a + x[kk] * q, 0);
+  return { g: s('g'), k: s('k'), p: s('p'), c: s('c'), f: s('f') };
+}
+async function aiText(t) {
+  const prompt = `한 사람이 먹은 음식을 글로 적었어: "${t.slice(0, 200).replace(/"/g, "'")}". 쉼표·and 로 나뉜 항목마다 한국 음식 기준으로 추정해 줘. 양이 적혀 있으면 그 양, 없으면 한국에서 흔한 1인분. 부풀리지 말고 현실적인 값. JSON만 출력: {"items":[{"n":"음식 이름(한국어)","g":그램,"k":kcal,"p":단백질g,"c":탄수화물g,"f":지방g,"conf":1~3}]} conf 3=확실 2=보통 1=불확실. 음식이 아니면 {"items":[]}.`;
+  const its = gemItems(await gemCall(DB.settings.gkey.trim(), [{ text: prompt }], '키를 확인해 주세요'));
+  if (!its.length) throw new Error('음식을 찾지 못했어요');
+  const s = kk => its.reduce((a, x) => a + x[kk], 0);
+  return { g: s('g'), k: s('k'), p: s('p'), c: s('c'), f: s('f') };
+}
+const estTag = f => f.est === 'w' ? (DB.settings.gkey ? '계산 대기' : '숫자 넣기') : f.est === 'ai' ? 'AI 추정' : '추정';
+async function textSave(btn) {
+  const t = ($('#tiName').value || '').trim().slice(0, 60), mp = $('#tiP').value.trim(), mk = $('#tiK').value.trim(), slot = curSlot();
+  if (mp || mk) { const p = Math.max(0, +mp || 0); closeSheet(); return addFood({ n: t || '직접 입력', p, k: +mk || Math.round(p * 4 + 150) }, null, slot); }
+  if (!t) { $('#tiName').focus(); return toast('<span>무엇을 먹었는지 적어 주세요.</span>'); }
+  const loc = localFood(t);
+  if (loc) { closeSheet(); return addFood({ ...loc, n: t, est: 'l' }, null, slot); }
+  let why = '';
+  if (DB.settings.gkey && navigator.onLine) {
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.innerHTML = `${ico('refresh', 'ico--20 spin')}AI가 계산하는 중`;
+    try { const r = await aiText(t); closeSheet(); return addFood({ ...r, n: t, est: 'ai' }, null, slot); } catch (e) { why = String(e.message || e); }
+  }
+  closeSheet(); addFood({ n: t, p: 0, k: 0, est: 'w' }, null, slot);
+  if (why) setTimeout(() => toast(`<span class="t2">AI가 못 읽었어요 (${esc(why.slice(0, 30))}). 계산 대기로 저장했어요</span>`, 4500), 1200);
+}
+/* 숫자 바꾸기 (추정 고치기 · 계산 대기 채우기): 오늘이면 단백질 클리어 XP·오늘 3칸도 다시 봄 */
+function setFood(it, v) {
+  const today = it.day === dayKey(), T = targets(), b = daySum().p - (today ? it.p : 0);
+  Object.assign(it, v);
+  if (today && b < T.p * .9 && b + it.p >= T.p * .9) addXP('protein', 50);
+  if (today) checkDaily3(); save();
+}
+let fillBusy = false;
+async function fillPending() {   // 계산 대기 → 표 또는 제미나이로 채움 (앱 열 때 · 온라인 될 때 · 키 저장할 때)
+  if (fillBusy || !DB.settings.gkey || !navigator.onLine || !DB.foods.some(f => f.est === 'w')) return;
+  fillBusy = true;
+  try {
+    for (const it of DB.foods.filter(f => f.est === 'w')) {
+      let r = localFood(it.n), est = 'l';
+      if (!r) { r = await aiText(it.n); est = 'ai'; }
+      if (!DB.foods.includes(it) || it.est !== 'w') continue;   // 그사이 지웠거나 직접 넣음
+      setFood(it, { p: Math.round(r.p), k: Math.round(r.k), c: Math.round(r.c), f: Math.round(r.f), g: Math.round(r.g), est });
+      if (TAB !== 'logger' && R[TAB]) R[TAB]();
+      toast(`<span class="t2">${esc(it.n.slice(0, 14))} 단백질 ${it.p}g · ${fmt(it.k)}kcal 채웠어요</span><button data-act="foodEdit" data-id="${it.id}">수정</button>`, 4500);
+    }
+  } catch (e) {} finally { fillBusy = false; }
+}
+addEventListener('online', () => fillPending());
+function foodEditSheet(id) {
+  const f = DB.foods.find(x => x.id === id); if (!f) return;
+  const w = f.est === 'w', F = [['feG', '양 g', f.g || ''], ['feP', '단백질 g', w ? '' : f.p], ['feK', '칼로리', w ? '' : f.k]];
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">${w ? '숫자 넣기' : '숫자 고치기'}</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <p class="fq-t-caption" style="margin:-6px 0 0"><b class="ink">${esc(f.n)}</b> · ${w ? (DB.settings.gkey ? '온라인이 되면 AI가 채워요. 알면 지금 넣어도 돼요.' : '아는 숫자만 넣어요. 설정에서 제미나이 키를 넣으면 자동으로 채워요.') : `${f.est === 'ai' ? 'AI' : '앱 음식표'} 추정값이에요. 양을 바꾸면 단백질·칼로리도 같이 바뀌어요.`}</p>
+    <div class="grid3">${F.map(([i, l, v]) => `<label class="stack" for="${i}" style="gap:6px"><span class="fq-t-label">${l}</span><input id="${i}" class="inp" inputmode="numeric" value="${v}"></label>`).join('')}</div>
+    <button class="fq-btn fq-btn--lg fq-btn--block" data-act="foodSave" data-id="${id}">저장</button>`);
+  if (f.g) $('#feG').addEventListener('input', e => { const r = (+e.target.value || 0) / f.g; $('#feP').value = Math.round(f.p * r); $('#feK').value = Math.round(f.k * r); });
+  if (w) $('#feP').focus();
+}
+function foodSave(id) {
+  const f = DB.foods.find(x => x.id === id); if (!f) return closeSheet();
+  const g = +$('#feG').value || 0, ps = $('#feP').value.trim(), ks = $('#feK').value.trim();
+  if (!ps && !ks) return toast('<span>단백질이나 칼로리 중 하나는 적어 주세요.</span>');
+  const p = Math.max(0, +ps || 0), k = Math.max(0, +ks || Math.round(p * 4 + 150)), r = f.k ? k / f.k : 0;
+  setFood(f, { g, p, k, c: Math.round(f.c * r), f: Math.round(f.f * r), est: f.est === 'w' ? 'm' : f.est });
+  closeSheet(); R[TAB] && R[TAB](); toast(`<span>${esc(f.n.slice(0, 14))} 단백질 ${p}g · ${fmt(k)}kcal 로 고쳤어요</span>`);
 }
 
 /* ================= WORKOUT TAB ================= */
@@ -1729,11 +1826,12 @@ document.addEventListener('click', ev => {
     delFood: () => { DB.foods = DB.foods.filter(f => f.id !== a.dataset.id); save(); R[TAB](); },
     allLogged: () => { const key = 'all_' + k; if (a.checked && !DB.flags[key]) { DB.flags[key] = true; addXP('all', 20); toast('<span>완전 기록일 +20 XP · 정체기 진단이 정확해져요</span>'); } else if (!a.checked) delete DB.flags[key]; checkDaily3(); save(); showLevelUp(); },
     weigh: () => { const v = parseFloat((a.parentElement.querySelector('input').value || '').replace(',', '.')); if (!(v >= 30 && v <= 250)) return toast('<span>체중을 kg으로 넣어 주세요.</span>'); const first = !DB.weights[k]; DB.weights[k] = v; if (first) addXP('weight', 5); checkDaily3(); save(); SFX.food(); R[TAB] && R[TAB](); toast(`<span>${v}kg 기록${first ? ' <em>+5 XP</em>' : ''}</span>`); showLevelUp(); },
-    textIn: () => { pickSlot(); sheet(`<h2 class="fq-t-title">글로 기록</h2><p class="fq-t-caption" style="margin:-6px 0 0">${mealNames()[curSlot()]}에 기록돼요. 모르면 단백질만 적어도 돼요. 칼로리를 비우면 대략 추정해요.</p>
-      <label class="stack" for="tiName" style="gap:6px"><span class="fq-t-label">무엇을 먹었나요</span><input id="tiName" class="inp" placeholder="예: 닭가슴살 200g, 밥 반 공기"></label>
-      <div class="grid2"><label class="stack" for="tiP" style="gap:6px"><span class="fq-t-label">단백질 g</span><input id="tiP" class="inp" inputmode="numeric" placeholder="30"></label><label class="stack" for="tiK" style="gap:6px"><span class="fq-t-label">칼로리</span><input id="tiK" class="inp" inputmode="numeric" placeholder="모르면 비워요"></label></div>
-      <button class="fq-btn fq-btn--lg fq-btn--block" data-act="textSave">기록하기</button>`); },
-    textSave: () => { const n = $('#tiName').value.trim() || '직접 입력', p = Math.max(0, +$('#tiP').value || 0), kc = +$('#tiK').value || Math.round(p * 4 + 150); if (!p && !+$('#tiK').value) return toast('<span>단백질이나 칼로리 중 하나는 적어 주세요.</span>'); closeSheet(); addFood({ n, p, k: kc }); },
+    textIn: () => { pickSlot(); sheet(`<h2 class="fq-t-title">글로 기록</h2><p class="fq-t-caption" style="margin:-6px 0 0">${mealNames()[curSlot()]}에 기록돼요. 이름만 적으면 단백질·칼로리는 알아서 채워요.</p>
+      <label class="stack" for="tiName" style="gap:6px"><span class="fq-t-label">무엇을 먹었나요</span><input id="tiName" class="inp" placeholder="예: 닭가슴살 1팩, 현미밥 반 공기" enterkeyhint="done" autocomplete="off"></label>
+      <details class="ti-more"><summary>${ico('chev', 'ico--16')}<span class="fq-t-label">직접 입력 (선택)</span></summary><div class="grid2"><label class="stack" for="tiP" style="gap:6px"><span class="fq-t-label">단백질 g</span><input id="tiP" class="inp" inputmode="numeric" placeholder="30"></label><label class="stack" for="tiK" style="gap:6px"><span class="fq-t-label">칼로리</span><input id="tiK" class="inp" inputmode="numeric" placeholder="모르면 비워요"></label></div></details>
+      <button class="fq-btn fq-btn--lg fq-btn--block" data-act="textSave">기록하기</button>`); $('#tiName').focus(); },
+    textSave: () => { if (!a.disabled) textSave(a); },
+    foodEdit: () => foodEditSheet(a.dataset.id), foodSave: () => foodSave(a.dataset.id),
     ask: () => { FR.items[+a.dataset.i].q = +a.dataset.q; FR.asked = true; drawResult(); },
     qty: () => { FR.items[+a.dataset.i].q = +a.dataset.q; drawResult(); },
     saveFood: () => { const it = FR.items.filter(x => x.q > 0); const P = it.reduce((s, x) => s + x.p * x.q, 0), K = it.reduce((s, x) => s + x.k * x.q, 0), C = it.reduce((s, x) => s + x.c * x.q, 0), F = it.reduce((s, x) => s + x.f * x.q, 0); FR = null; addFood({ n: it.map(x => x.n).join(' · ').slice(0, 40) || '사진 기록', p: P, k: K, c: C, f: F }); },
@@ -1792,7 +1890,7 @@ document.addEventListener('click', ev => {
     sfxTest: () => { const seq = ['start', 'set', 'combo', 'ready', 'pr', 'food']; seq.forEach((s, i) => setTimeout(() => SFX[s](), i * 650)); },
     theme: () => { DB.settings.theme = a.dataset.v; applyTheme(); save(); R.set(); },
     prof: () => { const kk = a.dataset.k, v = a.dataset.v; DB.profile[kk] = v === 'true' ? true : v === 'false' ? false : isNaN(+v) ? v : +v; save(); R.set(); },
-    saveKey: () => { DB.settings.gkey = $('#gkey').value.trim(); DB.settings.gmodel = $('#gmodel').value.trim(); save(); toast('<span>저장했어요. 음식 기록에서 사진을 올려 보세요.</span>'); },
+    saveKey: () => { DB.settings.gkey = $('#gkey').value.trim(); DB.settings.gmodel = $('#gmodel').value.trim(); save(); toast('<span>저장했어요. 음식 기록에서 사진을 올려 보세요.</span>'); fillPending(); },
     export: () => { const blob = new Blob([JSON.stringify(DB)], { type: 'application/json' }), u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = `fitquest-backup-${dayKey()}.json`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); },
     resetAsk: () => sheet(`<h2 class="fq-t-title">전체 초기화할까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">모든 기록·레벨·몸 사진이 지워지고 되돌릴 수 없어요. 먼저 내보내기를 권해요.</p><button class="fq-btn fq-btn--lg fq-btn--block"  data-act="reset">초기화</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
     reset: () => { DB = fresh(); save(); PH.clear().catch(() => {}); PHOTOS = []; closeSheet(); go('onb'); }
@@ -1806,12 +1904,13 @@ function applyTheme() {
   h.classList.toggle('gym', on); delete h.dataset.theme;
   const m = $('#themeColor'); if (m) m.content = on ? '#121317' : '#ECEDF1';
 }
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'tiName' && !e.isComposing) $('[data-act=textSave]').click(); });   // 글로 기록: 엔터 = 기록하기
 $('#lvl').addEventListener('click', e => { if (e.target === $('#lvl')) $('#lvl').close(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); fwAuto(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); fwAuto(); fillPending(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
 
 /* ================= boot ================= */
 Object.keys(R).forEach(k => { const f = R[k]; R[k] = (...a) => { const r = f(...a); flow(); return r; }; });   // 그릴 때마다 두 줄 다시 나눔
 $('#lvl-coach').innerHTML = COACH_SVG;
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } fixOldPostpone(); settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); }); }
+else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } fixOldPostpone(); settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); fillPending(); }); }
