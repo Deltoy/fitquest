@@ -542,3 +542,38 @@ html.gym .tabbar button[aria-current="page"] { color: #FF6B75; }
   #scr-onb > .onb-head, #scr-onb > .onb-lead, #scr-onb > .fq-btn, #scr-onb > #obResult, #scr-onb > .note, #scr-set > .topbar, #scr-set > .note { grid-column: 1 / -1; }
   #scr-cmp:not([hidden]) > .ph-pair, #scr-cmp:not([hidden]) > .ph-wipe, #scr-cmp:not([hidden]) > .ph-lapse { width: min(100%, 640px); justify-self: center; }
 }
+
+/* ================= 운동 달력 (운동 탭 카드 → 시트) ================= */
+.cal-card { width: 100%; border: 0; color: var(--ink); text-align: left; font: inherit; }
+.cal-card-b { display: flex; align-items: center; gap: 18px; }
+.cal-mini { display: grid; grid-template-columns: repeat(7, 10px); gap: 4px; flex: none; }
+.cal-mini i { width: 10px; height: 10px; border-radius: 3px; background: var(--soft); }
+.cal-mini i.x { background: none; }
+.cal-mini i[data-on] { background: var(--pc); }
+.cal-mini i[data-today] { box-shadow: 0 0 0 1.5px var(--canvas), 0 0 0 3px var(--ink); }
+.cal-nav, .cal-dh { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 8px; text-align: center; }
+.cal-sum { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cal-sum .fq-card { display: grid; gap: 6px; align-content: start; padding: 14px 16px; }
+.cal-dt { font-weight: 800; color: var(--ink-2); }
+.cal-dt[data-up="true"] { color: var(--red-ink); }
+.cal-dt[data-up="false"] { color: var(--cyan-chip); }
+.cal-h, .cal-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.cal-h span { font-size: 12px; font-weight: 700; color: var(--ink-2); text-align: center; }
+.cal-d { display: flex; flex-direction: column; gap: 3px; min-width: 0; min-height: 60px; padding: 5px 3px; border: 0; border-radius: 14px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); transition: transform .3s var(--spring); }
+.cal-d:active { transform: scale(.94); transition-duration: .07s; }
+.cal-d > .num { font-size: 13px; font-weight: 800; line-height: 1.25; text-align: center; }
+.cal-d[data-e] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); }
+.cal-d[data-e] > .num { color: var(--ink-2); }
+.cal-d[aria-current] { box-shadow: inset 0 0 0 2.5px var(--ink), var(--shadow); }
+.cal-c { display: block; border-radius: 999px; background: var(--pc); color: #fff; font: 800 11px/16px var(--kr); font-style: normal; letter-spacing: -.02em; text-align: center; white-space: nowrap; overflow: hidden; }
+.cal-c.plan { background: none; color: var(--ink-2); border: 1.5px dashed var(--pc); line-height: 13px; }
+.cal-big .cal-c, .cal-c.cal-big { display: inline-block; padding: 0 12px; font-size: 14px; line-height: 28px; }
+.cal-big { display: block; }
+.cal-s h3 { margin-top: -4px; }
+.cal-ex { display: grid; }
+.cal-ex > div { display: grid; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.cal-ex > div:last-child { border-bottom: 0; }
+.cal-ex b { font-size: 15px; font-weight: 700; }
+.cal-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+.cal-sets > span { display: inline-flex; align-items: center; gap: 3px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--canvas); font-size: 13px; font-weight: 800; }
+.cal-sets > .pr { background: var(--gold); color: var(--on-gold); }

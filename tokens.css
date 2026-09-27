@@ -13,6 +13,8 @@
   --cyan: #0896BD; --cyan-soft: #8FD8EC; --cyan-tint: #DDF3F9; --cyan-chip: #0A7897; --on-cyan: #FFFFFF;
   --gold: #FFC23D; --gold-ink: #8A5A00; --on-gold: #3A2A00; --gold-ledge: #B98300;
   --soft: #E2E4EA; --soft-ledge: #C9CCD5; --line: #DADCE2;
+  /* 부위 색 (운동 달력) — 빨강·노랑과 겹치지 않게, 흰 글자 5:1 이상 · 헬스장 모드도 그대로 */
+  --p-back: #2F5FD0; --p-chest: #C0307A; --p-shoulder: #0B7A6E; --p-legs: #7047C9; --p-arms: #B45309; --p-full: #4B5263;
   --shadow: 0 1px 2px rgba(38, 39, 45, .06), 0 12px 28px -16px rgba(38, 39, 45, .28);
   --photo: none;
   --scrim: rgba(18, 19, 23, .5);

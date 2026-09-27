@@ -11,7 +11,7 @@ const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e)
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const I = {
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>', minus: '<path d="M5 12h14"/>', check: '<path d="M20 6 9 17l-5-5"/>',
-  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', chev: '<path d="m9 18 6-6-6-6"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', chev: '<path d="m9 18 6-6-6-6"/>', chevL: '<path d="m15 18-6-6 6-6"/>',
   undo: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
   image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
   ext: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
@@ -733,6 +733,7 @@ R.work = () => {
     <div class="cols"><div class="col">
     ${roleStrip()}
     <ol class="week" aria-label="이번 주 루틴">${week.map(w => `<li class="day" data-s="${w.s}" aria-label="${DOW[dow(w.d)]}요일, ${w.t ? TPL[w.t].code : '휴식'}"><small>${DOW[dow(w.d)]}</small>${w.t ? `<b>${TPL[w.t].code.replace('·', '<br>')}</b>` : ico('moon', 'ico--16')}</li>`).join('')}</ol>
+    ${calCard()}
     <section class="fq-card stack" style="gap:10px"><div class="row row--between"><h2 class="fq-t-heading">이번 주 우선 부위</h2><span class="fq-t-caption">완료 / 목표 세트</span></div>
       ${[['측면 삼각근', 'delt-side'], ['광배근', 'lats'], ['윗가슴', 'chest-upper']].map(p => `<div class="stack" style="gap:6px"><div class="row row--between"><span class="fq-t-label">${p[0]}</span><span class="fq-t-caption num">${ws[p[1]] || 0}/${BP_T[p[1]]}</span></div><div class="bar" style="--p:${Math.min(100, (ws[p[1]] || 0) / BP_T[p[1]] * 100)}"><i></i></div></div>`).join('')}</section>
     <div class="stack pro-sec" style="--o:5">${proSection(tpl)}</div>
@@ -750,6 +751,75 @@ function roleStrip() {
   const mine = (DB.profile.creators || []).map(id => CREATORS.find(c => c.id === id)).filter(Boolean);
   return `<section class="fq-card stack" style="gap:10px" aria-label="롤모델"><div class="row row--between"><h2 class="fq-t-heading">내 롤모델</h2><button class="linkbtn" data-act="crPick">바꾸기</button></div>
     <div class="role-row">${mine.map(c => `<button class="rm" data-act="crCard" data-v="${c.id}">${avatar(c, 'av av--md')}<span><b>${esc(c.name)}</b><small>${esc(c.tag)}</small></span></button>`).join('')}<button class="rm rm--add" data-act="crAdd"><span class="pl">${ico('plus')}</span><span><b>내 유튜버 추가</b><small>영상 링크로 학습</small></span></button></div></section>`;
+}
+/* ---------- 운동 달력: DB.sessions 를 날짜별로 모아 월 달력으로 (새 저장 형식 없음) ---------- */
+let CAL = null; // 보고 있는 달 'YYYY-MM'
+const MUS_PART = { lats: 'back', traps: 'back', chest: 'chest', 'chest-upper': 'chest', 'delt-side': 'shoulder', 'delt-front': 'shoulder', biceps: 'arms', forearm: 'arms', quads: 'legs', calves: 'legs' };
+function partOf(tpl, ex = []) {   // 루틴의 첫 부위 · 루틴이 지워졌으면 세트가 가장 많은 부위
+  const t = TPL[tpl]; if (t) return t.code === '전신' ? 'full' : (TPL_PARTS[tpl] || [])[0] || 'full';
+  const c = {}; ex.forEach(e => { const p = EX[e.id] && MUS_PART[EX[e.id].mus[0]]; if (p) c[p] = (c[p] || 0) + e.sets.length; });
+  return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || 'full';
+}
+const ymAdd = (ym, n) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5) - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const ymDays = ym => new Date(+ym.slice(0, 4), +ym.slice(5), 0).getDate();
+function sessByDay() { const m = {}; DB.sessions.forEach(s => (m[s.day] = m[s.day] || []).push(s)); return m; }
+const setsOf = s => s.ex.reduce((a, e) => a + e.sets.length, 0);
+function calStats(ym, by) {
+  const days = Object.keys(by).filter(k => k.startsWith(ym + '-')).sort(), ss = days.flatMap(k => by[k]), cnt = {};
+  ss.forEach(s => { const p = partOf(s.tpl, s.ex); cnt[p] = (cnt[p] || 0) + 1; });
+  let run = 0, best = 0; days.forEach((k, i) => { run = i && daysBetween(days[i - 1], k) === 1 ? run + 1 : 1; best = Math.max(best, run); });
+  const top = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+  return { days: days.length, sets: ss.reduce((a, s) => a + setsOf(s), 0), top, topN: top ? cnt[top] : 0, best };
+}
+const calChip = (p, cls = '') => `<i class="cal-c ${cls}" style="--pc:var(--p-${p})">${PART_NAME[p]}</i>`;
+const calDelta = (a, b) => a === b ? '지난달과 같아요' : `지난달보다 <b class="cal-dt" data-up="${a > b}">${a > b ? '▲' : '▼'}<span class="num">${Math.abs(a - b)}</span></b>`;
+function calCard() {
+  const ym = dayKey().slice(0, 7), today = dayKey(), by = sessByDay(), S = calStats(ym, by), P = calStats(ymAdd(ym, -1), by), m = +ym.slice(5);
+  const dots = Array.from({ length: ymDays(ym) }, (_, i) => { const k = `${ym}-${pad(i + 1)}`, s = by[k]; return `<i${s ? ` data-on style="--pc:var(--p-${partOf(s[0].tpl, s[0].ex)})"` : ''}${k === today ? ' data-today' : ''}></i>`; }).join('');
+  return `<button class="tile card-pad cal-card" style="--o:4" data-act="calOpen" aria-label="운동 달력 열기. ${m}월 운동 ${S.days}일, 총 ${S.sets}세트">
+    <span class="row row--between"><span class="fq-t-heading">운동 달력</span><span class="fq-t-caption row" style="gap:2px">${m}월 전체 보기${ico('chev', 'ico--16')}</span></span>
+    <span class="cal-card-b"><span class="cal-mini" aria-hidden="true">${'<i class="x"></i>'.repeat((dow(ym + '-01') + 6) % 7)}${dots}</span>
+      <span class="stack" style="gap:4px"><span><span class="fq-t-num-md">${S.days}</span><span class="fq-unit">일 운동</span> · <span class="num">${S.sets}</span><span class="fq-unit">세트</span></span><span class="fq-t-caption">${calDelta(S.days, P.days)}</span></span></span>
+  </button>`;
+}
+function calSheet(keep) {
+  const ym = CAL, by = sessByDay(), today = dayKey(), m = +ym.slice(5), S = calStats(ym, by), P = calStats(ymAdd(ym, -1), by);
+  const future = ym > today.slice(0, 7), cells = Array.from({ length: ymDays(ym) }, (_, i) => {
+    const k = `${ym}-${pad(i + 1)}`, ss = by[k] || [], plan = !ss.length && daysBetween(today, k) >= 0 && tplFor(k), parts = ss.map(s => partOf(s.tpl, s.ex));
+    const lab = `${m}월 ${i + 1}일 ${DOW[dow(k)]}요일${k === today ? ' 오늘' : ''}, ${ss.length ? parts.map(p => PART_NAME[p]).join('·') + ' 운동' : plan ? TPL[plan].code + ' 예정' : '기록 없음'}`;
+    return `<button class="cal-d" data-act="calDay" data-k="${k}"${k === today ? ' aria-current="date"' : ''}${ss.length || plan ? '' : ' data-e'} aria-label="${esc(lab)}"><span class="num">${i + 1}</span>${parts.map(p => calChip(p)).join('')}${plan ? calChip(partOf(plan), 'plan') : ''}</button>`;
+  }).join('');
+  const html = `<div class="row row--between"><h2 class="fq-t-title">운동 달력</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <div class="cal-nav"><button class="fq-btn fq-btn--icon" data-act="calNav" data-n="-1" aria-label="지난달">${ico('chevL')}</button><p class="fq-t-heading" id="calTitle" aria-live="polite">${ym.slice(0, 4)}년 ${m}월</p><button class="fq-btn fq-btn--icon" data-act="calNav" data-n="1" aria-label="다음 달">${ico('chev')}</button></div>
+    ${S.days ? `<div class="cal-sum" id="calSum">
+      <div class="fq-card"><span class="fq-eyebrow">운동</span><span class="fq-t-num-md" data-v="days">${S.days}<small>일</small></span><span class="fq-t-caption">${calDelta(S.days, P.days)}</span></div>
+      <div class="fq-card"><span class="fq-eyebrow">총 세트</span><span class="fq-t-num-md" data-v="sets">${S.sets}<small>세트</small></span><span class="fq-t-caption">${calDelta(S.sets, P.sets)}</span></div>
+      <div class="fq-card"><span class="fq-eyebrow">가장 많이 한 부위</span><span class="cal-big" data-v="top">${calChip(S.top)}</span><span class="fq-t-caption"><span class="num">${S.topN}</span>번</span></div>
+      <div class="fq-card"><span class="fq-eyebrow">연속 최고</span><span class="fq-t-num-md" data-v="best">${S.best}<small>일</small></span><span class="fq-t-caption">하루도 안 쉬고 이어 간 날</span></div></div>`
+    : `<section class="tile card-pad" id="calEmpty"><div class="l-head">${coach('idle', 40)}<p>${future ? '아직 오지 않은 달이에요.' : '이 달엔 운동 기록이 없어요.'}<small>${future ? '점선은 주간 루틴에 잡혀 있는 계획이에요.' : '운동을 끝내면 날짜마다 부위 색으로 쌓여요.'}</small></p></div></section>`}
+    <div class="cal-h" aria-hidden="true">${[1, 2, 3, 4, 5, 6, 0].map(d => `<span>${DOW[d]}</span>`).join('')}</div>
+    <div class="cal-g" id="calGrid">${'<span></span>'.repeat((dow(ym + '-01') + 6) % 7)}${cells}</div>
+    <p class="fq-t-caption center" style="margin:0">날짜를 누르면 그날 한 운동이 나와요 · 점선은 계획</p>`;
+  const el = $('.sheet'); if (keep && el) { el.innerHTML = html; el.scrollTop = 0; } else sheet(html);
+}
+function calSess(s, i) {
+  const t = TPL[s.tpl], mins = s.t0 && s.t1 ? Math.max(1, Math.round((s.t1 - s.t0) / 6e4)) : 0;
+  const name = t ? (t.by ? `${t.by} · ${t.ko.replace(t.by + ' · ', '')}` : `기본 V자 · ${t.ko}`) : '지금은 없는 루틴';
+  const vol = s.ex.reduce((a, e) => a + (EX[e.id] && EX[e.id].kind === 'as' ? 0 : e.sets.reduce((x, z) => x + z.w * z.r, 0)), 0);   // 어시스트는 보조 무게라 볼륨에서 뺌
+  return `<section class="tile card-pad cal-s" aria-label="${esc(name)}">
+    <div class="row row--between"><span class="row" style="gap:6px;flex-wrap:wrap">${calChip(partOf(s.tpl, s.ex), 'cal-big')}${s.cond === 'short' ? '<span class="chip">15분 퀘스트</span>' : ''}${s.complete === false ? '<span class="chip">일부만</span>' : ''}</span><span class="chip gd num">+${fmt(s.xp || 0)} XP</span></div>
+    <h3 class="fq-t-heading">${esc(name)}</h3>
+    <p class="fq-t-caption">${s.ex.length}가지 <span class="num">${setsOf(s)}</span>세트${mins ? ` · <span class="num">${mins}</span>분` : ''} · 총 볼륨 <span class="num">${fmt(vol)}</span>kg${(s.prs || []).length ? ` · 새 기록 <span class="num">${s.prs.length}</span>개` : ''}</p>
+    <div class="cal-ex">${s.ex.map(e => `<div><b>${esc(EX[e.id] ? EX[e.id].n : e.id)}</b><span class="cal-sets">${e.sets.map(z => `<span class="num${z.pr ? ' pr' : ''}">${z.pr ? `${ico('trophy', 'ico--14')}<span class="fq-sr">새 기록</span>` : ''}${EX[e.id] ? wLabel(e.id, z.w) : z.w}×${z.r}</span>`).join('')}</span></div>`).join('')}</div>
+    ${t ? `<button class="fq-btn ${i ? 'fq-btn--secondary ' : ''}fq-btn--block" data-act="pickGo" data-t="${esc(s.tpl)}">${ico('repeat')}이 루틴 다시 하기</button>` : ''}</section>`;
+}
+function calDaySheet(k) {
+  const ss = DB.sessions.filter(s => s.day === k), d = kDate(k), today = dayKey(), plan = !ss.length && daysBetween(today, k) >= 0 && tplFor(k);
+  const body = ss.length ? ss.map(calSess).join('')
+    : plan ? `<section class="tile card-pad"><div class="l-head">${coach('think', 40)}<p>${esc(TPL[plan].ko)} 하는 날이에요.<small>아직 기록 전이에요. 끝내면 여기에 쌓여요.</small></p></div>${k === today ? `<button class="fq-btn fq-btn--lg fq-btn--block" data-act="startQuest">${ico('play', 'fill')}운동 시작</button>` : ''}</section>`
+    : `<section class="tile card-pad" id="calDayEmpty"><div class="l-head">${coach('rest', 40)}<p>${daysBetween(today, k) > 0 ? '아직 계획이 없는 날이에요.' : '쉬어 간 날이에요.'}<small>근육은 쉬는 날 자라요. 이날은 운동 기록이 없어요.</small></p></div></section>`;
+  $('.sheet').innerHTML = `<div class="cal-dh"><button class="fq-btn fq-btn--icon" data-act="calBack" aria-label="달력으로">${ico('chevL')}</button><h2 class="fq-t-title">${d.getMonth() + 1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>${body}`;
+  $('.sheet').scrollTop = 0;
 }
 function crCard(id) {
   const c = CREATORS.find(x => x.id === id);
@@ -1240,6 +1310,8 @@ document.addEventListener('click', ev => {
   const act = a.dataset.act, k = dayKey();
   const H = {
     close: closeSheet,
+    calOpen: () => { CAL = dayKey().slice(0, 7); calSheet(); }, calDay: () => calDaySheet(a.dataset.k), calBack: () => calSheet(true),
+    calNav: () => { CAL = ymAdd(CAL, +a.dataset.n); calSheet(true); $(`.sheet [data-act=calNav][data-n="${a.dataset.n}"]`).focus(); },
     ob: () => { OB[a.dataset.k] = isNaN(+a.dataset.v) ? a.dataset.v : +a.dataset.v; a.parentElement.querySelectorAll('.fq-chip').forEach(c => c.setAttribute('aria-pressed', c === a)); },
     obCr: () => { const v = a.dataset.v; OB.cr = OB.cr.includes(v) ? OB.cr.filter(x => x !== v) : OB.cr.concat(v); const y = scrollY; R.onb(); scrollTo(0, y); },
     obDay: () => { const d = +a.dataset.v; OB.days = OB.days.includes(d) ? OB.days.filter(x => x !== d) : OB.days.concat(d); a.setAttribute('aria-pressed', OB.days.includes(d)); },
