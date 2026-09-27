@@ -1,17 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFBE5C"/><stop offset=".5" stop-color="#F68D1F"/><stop offset="1" stop-color="#E57A12"/></linearGradient>
-    <linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCE5F7"/><stop offset=".46" stop-color="#A9BBE6"/><stop offset=".54" stop-color="#8B9DD2"/><stop offset="1" stop-color="#7D8EC4"/></linearGradient>
-    <pattern id="g" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#9FBEE7" stroke-opacity=".10" stroke-width="2"/></pattern>
-  </defs>
-  <rect width="512" height="512" fill="#0A0A0A"/>
-  <rect width="512" height="512" fill="url(#g)"/>
-  <!-- shoulder-width dimension line (blueprint) -->
-  <g stroke="#9FBEE7" stroke-width="5" stroke-linecap="round"><path d="M92 150H420"/><path d="M92 136v28M420 136v28"/></g>
-  <!-- head: chrome octagon -->
-  <polygon points="238,62 274,62 294,82 294,114 274,134 238,134 218,114 218,82" fill="url(#c)" stroke="#3D4F97" stroke-opacity=".6" stroke-width="5"/>
-  <!-- V-taper torso with delt caps -->
-  <polygon points="92,206 134,170 378,170 420,206 398,262 350,252 312,414 200,414 162,252 114,262" fill="url(#v)" stroke="#7A3400" stroke-opacity=".35" stroke-width="5" stroke-linejoin="round"/>
-  <path d="M142 182H370" stroke="#fff" stroke-opacity=".55" stroke-width="5" stroke-linecap="round"/>
-  <g fill="none" stroke="#7A3400" stroke-opacity=".32" stroke-width="5" stroke-linecap="round"><path d="M256 200v196"/><path d="M186 250q70 26 140 0"/><path d="M162 252l-18-50M350 252l18-50"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#ECEDF1"/><g transform="translate(83.19999999999999 68.79999999999998) scale(7.2)">
+  <ellipse cx="24" cy="47.6" rx="17" ry="2.4" fill="#26272D" opacity=".10"/>
+  <rect x="2" y="4" width="44" height="42" rx="14" fill="#A8121C"/>
+  <rect x="2" y="4" width="44" height="38" rx="14" fill="#E0202C"/>
+  <rect x="9" y="8.5" width="9" height="3" rx="1.5" fill="#fff" opacity=".3"/>
+  <path d="M13.8 22.8q4-6.2 8 0M26.2 22.8q4-6.2 8 0" fill="none" stroke="#fff" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18.5 28.5h11a5.5 5.5 0 0 1-11 0z" fill="#fff"/></g><g transform="translate(387.04 114.82239999999997) scale(44.64)" fill="#B98300"><path d="M0 -1Q.14 -.14 1 0Q.14 .14 0 1Q-.14 .14 -1 0Q-.14 -.14 0 -1z"/></g><g transform="translate(387.04 107.67999999999998) scale(44.64)" fill="#FFC23D"><path d="M0 -1Q.14 -.14 1 0Q.14 .14 0 1Q-.14 .14 -1 0Q-.14 -.14 0 -1z"/></g></svg>
