@@ -657,3 +657,20 @@ const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1',
 const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'C'], shoulder: ['P4', 'C', 'E'], arms: ['P5', 'E'], full: ['D', 'P7'] };
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
+/* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
+const LUNCH = [
+  { n: '닭갈비·닭볶음탕 정식', p: 38, k: 800, c: 90, f: 26 },
+  { n: '제육볶음 정식', p: 35, k: 850, c: 105, f: 28 },
+  { n: '생선구이 정식', p: 34, k: 750, c: 95, f: 24 },
+  { n: '불고기 정식', p: 33, k: 800, c: 100, f: 24 },
+  { n: '순대·돼지국밥', p: 32, k: 700, c: 85, f: 22 },
+  { n: '돈까스 정식', p: 32, k: 950, c: 110, f: 40 },
+  { n: '샐러드 + 닭가슴살', p: 32, k: 400, c: 25, f: 15 },
+  { n: '한식 백반', p: 28, k: 750, c: 110, f: 18 },
+  { n: '구내식당 (보통)', p: 28, k: 750, c: 105, f: 20 },
+  { n: '김치찌개 + 공기밥', p: 24, k: 650, c: 90, f: 18 },
+  { n: '비빔밥', p: 20, k: 650, c: 105, f: 15 },
+  { n: '짜장면', p: 20, k: 800, c: 130, f: 20 }
+];
+const LUNCH_P = 30; // 일반식 점심에서 현실적으로 나오는 단백질
+const RICE = [['밥 반 공기', -150, -33, 0], ['보통', 0, 0, 0], ['밥 추가', 300, 66, 6]];

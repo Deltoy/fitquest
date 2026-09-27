@@ -119,7 +119,14 @@ function targets(k = dayKey()) {
   return { kcal, p, f, c, train, bmr, tdee: Math.round(tdee) };
 }
 function mealNames() { return { 3: ['아침', '점심', '저녁'], 4: ['아침', '점심', '간식', '저녁'], 5: ['아침', '간식1', '점심', '간식2', '저녁'] }[DB.profile.meals] || ['아침', '점심', '간식', '저녁']; }
-function mealSplit(p) { const n = DB.profile.meals, base = Math.floor(p / n / 5) * 5; let rem = p - base * n; return Array.from({ length: n }, () => { const add = rem >= 5 ? 5 : 0; rem -= add; return base + add; }); }
+const lunchIdx = () => DB.profile.meals === 5 ? 2 : 1;
+const lunchOut = () => DB.profile.lunchOut !== false;
+function mealSplit(p) {
+  const n = DB.profile.meals, li = lunchOut() ? lunchIdx() : -1, others = li >= 0 ? n - 1 : n, rest = li >= 0 ? p - LUNCH_P : p;
+  const base = Math.floor(rest / others / 5) * 5; let rem = rest - base * others;
+  return Array.from({ length: n }, (_, i) => { if (i === li) return LUNCH_P; const add = rem >= 5 ? 5 : 0; rem -= add; return base + add; });
+}
+function riceTip() { const c = DB.profile.chapter; return c === 1 ? '밥은 반 공기, 고기·생선 반찬은 다 드세요' : c === 3 ? '밥 1공기 다 드시고, 식후 단백질 음료 하나 추가' : '밥 1공기, 고기 반찬 먼저'; }
 function slotAt(min = hm()) {
   const n = DB.profile.meals, cut = { 3: [630, 960], 4: [630, 900, 1110], 5: [570, 720, 900, 1110] }[n] || [630, 900, 1110];
   const m = min < 240 ? min + 1440 : min;
@@ -129,8 +136,10 @@ function dayFoods(k = dayKey()) { return DB.foods.filter(f => f.day === k); }
 function daySum(k = dayKey()) { const fs = dayFoods(k); const s = x => fs.reduce((a, f) => a + (+f[x] || 0), 0); return { p: s('p'), k: s('k'), c: s('c'), f: s('f'), n: fs.length }; }
 function slotSum(slot, k = dayKey()) { return dayFoods(k).filter(f => f.slot === slot).reduce((a, f) => a + f.p, 0); }
 function nextTarget() {
-  const T = targets(), S = daySum(), left = Math.max(0, T.p - S.p), cur = slotAt(), n = DB.profile.meals;
-  return { left, nt: Math.ceil(left / Math.max(1, n - cur) / 5) * 5, cur };
+  const T = targets(), S = daySum(), left = Math.max(0, T.p - S.p), cur = slotAt(), n = DB.profile.meals, li = lunchOut() ? lunchIdx() : -1;
+  if (cur === li && !slotSum(li)) return { left, nt: LUNCH_P, cur, lunch: true };
+  const lunchAhead = li > cur ? LUNCH_P : 0, slots = Math.max(1, n - cur - (lunchAhead ? 1 : 0));
+  return { left, nt: Math.max(0, Math.ceil((left - lunchAhead) / slots / 5) * 5), cur };
 }
 
 /* ================= game engine (6장) ================= */
@@ -324,7 +333,7 @@ function mealCells(T) {
 }
 
 /* ================= ONBOARDING ================= */
-const OB = { sex: 'M', steps: 1, meals: 4, min: 60, level: 'beginner', days: [1, 2, 4, 5, 6] };
+const OB = { sex: 'M', steps: 1, meals: 4, min: 60, level: 'beginner', days: [1, 2, 4, 5, 6], lunch: 1 };
 R.onb = () => {
   const ch = (k, v, label) => `<button class="fq-chip" aria-pressed="${OB[k] === v}" data-act="ob" data-k="${k}" data-v="${v}">${label}</button>`;
   const inp = (id, label, ph, extra = '') => `<label class="stack" for="${id}" style="gap:6px"><span class="fq-t-label">${label}</span><input id="${id}" class="inp" inputmode="decimal" placeholder="${ph}" ${extra}></label>`;
@@ -342,6 +351,7 @@ R.onb = () => {
     <section class="fq-card stack" style="gap:14px"><h2 class="fq-t-heading">생활</h2>
       <span class="fq-t-label">하루 걸음 수</span><div class="chips">${STEPS.map((s, i) => ch('steps', i, s[0])).join('')}</div>
       <span class="fq-t-label">하루 끼니 수</span><div class="chips">${[3, 4, 5].map(n => ch('meals', n, n + '끼')).join('')}</div>
+      <span class="fq-t-label">점심</span><div class="chips">${ch('lunch', 1, '회사·식당 일반식')}${ch('lunch', 0, '도시락·직접 조절')}</div>
       <span class="fq-t-label">한 번 운동 시간</span><div class="chips">${[45, 60, 75, 90].map(n => ch('min', n, n + '분')).join('')}</div>
       <span class="fq-t-label">웨이트 경력</span><div class="chips">${ch('level', 'beginner', '6개월 미만 · 쉬었다 복귀')}${ch('level', 'intermediate', '6개월 이상 꾸준히')}</div></section>
     <section class="fq-card stack" style="gap:14px"><h2 class="fq-t-heading">운동 요일</h2>
@@ -420,6 +430,7 @@ R.home = () => {
       ${S.p < T.p * .9 ? `<div class="next"><div class="stack" style="gap:4px"><span class="fq-t-caption">다음 끼니 (${names[Math.min(cur, names.length - 1)]}) 단백질</span><span><strong>${nt}</strong> <span class="fq-unit">G</span></span></div><button class="fq-btn fq-btn--secondary" data-act="wte">뭐 먹지?</button></div>`
         : `<div class="next"><div class="stack" style="gap:4px"><span class="fq-hud" style="color:var(--fq-success)">PROTEIN CLEAR</span><span class="fq-t-caption">오늘 지은 근육에 재료가 도착했어요.</span></div><span class="fq-badge fq-badge--success">+50 XP</span></div>`}
     </section>
+    ${lunchCard()}
     ${rescue}
     ${quest}
     <section class="fq-card daily" aria-label="일일 퀘스트"><div class="row row--between"><span class="fq-t-heading">일일 퀘스트</span><span class="fq-t-caption">3개 모두 +30 XP</span></div>
@@ -432,6 +443,33 @@ R.home = () => {
         ${vRatio() ? `<span><span class="fq-t-display" style="font-size:44px">${vRatio().toFixed(2)}</span> <span class="fq-eyebrow" style="color:#9FBEE7">V RATIO</span></span>` : `<span class="fq-t-caption" style="color:var(--fq-ondark-2)">어깨·허리 둘레를 재면 V 비율이 열려요</span>`}
         <button class="fq-btn fq-btn--secondary" style="--_bg:#1F2547;--_fg:#F5F5F5;justify-self:start;min-height:44px" data-go="grow">설계도 열기</button></div></section>`;
 };
+function lunchCard() {
+  if (!lunchOut() || slotAt() !== lunchIdx() || slotSum(lunchIdx())) return '';
+  const top = LUNCH.slice(0, 3);
+  return `<section class="fq-card stack" aria-label="점심 일반식"><div class="row row--between"><span class="fq-t-heading">점심은 일반식이죠?</span><span class="fq-t-caption">단백질 ${LUNCH_P}g 목표</span></div>
+    <p class="fq-t-caption" style="margin:0">${riceTip()}. 단백질 많은 메뉴부터 골라 봤어요.</p>
+    <div class="fav-row">${top.map(x => `<button class="fav" data-act="lunch" data-n="${esc(x.n)}"><b>${esc(x.n)}</b><span>단백질 ${x.p}g · ${x.k}kcal</span></button>`).join('')}<button class="fav" data-act="lunchAll"><b>다른 메뉴</b><span>백반·국밥·찌개…</span></button></div></section>`;
+}
+function lunchSheet(name) {
+  const x = LUNCH.find(l => l.n === name), ri = LUNCH_RICE_DEFAULT();
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">${esc(x.n)}</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <p class="fq-t-caption" style="margin:-6px 0 0">${riceTip()}</p>
+    <div class="chips" role="group" aria-label="밥 양">${RICE.map((r, i) => `<button class="fq-chip" aria-pressed="${i === ri}" data-act="lunchRice" data-n="${esc(x.n)}" data-r="${i}">${r[0]}</button>`).join('')}</div>
+    <div id="lunchPrev"></div>`);
+  lunchPrev(x.n, ri);
+}
+const LUNCH_RICE_DEFAULT = () => DB.profile.chapter === 1 ? 0 : 1;
+function lunchPrev(name, ri) {
+  const x = LUNCH.find(l => l.n === name), r = RICE[ri], v = { n: `${x.n}${ri === 1 ? '' : ' (' + r[0] + ')'}`, p: x.p + r[3], k: x.k + r[1], c: x.c + r[2], f: x.f }, S = daySum(), T = targets();
+  $('#lunchPrev').innerHTML = `<div class="preview"><span class="fq-eyebrow">기록하면</span><span>단백질 <b>+${v.p}g</b> → ${Math.round(S.p + v.p)} / ${T.p}g</span><span class="fq-t-caption">칼로리 ${fmt(S.k)} → ${fmt(S.k + v.k)} / ${fmt(T.kcal)} · 식당마다 ±25%</span></div>
+    <button class="fq-btn fq-btn--lg fq-btn--block" data-act="lunchSave" data-n="${esc(name)}" data-r="${ri}">점심 기록</button>`;
+  document.querySelectorAll('[data-act=lunchRice]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.r === ri));
+}
+function lunchAllSheet() {
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">오늘 점심 메뉴</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <p class="fq-t-caption" style="margin:-6px 0 0">단백질 많은 순이에요. 비슷한 메뉴를 고르면 돼요.</p>
+    <div class="list">${LUNCH.map(x => `<div><button class="linkbtn" style="color:var(--fq-text);text-align:left;flex:1" data-act="lunch" data-n="${esc(x.n)}">${esc(x.n)}</button><span class="fq-t-caption">단백질 ${x.p}g · ${x.k}kcal</span></div>`).join('')}</div>`);
+}
 function weekDone() { const mon = mondayOf(dayKey()); return Object.keys(DB.done).filter(k => daysBetween(mon, k) >= 0).length; }
 const wLabel = (id, w) => EX[id].kind === 'as' ? `보조 ${w}` : `${w}`;
 const TAPE_SVG = `<svg viewBox="0 0 240 284" role="img" aria-label="어깨 둘레는 삼각근 가장 튀어나온 곳, 허리 둘레는 배꼽 높이에서 잰다는 그림" style="display:block;width:100%;max-width:260px;margin:0 auto">
@@ -485,6 +523,7 @@ R.diet = () => {
       <div class="stack" style="gap:6px"><span class="fq-t-caption">남은 단백질</span><span><span class="fq-t-num-lg" style="color:var(--fq-protein)">${Math.max(0, Math.round(T.p - S.p))}</span> <span class="fq-unit">G</span></span><span class="fq-t-caption">칼로리 ${fmt(S.k)} / ${fmt(T.kcal)}</span></div></section>
     ${names.map((n, i) => { const items = dayFoods().filter(f => f.slot === i), got = items.reduce((a, f) => a + f.p, 0), kc = items.reduce((a, f) => a + f.k, 0);
       return `<section class="fq-card mealcard" aria-label="${n}"><div class="row row--between"><span class="fq-t-heading">${n}</span><span class="fq-t-label"><span style="color:var(--fq-protein)">${Math.round(got)}</span> / ${split[i]}g · ${fmt(kc)}kcal</span></div>
+        ${!items.length && i === lunchIdx() && lunchOut() ? `<button class="fq-btn fq-btn--secondary" style="justify-self:start;min-height:44px" data-act="lunchAll">점심 일반식 고르기 · 목표 ${LUNCH_P}g</button>` : ''}
         ${items.length ? `<div class="items">${items.map(f => `<div><span>${esc(f.n)}</span><span class="row" style="gap:6px"><span class="muted">${f.p}g · ${f.k}kcal</span><button class="fq-btn fq-btn--icon" style="width:36px;min-height:36px" data-act="delFood" data-id="${f.id}" aria-label="${esc(f.n)} 삭제">${ico('x', 'ico--16')}</button></span></div>`).join('')}</div>` : `<p class="fq-t-caption" style="margin:0">아직 기록 없음 · 목표 단백질 ${split[i]}g</p>`}</section>`; }).join('')}
     <div class="sec-title"><h2 class="fq-t-heading">내 단골 · 1탭 기록</h2><span class="fq-t-caption">3번 먹으면 자동 등록</span></div>
     ${favRow()}
@@ -832,6 +871,7 @@ R.set = () => {
     <section class="fq-card stack" style="gap:12px"><span class="fq-t-heading">생활 · 운동</span>
       <span class="fq-t-label">하루 걸음 수</span><div class="chips">${STEPS.map((s, i) => `<button class="fq-chip" aria-pressed="${P.steps === i}" data-act="prof" data-k="steps" data-v="${i}">${s[0]}</button>`).join('')}</div>
       <span class="fq-t-label">하루 끼니 수</span><div class="chips">${[3, 4, 5].map(n => `<button class="fq-chip" aria-pressed="${P.meals === n}" data-act="prof" data-k="meals" data-v="${n}">${n}끼</button>`).join('')}</div>
+      <span class="fq-t-label">점심</span><div class="chips"><button class="fq-chip" aria-pressed="${lunchOut()}" data-act="prof" data-k="lunchOut" data-v="true">회사·식당 일반식</button><button class="fq-chip" aria-pressed="${!lunchOut()}" data-act="prof" data-k="lunchOut" data-v="false">직접 조절</button></div>
       <span class="fq-t-label">운동 시간</span><div class="chips">${[45, 60, 75, 90].map(n => `<button class="fq-chip" aria-pressed="${P.sessionMin === n}" data-act="prof" data-k="sessionMin" data-v="${n}">${n}분</button>`).join('')}</div>
       <span class="fq-t-label">경력</span><div class="chips"><button class="fq-chip" aria-pressed="${P.level === 'beginner'}" data-act="prof" data-k="level" data-v="beginner">초보·복귀</button><button class="fq-chip" aria-pressed="${P.level === 'intermediate'}" data-act="prof" data-k="level" data-v="intermediate">중급</button></div>
       <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="schedule">요일별 루틴 바꾸기</button></section>
@@ -875,14 +915,15 @@ function wteSheet(cat) {
   const score = x => 2 * Math.min(1, x.p / mP) + Math.min(1, x.k / mK) - 3 * Math.max(0, (x.k - mK) / mK);
   const late = hm() >= 1260 && remK < 800, pool = WTE.filter(x => !late || x.k <= 600);
   const cats = ['편의점', '배달', '집밥'];
-  const picks = (cat ? [cat] : cats).flatMap(c => pool.filter(x => x.cat === c).sort((a, b) => score(b) - score(a)).slice(0, cat ? 3 : 1));
+  let picks = (cat ? [cat] : cats).flatMap(c => pool.filter(x => x.cat === c).sort((a, b) => score(b) - score(a)).slice(0, cat ? 3 : 1));
+  if (!cat && lunchOut() && slotAt() === lunchIdx() && !slotSum(lunchIdx())) picks = LUNCH.slice(0, 3).map(x => ({ ...x, cat: '회사 점심' }));
   sheet(`<div class="row row--between"><h2 class="fq-t-title">뭐 먹지?</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
     <p class="fq-t-body" style="margin:-8px 0 0">남은 단백질 <b style="color:var(--fq-protein)">${left}g</b> · 칼로리 <b>${fmt(Math.max(0, remK))}kcal</b>. 다음 끼니 ${nt}g에 맞춘 추천이에요.</p>
     <div class="chips" role="group" aria-label="장소">${['전체', ...cats].map(c => `<button class="fq-chip" aria-pressed="${(cat || '전체') === c}" data-act="wteCat" data-c="${c}">${c}</button>`).join('')}</div>
     <div class="wte">${picks.map(x => `<div class="wte-card"><span class="fq-badge" style="justify-self:start">${x.cat}</span><b style="font-size:17px">${x.n}</b>
       <div class="nums"><span><b style="color:var(--fq-protein)">${x.p}</b><span class="fq-unit">G 단백질</span></span><span><b>${x.k}</b><span class="fq-unit">KCAL</span></span></div>
       <span class="fq-t-caption">먹으면: 단백질 ${Math.round(S.p)} → ${Math.round(S.p + x.p)} / ${T.p}g · 칼로리 ${fmt(S.k)} → ${fmt(S.k + x.k)} / ${fmt(T.kcal)}</span>
-      <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="logWte" data-n="${esc(x.n)}">이걸로 기록</button></div>`).join('')}</div>
+      <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="${x.cat === '회사 점심' ? 'lunch' : 'logWte'}" data-n="${esc(x.n)}">이걸로 기록</button></div>`).join('')}</div>
     <p class="note" style="margin:0">값은 대략이에요. 배달 음식은 가게마다 ±30% 달라요.</p>`);
 }
 function proSheet(i) {
@@ -910,7 +951,7 @@ document.addEventListener('click', ev => {
       if (bad.length) { $('#obResult').innerHTML = `<p class="fq-card" style="color:var(--fq-danger);margin:0">${bad.join(', ')} 값을 확인해 주세요.</p>`; return; }
       if (OB.days.length < 2) { $('#obResult').innerHTML = `<p class="fq-card" style="margin:0">운동 요일을 2일 이상 골라 주세요.</p>`; return; }
       const rec = recChapter(OB.sex, d.pbf);
-      DB.profile = { sex: OB.sex, age: d.age, height: d.h, steps: OB.steps, meals: OB.meals, sessionMin: OB.min, level: OB.level, chapter: 0, chapterStart: dayKey(), rec };
+      DB.profile = { sex: OB.sex, age: d.age, height: d.h, steps: OB.steps, meals: OB.meals, sessionMin: OB.min, level: OB.level, lunchOut: OB.lunch === 1, chapter: 0, chapterStart: dayKey(), rec };
       DB.inbody = [{ date: d.date, w: d.w, smm: d.smm, pbf: d.pbf, bmr: d.bmr }]; DB.schedule = assignDays(OB.days); DB.rot = rotFromDays(OB.days);
       DB.flags.obDraft = true;
       const t0 = targets(); const save0 = DB.profile.chapter; DB.profile.chapter = rec; const tr = targets(); DB.profile.chapter = save0;
@@ -918,7 +959,7 @@ document.addEventListener('click', ev => {
         <h2 class="fq-t-title">추천: 챕터 ${rec} ${CH[rec].name}</h2>
         <p class="fq-t-body" style="margin:0">${rec === 1 ? 'V자는 마를수록 넓어 보여요. 체지방 20%에서 벌크를 시작하면 허리가 어깨보다 먼저 커져요. 먼저 15%대까지 지방 안개를 걷어내고, 그다음 프레임을 키워요. 근육을 지키려고 단백질은 오히려 더 먹어요.' : rec === 2 ? '유지 칼로리로 근육은 늘리고 지방은 줄여요. 더 선명한 V자를 빨리 원하면 미니컷도 좋아요.' : '충분히 말랐어요. 이제 조금 더 먹으며 프레임을 넓혀요.'}</p>
         <div class="grid2"><div class="stack" style="gap:4px"><span class="fq-t-caption">운동일 칼로리</span><span class="fq-t-num-md">${fmt(tr.train ? tr.kcal : tr.kcal + 300)}</span></div><div class="stack" style="gap:4px"><span class="fq-t-caption">단백질 (하루)</span><span class="fq-t-num-md" style="color:var(--fq-protein)">${tr.p}g</span></div></div>
-        <span class="fq-t-caption">끼니당 단백질 ${mealSplit(tr.p).join(' · ')}g</span>
+        <span class="fq-t-caption">끼니당 단백질 ${mealSplit(tr.p).join(' · ')}g${DB.profile.lunchOut ? ` · 점심은 일반식이라 ${LUNCH_P}g, 나머지 끼니에 더 배분` : ''}</span>
         <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="obStart" data-c="0">정직한 2주부터 시작 (추천)</button>
         <p class="fq-t-caption" style="margin:-4px 0 0">2주 동안 평소대로 먹고 다 기록하면, 공식이 아닌 내 몸의 진짜 유지 칼로리를 찾아요. 그동안 단백질 목표는 ${t0.p}g.</p>
         <button class="fq-btn fq-btn--ghost fq-btn--block" data-act="obStart" data-c="${rec}">바로 챕터 ${rec} ${CH[rec].name} 시작</button></section>`;
@@ -956,6 +997,9 @@ document.addEventListener('click', ev => {
       if (a.dataset.v === '2') { if (W.i < W.ex.length - 1) { W.i++; W.rest = null; R.logger(); } else finish(); } },
     endAsk: () => sheet(`<h2 class="fq-t-title">운동을 끝낼까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">계획의 80% 이상이면 완료로 쳐요. 모자라도 기록한 세트는 저장돼요.</p><button class="fq-btn fq-btn--lg fq-btn--block" data-act="finishNow">끝내고 저장</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">계속하기</button>`),
     finishNow: () => { closeSheet(); finish(); }, finish: () => finish(),
+    lunch: () => lunchSheet(a.dataset.n), lunchAll: () => lunchAllSheet(),
+    lunchRice: () => lunchPrev(a.dataset.n, +a.dataset.r),
+    lunchSave: () => { const x = LUNCH.find(l => l.n === a.dataset.n), r = RICE[+a.dataset.r]; closeSheet(); addFood({ n: `${x.n}${+a.dataset.r === 1 ? '' : ' (' + r[0] + ')'}`, p: x.p + r[3], k: x.k + r[1], c: x.c + r[2], f: x.f }); },
     proGo: () => condSheet(a.dataset.t),
     proDay: () => sheet(`<h2 class="fq-t-title">어느 요일에 고정할까요?</h2><p class="fq-t-caption" style="margin:-6px 0 0">${esc(TPL[a.dataset.t].ko)} · 로테이션과 상관없이 매주 이 요일은 이 루틴</p><div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" style="min-width:52px;justify-content:center" data-act="proDaySet" data-d="${d}" data-t="${a.dataset.t}">${DOW[d]}</button>`).join('')}</div>`),
     proDaySet: () => { DB.pins = DB.pins || {}; DB.pins[+a.dataset.d] = a.dataset.t; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${DOW[+a.dataset.d]}요일은 ${esc(TPL[a.dataset.t].ko)}로 고정했어요</span>`); },
@@ -977,7 +1021,7 @@ document.addEventListener('click', ev => {
     sound: () => { DB.settings.sound = a.dataset.v === '1'; save(); R.set(); if (DB.settings.sound) SFX.set(); },
     sfxTest: () => { const seq = ['start', 'set', 'combo', 'ready', 'pr', 'food']; seq.forEach((s, i) => setTimeout(() => SFX[s](), i * 650)); },
     theme: () => { DB.settings.theme = a.dataset.v; applyTheme(); save(); R.set(); },
-    prof: () => { const kk = a.dataset.k; DB.profile[kk] = isNaN(+a.dataset.v) ? a.dataset.v : +a.dataset.v; save(); R.set(); },
+    prof: () => { const kk = a.dataset.k, v = a.dataset.v; DB.profile[kk] = v === 'true' ? true : v === 'false' ? false : isNaN(+v) ? v : +v; save(); R.set(); },
     saveKey: () => { DB.settings.gkey = $('#gkey').value.trim(); DB.settings.gmodel = $('#gmodel').value.trim(); save(); toast('<span>저장했어요. 음식 기록에서 사진을 올려 보세요.</span>'); },
     export: () => { const blob = new Blob([JSON.stringify(DB)], { type: 'application/json' }), u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = `fitquest-backup-${dayKey()}.json`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); },
     resetAsk: () => sheet(`<h2 class="fq-t-title">전체 초기화할까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">모든 기록·레벨·몸 사진이 지워지고 되돌릴 수 없어요. 먼저 내보내기를 권해요.</p><button class="fq-btn fq-btn--lg fq-btn--block" style="--_bg:var(--fq-danger-fill);--_fg:#fff" data-act="reset">초기화</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
