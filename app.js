@@ -95,7 +95,7 @@ const mondayOf = k => addDays(k, -((dow(k) + 6) % 7));
 /* ================= store ================= */
 const KEY = 'fitquest.v1';
 function fresh() {
-  return { v: 1, profile: null, inbody: [], weights: {}, foods: [], sessions: [], prog: {}, xp: 0, xpDay: {}, done: {}, overrides: {}, flags: {},
+  return { v: 1, profile: null, inbody: [], weights: {}, foods: [], sessions: [], prog: {}, xp: 0, xpDay: {}, done: {}, overrides: {}, flags: { ppFix: 1 },
     streak: { cur: 0, best: 0, last: null, shields: 0 }, tape: [], schedule: { 1: 'A', 2: 'B', 4: 'C', 5: 'E', 6: 'D' },
     settings: { sound: true, theme: 'auto', gkey: '', gmodel: '' } };
 }
@@ -237,14 +237,58 @@ function checkDaily3() {
   if (q.every(Boolean)) addXP('daily3', 30);
   return q;
 }
-/* 그날 계획 루틴 — 이번 주 줄·홈 오늘·달력·주간 루틴 미리보기가 모두 이것 하나를 쓴다. raw: 어제 부위 확인용(재귀 방지) */
-function tplFor(k, raw) {
-  const ok = t => t && TPL[t] ? t : null;
-  const o = DB.overrides[k]; if (o === 'rest') return null; if (ok(o)) return o;
-  const d = dow(k);
-  if (DB.pins && ok(DB.pins[d])) return DB.pins[d];
-  if (DB.rot && DB.rot.on) return ok(rotFor(k, raw));
-  return ok(DB.schedule[d]);
+/* 그날 계획 루틴 — 이번 주 줄·홈 오늘·달력·기록·주간 루틴 미리보기가 모두 이것 하나를 쓴다 */
+function tplFor(k) { return weekPlan(mondayOf(k))[(dow(k) + 6) % 7]; }
+function rawPlan(k) {   // [루틴, 고정?] — 미루기·바꾸기(overrides)·요일 고정(pins)은 고정, 나머지는 로테이션/주간 루틴
+  const ok = t => t && TPL[t] ? t : null, o = DB.overrides[k], d = dow(k);
+  if (o === 'rest') return [null, 1]; if (ok(o)) return [o, 1];
+  if (DB.pins && ok(DB.pins[d])) return [DB.pins[d], 1];
+  return [DB.rot && DB.rot.on ? ok(rotFor(k)) : ok(DB.schedule[d]), 0];
+}
+/* 한 주(월~일) 최종 계획: 고정 안 된 날이 어제·(고정된) 내일과 같은 부위거나 그 주 하체 3번째면 다른 부위로
+   (그 요일 기본 루틴 → 등·가슴·어깨·팔·하체 순). 고정된 날끼리 겹치면 그대로 두고 주간 루틴 시트에서 알려 줌.
+   ponytail: 지난주는 한 단계만 거슬러 계산 — 지난 일요일이 연쇄로 바뀌는 드문 경우엔 월요일 판단이 어긋날 수 있음 */
+function weekPlan(mon, depth = 1) {
+  const P = t => t && partOf(t), raw = [0, 1, 2, 3, 4, 5, 6, 7].map(i => rawPlan(addDays(mon, i)));
+  let prev = depth ? weekPlan(addDays(mon, -7), 0)[6] : rawPlan(addDays(mon, -1))[0];
+  let legs = raw.slice(0, 7).filter(([t, f]) => f && P(t) === 'legs').length;
+  return raw.slice(0, 7).map(([t, f], i) => {
+    if (t && !f) {
+      const k = addDays(mon, i), pp = P(prev), [n, nf] = raw[i + 1], np = P(n), bad = q => q === pp || (nf && q === np) || (q === 'legs' && legs >= 2);
+      if (bad(P(t))) t = [DB.schedule[dow(k)], ...['back', 'chest', 'shoulder', 'arms', 'legs'].map(q => { const c = rotCands(q); return c[(DB.rot ? rotWeek(k) : 0) % c.length]; })]
+        .find(x => x && TPL[x] && !bad(P(x)) && P(x) !== np) || null;
+      if (P(t) === 'legs') legs++;
+    }
+    return prev = t;
+  });
+}
+/* 미루기: k 의 운동 t 를 다음 운동일로, 그 뒤 운동도 그 주 일요일까지 한 칸씩 밀고 마지막 하나는 이번 주 쉼 (요일 고정한 날은 건너뜀).
+   다음 운동일이 없으면 내일(쉬는 날)로 */
+function shiftPlan(k, t) {
+  const end = addDays(mondayOf(addDays(k, 1)), 6), ds = [];
+  for (let d = addDays(k, 1); d <= end; d = addDays(d, 1)) if (tplFor(d) && !(DB.pins && TPL[DB.pins[dow(d)]])) ds.push(d);
+  if (!ds.length) ds.push(addDays(k, 1));
+  const seq = [t, ...ds.map(d => tplFor(d))];
+  DB.overrides[k] = 'rest'; ds.forEach((d, i) => { DB.overrides[d] = seq[i]; });
+  return { ds, seq };
+}
+/* 한 번만: 옛 미루기(다음 날에 그대로 얹기)로 같은 부위가 이어지거나 하체가 주 3번이 된 날은 그 덮어쓰기를 지워 원래 계획으로 (요일 고정은 안 건드림).
+   새로 시작한 사용자는 fresh() 에 표시가 있어 안 돎 */
+function fixOldPostpone() {
+  if (DB.flags.ppFix) return; DB.flags.ppFix = 1;
+  const today = dayKey(), P = t => t && partOf(t); let n = 0;
+  Object.keys(DB.overrides).sort().forEach(d => {
+    const t = DB.overrides[d]; if (d < today || !TPL[t] || DB.overrides[addDays(d, -1)] !== 'rest') return;
+    delete DB.overrides[d];
+    const mon = mondayOf(d), legs = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(mon, i)).filter(x => x !== d && P(rawPlan(x)[0]) === 'legs').length;
+    if (P(rawPlan(addDays(d, 1))[0]) === P(t) || (P(t) === 'legs' && legs >= 2)) n++; else DB.overrides[d] = t;
+  });
+  if (n) save();
+}
+/* 요일 고정 루틴이 옆 요일(고정·요일 부위)과 같은 부위인지 — 주간 루틴 시트·고정 토스트 경고용 */
+function pinClash(d) {
+  const pt = t => t && TPL[t] ? partOf(t) : null, at = n => pt(DB.pins && DB.pins[n]) || (DB.rot && DB.rot.on ? DB.rot.slots[n] : pt(DB.schedule[n])), p = pt(DB.pins && DB.pins[d]);
+  return !!p && (at((d + 1) % 7) === p || at((d + 6) % 7) === p);
 }
 function rotCands(part) {
   const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []);
@@ -255,18 +299,14 @@ function rotCands(part) {
   return mine.length >= 2 ? mine.concat(rest.filter(t => !TPL[t].pro).slice(0, 1)) : [mine[0], rest[0], mine[0]].filter(Boolean);
 }
 function rotWeek(k) { return Math.max(0, Math.floor(daysBetween(DB.rot.start, mondayOf(k)) / 7)); }
-function rotFor(k, raw) {
+function rotFor(k) {
   const d = dow(k), part = DB.rot.slots[d]; if (!part) return null;
   const c = rotCands(part), base = DB.schedule[d]; if (!c.length) return base;
   const mon = mondayOf(k), w = rotWeek(k), j = [1, 2, 3, 4, 5, 6, 0].filter(x => DB.rot.slots[x] === part).indexOf(d);
   const fresh = c.filter(t => TPL[t].day && mondayOf(addDays(TPL[t].day, 7)) === mon).sort((a, b) => TPL[b].at - TPL[a].at)[0];   // 새로 자동 추가된 루틴은 다음 주 그 부위 첫날에 꼭 들어감
   const used = [];   // 같은 주 같은 부위 둘째 날부터는 앞에서 쓴 루틴을 건너뜀 (새 루틴 중복 방지)
   for (let i = 0; i <= j; i++) { const r = c.map((_, n) => c[(w + i + n) % c.length]); used.push((!i && fresh) || r.find(x => !used.includes(x)) || r[0]); }
-  const t = used[j]; if (raw) return t;
-  // 어제(고정·미루기 포함)와 부위가 겹치면 그 요일 기본 루틴으로 (부위가 다를 때만).
-  // ponytail: 요일 부위는 안 바꾸므로, 사용자가 같은 부위를 이웃 요일에 고정·지정하면 겹침이 남는다 — 막으려면 주간 루틴 화면에서 경고
-  const y = tplFor(addDays(k, -1), 1);
-  return y && partOf(y) === part && TPL[base] && partOf(base) !== part ? base : t;
+  return used[j];
 }
 function settleStreak() {
   const S = DB.streak, today = dayKey();
@@ -1018,11 +1058,12 @@ R.work = () => {
   const show = tpl || (nx && tplFor(nx)), T = show && TPL[show], cr = creatorOf(T), nSets = T ? T.ex.reduce((a, e) => a + e[1], 0) : 0;
   const week = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = addDays(mon, i), t = tplFor(d), s = by[d] && by[d][0], p = s && PART_NAME[partOf(s.tpl, s.ex)];
     return { d, lab: DB.done[d] && p ? p : t ? TPL[t].code : '', aria: DB.done[d] && p ? `${p} 완료` : t ? TPL[t].code : '휴식', st: DB.done[d] ? 'done' : d === k ? 'today' : t ? '' : 'rest' }; });
-  const alt = tpl && !done ? partCands(partOf(tpl), tpl)[0] : null, nLib = ROUTINES.length + Object.keys((DB.custom && DB.custom.tpls) || {}).length;
-  const foot = `<div class="ex-foot">${alt ? `<button class="linkbtn ink" data-act="swapTpl" data-t="${esc(alt)}">${ico('swap', 'ico--16')}<span>바꾸기 <b>${esc(TPL[alt].ko)}</b></span></button>` : ''}<button class="linkbtn ink" data-act="lib">${ico('search', 'ico--16')}루틴 도감 <span class="num">${nLib}</span></button></div>`;
+  const ek = tpl ? !done && k : nx, nLib = ROUTINES.length + Object.keys((DB.custom && DB.custom.tpls) || {}).length;
+  const foot = `<div class="ex-foot">${ek ? `<button class="linkbtn ink" data-act="dayEdit" data-k="${ek}" aria-haspopup="dialog">${ico('swap', 'ico--16')}<span>바꾸기 <b>다른 부위·루틴</b></span></button>` : ''}<button class="linkbtn ink" data-act="lib">${ico('search', 'ico--16')}루틴 도감 <span class="num">${nLib}</span></button></div>`;
   $('#scr-work').innerHTML = `
     <header class="topbar work-top"><h1 class="fq-t-title">운동</h1>
-      <ol class="week" aria-label="이번 주 루틴, ${wd}/${pl}회 완료">${week.map(w => `<li class="day" data-s="${w.st}" aria-label="${DOW[dow(w.d)]}요일, ${w.aria}"><small>${DOW[dow(w.d)]}</small>${w.lab ? `<b>${esc(w.lab.split('·')[0])}</b>` : ico('moon', 'ico--14')}</li>`).join('')}</ol>
+      <ol class="week" aria-label="이번 주 루틴, ${wd}/${pl}회 완료">${week.map(w => { const inner = `<span class="pill"><small>${DOW[dow(w.d)]}</small>${w.lab ? `<b>${esc(w.lab.split('·')[0])}</b>` : ico('moon', 'ico--14')}</span>`, lab = `${DOW[dow(w.d)]}요일, ${w.aria}`;
+        return w.d >= k && !DB.done[w.d] ? `<li><button class="day" data-act="dayEdit" data-k="${w.d}" data-s="${w.st}" aria-haspopup="dialog" aria-label="${lab}">${inner}</button></li>` : `<li class="day" data-s="${w.st}" aria-label="${lab}">${inner}</li>`; }).join('')}</ol>
       <button class="linkbtn" data-act="schedule">${ico('repeat', 'ico--16')}${DB.rot && DB.rot.on ? `로테이션 ${rotWeek(k) + 1}주차 · 요일 바꾸기` : '요일 바꾸기'}</button></header>
     <div class="cols cols--flow"><div class="col">
     ${tpl ? `<section class="tile card-pad today" aria-label="오늘 운동">
@@ -1030,7 +1071,7 @@ R.work = () => {
       <h2 class="fq-t-title">${esc(T.by ? T.ko.replace(T.by + ' · ', '') : T.ko)}</h2>
       <p class="by">${avatar(cr)}${T.by ? esc(T.by) + ' 루틴' : '기본 V자 루틴'} · ${nSets}세트 약 ${DB.profile.sessionMin}분</p>
       ${done ? `<p class="chip rd">${ico('check', '')}오늘 완료</p>` : `<button class="fq-btn fq-btn--lg fq-btn--block sel" data-act="startQuest">${ico('play', 'fill')}운동 시작</button>`}
-      <div class="today-links">${!done && !DB.flags['pp_' + mon] ? '<button class="linkbtn" data-act="postpone">내일로 미루기 (주 1회)</button>' : ''}${T.by ? `<a class="src" href="${esc(T.video)}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${esc(T.by)} 원본 영상</span></a>` : ''}</div></section>`
+      <div class="today-links">${!done && !DB.flags['pp_' + mon] ? '<button class="linkbtn" data-act="postpone">다음 운동일로 미루기 (주 1회)</button>' : ''}${T.by ? `<a class="src" href="${esc(T.video)}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${esc(T.by)} 원본 영상</span></a>` : ''}</div></section>`
     : `<section class="tile card-pad hero--row" aria-label="휴식일"><div class="l-head">${coach('idle', 32)}<p>오늘은 휴식일이에요.<small>걷기 7천 보면 충분해요</small></p></div><button class="fq-btn fq-btn--secondary" data-act="pickTpl">그래도 운동할래요</button></section>`}
     ${T ? exList(show, tpl ? '' : `${DOW[dow(nx)]}요일 ${T.code} 미리보기`, foot) : ''}
     ${tvCard(k, 'data-c="r" style="--o:1"', 'tvWork')}
@@ -1557,17 +1598,49 @@ R.set = () => {
     try { const d = JSON.parse(await f.text()); if (!d || d.v !== 1 || !d.profile) throw 0; DB = d; save(); toast('<span>불러왔어요.</span>'); go('home'); } catch (err) { toast('<span>FITQUEST 백업 파일이 아니에요.</span>'); }
   });
 };
+/* 하루 운동 바꾸기: 이번 주 줄 요일 · 운동 목록 "바꾸기" 에서 열림. 고르면 그날 overrides → tplFor 한 길 (줄·홈·달력·기록 모두 같음).
+   규칙을 깨도 막지 않음 — 고정 안 된 옆 날은 weekPlan 이 알아서 바꾸고, 그걸 한 줄로 알려 줌 */
+const dayName = d => d === dayKey() ? '오늘' : `${DOW[dow(d)]}요일`;
+const shortKo = t => TPL[t].by ? TPL[t].ko.replace(TPL[t].by + ' · ', '') : TPL[t].ko;
+function defPick(k, part) {   // 그 부위에서 로테이션(없으면 주간 루틴)이 고를 루틴
+  const d = dow(k), s = DB.schedule[d], c = rotCands(part);
+  if (DB.rot && DB.rot.on && DB.rot.slots[d] === part) return rotFor(k);
+  return TPL[s] && partOf(s) === part ? s : c[(DB.rot ? rotWeek(k) : 0) % c.length];
+}
+function dayImpact(k, t) {   // k 를 t('rest' 포함)로 바꾸면: 자동으로 바뀌는 날 · 그래도 남는 겹침 — 한 줄
+  const mon = mondayOf(k), days = Array.from({ length: 9 }, (_, i) => addDays(mon, i - 1)).filter(d => d !== k), P = x => x ? PART_NAME[partOf(x)] : '휴식';
+  const was = DB.overrides[k], before = days.map(d => tplFor(d)); DB.overrides[k] = t;
+  const today = dayKey(), did = d => DB.sessions.find(s => s.day === d), pt = d => d < today ? did(d) && partOf(did(d).tpl, did(d).ex) : tplFor(d) && partOf(tplFor(d));   // 지난 날은 실제로 한 운동
+  const after = days.map(d => tplFor(d)), p = t !== 'rest' && partOf(t), same = [addDays(k, -1), addDays(k, 1)].filter(d => p && pt(d) === p);
+  const legs = [0, 1, 2, 3, 4, 5, 6].filter(i => { const x = tplFor(addDays(mon, i)); return x && partOf(x) === 'legs'; }).length;
+  if (was === undefined) delete DB.overrides[k]; else DB.overrides[k] = was;
+  const moved = days.map((d, i) => d >= today && P(before[i]) !== P(after[i]) ? `${dayName(d)} ${P(before[i])} → ${P(after[i])}` : '').filter(Boolean);
+  return [moved.length ? `자동 조정: ${moved.join(', ')}` : '', same.length ? `${same.map(dayName).join('·')}도 ${PART_NAME[p]}예요 (고정했거나 이미 한 날이라 그대로)` : '', legs > 2 ? `이번 주 하체 ${legs}번이에요` : ''].filter(Boolean).join('. ');
+}
+function dayEditSheet(k, part) {
+  const today = dayKey(), cur = tplFor(k), q = part || (cur ? partOf(cur) : DB.rot && DB.rot.slots[dow(k)] || 'back'), def = defPick(k, q);
+  const list = [def, ...partCands(q, def)].filter(t => t && TPL[t]), imp = def ? dayImpact(k, def) : '', ov = k in DB.overrides;
+  const row = (d, t) => `<div><span class="fq-t-label">${d === today ? '오늘' : `${+d.slice(5, 7)}/${+d.slice(8)} ${DOW[dow(d)]}요일`}</span><span class="fq-t-caption">${t ? `${PART_NAME[partOf(t)]} · ${esc(shortKo(t))}` : '휴식'}</span></div>`;
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">${dayName(k)} 운동 바꾸기</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <div class="list">${k !== today ? row(today, tplFor(today)) : ''}${row(k, cur)}</div>
+    <div class="chips day-parts" role="group" aria-label="부위">${['back', 'chest', 'shoulder', 'legs', 'arms', 'full'].map(p => `<button class="fq-chip" aria-pressed="${p === q}" data-act="dayPart" data-k="${k}" data-v="${p}">${PART_NAME[p]}</button>`).join('')}</div>
+    ${imp ? `<p class="note day-imp" style="margin:0">${imp}</p>` : ''}
+    ${list.map((t, i) => `<button class="pro-card" data-act="daySet" data-k="${k}" data-t="${t}"><div class="who"><span class="chip${i ? '' : ' rd'}">${i ? esc(TPL[t].code) : '추천'}</span>${t === cur ? '<span class="chip">지금</span>' : ''}<span class="fq-t-caption">${esc(TPL[t].by || '기본 V자 루틴')}</span></div><h4>${esc(shortKo(t))}</h4></button>`).join('')}
+    <div class="${ov ? 'grid2' : 'stack'}"><button class="fq-btn fq-btn--secondary" data-act="daySet" data-k="${k}" data-t="rest">${ico('moon')}쉬기</button>${ov ? `<button class="fq-btn fq-btn--secondary" data-act="dayClear" data-k="${k}">${ico('repeat')}되돌리기</button>` : ''}</div>`);
+}
 function scheduleSheet() {
   const on = DB.rot && DB.rot.on, k = dayKey(), mon = mondayOf(k);
   if (!DB.rot) DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number));
   const partChip = (d, v, l) => `<button class="fq-chip" style="padding:0 12px" aria-pressed="${(DB.rot.slots[d] || '') === v}" data-act="slot" data-d="${d}" data-v="${v}">${l}</button>`;
-  const preview = w => [1, 2, 3, 4, 5, 6, 0].map(d => { const day = addDays(mon, ((d + 6) % 7) + w * 7), t = tplFor(day); return `<div><span class="fq-t-label">${DOW[d]}</span><span class="fq-t-caption" style="text-align:right">${t ? esc(TPL[t].ko) : '휴식'}${DB.pins && DB.pins[d] ? ' · 고정' : ''}</span></div>`; }).join('');
+  const preview = w => [1, 2, 3, 4, 5, 6, 0].map(d => { const day = addDays(mon, ((d + 6) % 7) + w * 7), t = tplFor(day), y = tplFor(addDays(day, -1)); return `<div><span class="fq-t-label">${DOW[d]}</span><span class="fq-t-caption" style="text-align:right">${t ? esc(TPL[t].ko) : '휴식'}${DB.pins && DB.pins[d] ? ' · 고정' : ''}${t && y && partOf(t) === partOf(y) ? ' · 어제와 같은 부위' : ''}</span></div>`; }).join('');
+  const clash = [1, 2, 3, 4, 5, 6, 0].filter(pinClash).map(d => DOW[d]);
   sheet(`<div class="row row--between"><h2 class="fq-t-title">주간 루틴</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
     <div class="chips"><button class="fq-chip" aria-pressed="${!!on}" data-act="rotOn" data-v="1">매주 바뀌는 로테이션</button><button class="fq-chip" aria-pressed="${!on}" data-act="rotOn" data-v="0">고정 루틴</button></div>
     ${on ? `<p class="note" style="margin:0">요일마다 부위만 정하면, 매주 기본 V자 루틴과 이도황·제로범·조정현 루틴을 돌아가며 넣어요. 같은 부위는 3주에 한 번꼴로 같은 루틴이 돌아와요.</p>
       ${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="stack" style="gap:6px"><span class="fq-t-label">${DOW[d]}요일</span><div class="chips">${partChip(d, '', '휴식')}${Object.entries(PART_NAME).map(([v, l]) => partChip(d, v, l)).join('')}</div></div>`).join('')}
       <span class="fq-t-heading">이번 주</span><div class="list">${preview(0)}</div><span class="fq-t-heading">다음 주</span><div class="list">${preview(1)}</div>`
     : `${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="stack" style="gap:6px"><span class="fq-t-label">${DOW[d]}요일 · 지금 ${DB.schedule[d] ? esc(TPL[DB.schedule[d]].ko) : '휴식'}</span><div class="chips">${[['', '휴식'], ...Object.entries(TPL).map(([kk, t]) => [kk, t.by ? `${t.by.split('·')[0]} ${t.code}` : t.code])].map(([kk, l]) => `<button class="fq-chip" style="padding:0 12px" aria-pressed="${(DB.schedule[d] || '') === kk}" data-act="sched" data-d="${d}" data-v="${kk}">${l}</button>`).join('')}</div></div>`).join('')}`}
+    ${clash.length ? `<p class="note" style="margin:0">${clash.join('·')}요일 고정 루틴이 옆 요일과 같은 부위예요. 같은 부위를 이틀 연속 하면 회복이 모자라서, 고정 안 한 옆 날은 다른 부위로 바꿔 넣어요.</p>` : ''}
     ${DB.pins && Object.keys(DB.pins).length ? `<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="unpin">요일 고정 ${Object.keys(DB.pins).length}개 풀기</button>` : ''}`);
 }
 function pickTplSheet() {
@@ -1666,7 +1739,9 @@ document.addEventListener('click', ev => {
     saveFood: () => { const it = FR.items.filter(x => x.q > 0); const P = it.reduce((s, x) => s + x.p * x.q, 0), K = it.reduce((s, x) => s + x.k * x.q, 0), C = it.reduce((s, x) => s + x.c * x.q, 0), F = it.reduce((s, x) => s + x.f * x.q, 0); FR = null; addFood({ n: it.map(x => x.n).join(' · ').slice(0, 40) || '사진 기록', p: P, k: K, c: C, f: F }); },
     startQuest: () => condSheet(), pickTpl: () => pickTplSheet(), pickGo: () => condSheet(a.dataset.t),
     cond: () => { buildSession(a.dataset.c, a.dataset.t || null); closeSheet(); SFX.start(); keepAwake(true); go('logger'); },
-    postpone: () => { const mon = mondayOf(k), t = tplFor(k), tm = addDays(k, 1); DB.overrides[k] = 'rest'; DB.overrides[tm] = t; DB.flags['pp_' + mon] = true; save(); R.work(); toast('<span>내일로 미뤘어요. 오늘은 휴식일, 연속 기록은 그대로예요.</span>'); },
+    postpone: () => { const t = tplFor(k), { ds, seq } = shiftPlan(k, t), N = (d, x) => `${DOW[dow(d)]}요일 ${PART_NAME[partOf(x)]} 운동은`, last = seq[ds.length];
+      DB.flags['pp_' + mondayOf(k)] = true; save(); R.work();
+      toast(`<span>오늘 ${PART_NAME[partOf(t)]} 운동은 ${DOW[dow(ds[0])]}요일로${ds[1] ? `, ${N(ds[0], seq[1])} ${DOW[dow(ds[1])]}요일로` : ''} 밀렸어요.${last ? ` ${N(ds[ds.length - 1], last)} 이번 주 쉬어요.` : ''}</span>`, 6000); },
     setDone: () => setDone(+a.dataset.j), undoSet: () => undoSet(+a.dataset.j),
     'w+': () => adj('w', 1), 'w-': () => adj('w', -1), 'r+': () => adj('r', 1), 'r-': () => adj('r', -1),
     'rest+': () => { if (W.rest) { W.rest.len += 15; R.logger(); bump($('#restT')); } }, 'rest-': () => { if (W.rest) { W.rest.len = Math.max(15, W.rest.len - 15); R.logger(); bump($('#restT')); } },
@@ -1692,13 +1767,17 @@ document.addEventListener('click', ev => {
     crToggle: () => { const v = a.dataset.v, cur = DB.profile.creators || []; DB.profile.creators = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v); save(); crPickSheet(); R[TAB] && R[TAB](); },
     proGo: () => condSheet(a.dataset.t),
     proDay: () => sheet(`<h2 class="fq-t-title">어느 요일에 고정할까요?</h2><p class="fq-t-caption" style="margin:-6px 0 0">${esc(TPL[a.dataset.t].ko)} · 로테이션과 상관없이 매주 이 요일은 이 루틴</p><div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" style="min-width:52px;justify-content:center" data-act="proDaySet" data-d="${d}" data-t="${a.dataset.t}">${DOW[d]}</button>`).join('')}</div>`),
-    proDaySet: () => { DB.pins = DB.pins || {}; DB.pins[+a.dataset.d] = a.dataset.t; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${DOW[+a.dataset.d]}요일은 ${esc(TPL[a.dataset.t].ko)}로 고정했어요</span>`); },
+    proDaySet: () => { DB.pins = DB.pins || {}; DB.pins[+a.dataset.d] = a.dataset.t; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${DOW[+a.dataset.d]}요일은 ${esc(TPL[a.dataset.t].ko)}로 고정했어요${pinClash(+a.dataset.d) ? '. 옆 요일과 같은 부위라 옆 날은 다른 부위로 바꿔 넣어요' : ''}</span>`, 5000); },
     unpin: () => { DB.pins = {}; save(); scheduleSheet(); R[TAB] && R[TAB](); },
     rotOn: () => { if (!DB.rot) DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); DB.rot.on = a.dataset.v === '1'; save(); scheduleSheet(); R[TAB] && R[TAB](); },
     slot: () => { const d = +a.dataset.d; if (a.dataset.v) DB.rot.slots[d] = a.dataset.v; else delete DB.rot.slots[d]; save(); scheduleSheet(); R[TAB] && R[TAB](); },
     pro: () => proSheet(+a.dataset.i), lib: () => libSheet(),
-    swapTpl: () => { DB.overrides[k] = a.dataset.t; save(); R.work(); toast(`<span>오늘은 ${esc(TPL[a.dataset.t].ko)}로 바꿨어요</span>`); }, howtoId: () => { const t = a.dataset.t && TPL[a.dataset.t], row = t && t.ex.find(x => x[0] === a.dataset.id), o = row && row[2] || {}; howSheet(a.dataset.id, { v: o.t, range: o.r, tip: o.tip ? { who: t.by, t: o.tip } : null }); },
+    howtoId: () => { const t = a.dataset.t && TPL[a.dataset.t], row = t && t.ex.find(x => x[0] === a.dataset.id), o = row && row[2] || {}; howSheet(a.dataset.id, { v: o.t, range: o.r, tip: o.tip ? { who: t.by, t: o.tip } : null }); },
     howtoEx: () => { const e = W.ex[+a.dataset.i]; howSheet(e.id, { v: e.v, range: e.range, tip: e.tip }); },
+    dayEdit: () => dayEditSheet(a.dataset.k), dayPart: () => dayEditSheet(a.dataset.k, a.dataset.v),
+    daySet: () => { const d = a.dataset.k, t = a.dataset.t, imp = dayImpact(d, t); DB.overrides[d] = t; save(); closeSheet(); R[TAB] && R[TAB]();
+      toast(`<span>${dayName(d)}은 ${t === 'rest' ? '쉬어요' : esc(shortKo(t)) + '로 바꿨어요'}${imp ? `. ${imp}` : ''}</span>`, 5000); },
+    dayClear: () => { delete DB.overrides[a.dataset.k]; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${dayName(a.dataset.k)}은 원래 계획으로 돌렸어요</span>`); },
     schedule: () => scheduleSheet(), sched: () => { const d = +a.dataset.d; if (a.dataset.v) DB.schedule[d] = a.dataset.v; else delete DB.schedule[d]; save(); scheduleSheet(); R[TAB] && R[TAB](); },
     chapter: () => sheet(`<div class="row row--between"><h2 class="fq-t-title">챕터 바꾸기</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>${CH.map((c, i) => `<button class="pro-card" data-act="setCh" data-c="${i}"><div class="who"><span class="chip">챕터 ${i}</span>${i === DB.profile.rec ? '<span class="chip rd">추천</span>' : ''}</div><h4>${c.name} · ${c.sub}</h4><span class="fq-t-caption">칼로리 ${c.off > 0 ? '+' : ''}${c.off} · 단백질 ${c.pkg}g/kg</span></button>`).join('')}`),
     setCh: () => { DB.profile.chapter = +a.dataset.c; DB.profile.chapterStart = dayKey(); save(); closeSheet(); R[TAB](); toast(`<span>챕터 ${a.dataset.c} ${CH[+a.dataset.c].name} 시작!</span>`); },
@@ -1735,4 +1814,4 @@ Object.keys(R).forEach(k => { const f = R[k]; R[k] = (...a) => { const r = f(...
 $('#lvl-coach').innerHTML = COACH_SVG;
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); }); }
+else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } fixOldPostpone(); settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); }); }
