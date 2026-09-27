@@ -56,17 +56,17 @@ const metricsLine = m => m ? `${m.weight}kg · 체지방 ${m.pbf}% · 골격근 
 function photoSection() {
   const weeks = photoWeeks(), blur = DB.settings.blurPhotos !== false;
   const cover = set => set.front_lat || set.front_relax || set.side || set.back_lat;
-  return `<section class="fq-card stack" style="gap:12px" aria-label="바디 기록" id="bodyLog">
-    <div class="row row--between"><span class="fq-t-heading">바디 기록</span><button class="fq-chip" style="min-height:40px" aria-pressed="${blur}" data-act="phBlur">${blur ? '가리기 켜짐' : '가리기'}</button></div>
+  return `<section class="tile card-pad stack" style="--o:5;gap:12px" aria-label="바디 기록" id="bodyLog">
+    <div class="row row--between"><h2 class="fq-t-heading">바디 기록</h2><button class="fq-chip" aria-pressed="${blur}" data-act="phBlur">${ico(blur ? 'lock' : 'image', 'ico--16')}${blur ? '가리기 켜짐' : '가리기'}</button></div>
     ${weeks.length ? `<div class="ph-strip ${blur ? 'is-blur' : ''}">${weeks.map(([wk, set]) => { const c = cover(set); return `<button class="ph-cell" data-act="phCmp" data-w="${wk}" aria-label="${wk} 주 사진"><img src="${pURL(c)}" alt=""><span>${kDate(wk).getMonth() + 1}/${kDate(wk).getDate()}</span><small>${c.metrics ? c.metrics.weight + 'kg · ' + c.metrics.pbf + '%' : ''}</small></button>`; }).join('')}</div>`
       : `<p class="fq-t-caption" style="margin:0">매주 일요일 아침, 정면 1장이면 끝. 느린 변화도 사진은 기억해요.</p>`}
-    <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영하기</button><button class="fq-btn fq-btn--secondary" data-act="phCmp">비교하기</button></div>
+    <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="phShoot">${ico('camera')}촬영하기</button><button class="fq-btn fq-btn--secondary" data-act="phCmp">${ico('swap')}비교하기</button></div>
     <p class="fq-t-caption" style="margin:0">사진은 이 폰에만 저장돼요. 어디에도 올라가지 않아요.</p></section>`;
 }
 function photoHomeCard() {
   const k = dayKey(), done = thisWeekDone(), left = REQ.filter(p => !done.includes(p));
   if (!left.length || (dow(k) !== 0 && !(dow(k) === 1 && done.length === 0 && PHOTOS.length))) return '';
-  return `<section class="fq-card row row--between" aria-label="이번 주 몸 기록"><div class="stack" style="gap:4px"><span class="fq-t-heading">이번 주 몸 기록</span><span class="fq-t-caption">아침 공복에 정면 1장 · +30 XP</span></div><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영</button></section>`;
+  return `<section class="tile card-pad ph-home" aria-label="이번 주 몸 기록"><span class="ph-ic">${ico('camera')}</span><div><h2 class="fq-t-heading">이번 주 몸 기록</h2><p class="fq-t-caption">아침 공복에 정면 1장 · <span class="gold-t">+30 XP</span></p></div><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영</button></section>`;
 }
 
 /* ---------- 촬영 화면 ---------- */
@@ -82,7 +82,7 @@ async function renderShoot() {
     <div class="shoot">
       <div class="shoot-top">
         <button class="fq-btn fq-btn--icon" data-act="phClose" aria-label="닫기" style="--_bg:rgba(0,0,0,.5);--_fg:#fff">${ico('x')}</button>
-        <div class="shoot-poses" role="tablist" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip ph-pose" role="tab" aria-selected="${p.id === SH.pose}" data-act="phPose" data-p="${p.id}">${done.includes(p.id) ? '✓ ' : ''}${p.n}</button>`).join('')}</div>
+        <div class="shoot-poses" role="tablist" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip ph-pose" role="tab" aria-selected="${p.id === SH.pose}" data-act="phPose" data-p="${p.id}">${done.includes(p.id) ? ico('check', 'ico--16') : ''}${p.n}</button>`).join('')}</div>
       </div>
       ${firstThisWeek && !SH.shot ? `<div class="shoot-check">정면 1장 · 같은 자리 · 같은 조명 · 아침 공복</div>` : ''}
       <div class="shoot-stage" id="stage">
@@ -152,9 +152,9 @@ async function renderCmp() {
   const A = list.find(p => p.id === CM.a), B = list.find(p => p.id === CM.b);
   const dSel = (k, cur) => `<select class="inp" data-sel="${k}" aria-label="${k === 'a' ? '이전' : '이후'} 날짜">${list.map(p => `<option value="${p.id}" ${p.id === cur ? 'selected' : ''}>${p.date}</option>`).join('')}</select>`;
   const mTable = (x, label) => x ? `<div class="stack" style="gap:2px"><span class="fq-eyebrow">${label} · ${x.date}</span><span class="fq-t-caption">${metricsLine(x.metrics)}</span></div>` : '';
-  const delta = (A && B && A.metrics && B.metrics) ? [['체중', 'weight', 'kg', 0], ['체지방', 'pbf', '%p', -1], ['골격근', 'smm', 'kg', 1], ['V 비율', 'vRatio', '', 1], ['허리', 'waist', 'cm', -1]].filter(([, k]) => A.metrics[k] != null && B.metrics[k] != null).map(([n, k, u, good]) => { const d = +(B.metrics[k] - A.metrics[k]).toFixed(2); return `<div><span class="fq-t-caption">${n}</span><b ${good && d * good > 0 ? 'style="color:var(--fq-success)"' : ''}>${d > 0 ? '+' : ''}${d}${u}</b></div>`; }).join('') : '';
+  const delta = (A && B && A.metrics && B.metrics) ? [['체중', 'weight', 'kg', 0], ['체지방', 'pbf', '%p', -1], ['골격근', 'smm', 'kg', 1], ['V 비율', 'vRatio', '', 1], ['허리', 'waist', 'cm', -1]].filter(([, k]) => A.metrics[k] != null && B.metrics[k] != null).map(([n, k, u, good]) => { const d = +(B.metrics[k] - A.metrics[k]).toFixed(2); return `<div><span class="fq-t-caption">${n}</span><b class="num" ${good && d * good > 0 ? 'data-good' : ''}>${d > 0 ? '+' : ''}${d}${u}</b></div>`; }).join('') : '';
   let body = '';
-  if (list.length < 2) body = `<p class="fq-card fq-t-body" style="margin:0">아직 비교할 사진이 2주 이상 없어요. 다음 주에 한 번 더 찍으면 열려요.</p><button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="phShoot">촬영하기</button>`;
+  if (list.length < 2) body = `<p class="fq-card fq-t-body">아직 비교할 사진이 2주 이상 없어요. 다음 주에 한 번 더 찍으면 열려요.</p><button class="fq-btn fq-btn--lg fq-btn--block" data-act="phShoot">${ico('camera')}촬영하기</button>`;
   else if (CM.mode === 'side') body = `<div class="grid2">${dSel('a', CM.a)}${dSel('b', CM.b)}</div>
     <div class="ph-pair ${blur ? 'is-blur' : ''}"><figure><img src="${pURL(A)}" alt="${A.date} 사진"><figcaption>${A.date}</figcaption></figure><figure><img src="${pURL(B)}" alt="${B.date} 사진"><figcaption>${B.date}</figcaption></figure></div>
     ${delta ? `<div class="ph-delta">${delta}</div>` : ''}${mTable(A, '이전')}${mTable(B, '이후')}
@@ -169,7 +169,7 @@ async function renderCmp() {
     <p class="fq-t-caption" id="lapseM" style="margin:0">${metricsLine(list[Math.min(CM.i, list.length - 1)].metrics)}</p>
     ${list.length < 12 ? '<p class="note" style="margin:0">12주부터 부드러워져요.</p>' : ''}`;
   $('#scr-cmp').innerHTML = `
-    <header class="topbar"><h1 class="fq-t-title">몸 비교</h1><button class="fq-btn fq-btn--icon" data-go="grow" aria-label="닫기">${ico('x')}</button></header>
+    <header class="topbar"><h1 class="fq-t-title">몸 비교</h1><button class="round" data-go="grow" aria-label="닫기">${ico('x')}</button></header>
     <div class="chips" role="tablist">${[['side', '나란히'], ['wipe', '슬라이더'], ['lapse', '타임랩스']].map(([m, n]) => `<button class="fq-chip" role="tab" aria-selected="${CM.mode === m}" data-act="phMode" data-m="${m}">${n}</button>`).join('')}</div>
     <div class="chips" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip ph-mini" aria-pressed="${CM.pose === p.id}" data-act="phCPose" data-p="${p.id}" ${byPose(p.id).length ? '' : 'disabled'}>${p.n} ${byPose(p.id).length}</button>`).join('')}</div>
     ${blur && list.length ? '<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="phReveal">가리기 잠깐 풀기</button>' : ''}
@@ -196,7 +196,7 @@ const PH_ACTS = {
   phMode: a => { CM.mode = a.dataset.m; renderCmp(); }, phCPose: a => { CM.pose = a.dataset.p; CM.a = CM.b = null; CM.i = 0; renderCmp(); },
   phPlay: () => { const list = byPose(CM.pose); if (CM.play) { clearInterval(CM.play); CM.play = null; return; } CM.play = setInterval(() => { if (TAB !== 'cmp' || !$('#lapseImg')) { clearInterval(CM.play); CM.play = null; return; } showLapse((CM.i + 1) % list.length); }, 700 / CM.speed); },
   phSpeed: a => { CM.speed = +a.dataset.s; const was = !!CM.play; renderCmp(); if (was) PH_ACTS.phPlay(); },
-  phDel: a => sheet(`<h2 class="fq-t-title">이 사진을 지울까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">되돌릴 수 없어요.</p><button class="fq-btn fq-btn--lg fq-btn--block" style="--_bg:var(--fq-danger-fill);--_fg:#fff" data-act="phDelGo" data-id="${a.dataset.id}">지우기</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
+  phDel: a => sheet(`<h2 class="fq-t-title">이 사진을 지울까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">되돌릴 수 없어요.</p><button class="fq-btn fq-btn--lg fq-btn--block" data-act="phDelGo" data-id="${a.dataset.id}">지우기</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">취소</button>`),
   phDelGo: async a => { await PH.del(a.dataset.id); closeSheet(); await loadPhotos(); renderCmp(); toast('<span>지웠어요.</span>'); },
   phExport: async () => { await loadPhotos(); if (!PHOTOS.length) return toast('<span>내보낼 사진이 없어요.</span>'); toast(`<span>사진 ${PHOTOS.length}장을 차례로 저장해요.</span>`); for (const p of PHOTOS) { const l = document.createElement('a'); l.href = pURL(p); l.download = `fitquest_${p.date}_${p.pose}.jpg`; document.body.appendChild(l); l.click(); l.remove(); await new Promise(r => setTimeout(r, 350)); } }
 };

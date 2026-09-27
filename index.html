@@ -5,21 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FITQUEST</title>
 <meta name="description" content="게임처럼 나를 성장시키는 AI 트레이너">
-<meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#ECEDF1" id="themeColor">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="FITQUEST">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- 롤모델 몸 실루엣: 프레임(V) · 두께 · 매스 — 독자 도형 -->
+  <symbol id="b-frame" viewBox="0 0 56 56"><circle cx="28" cy="12" r="7"/><path d="M9 24.5c0-2.5 2-4.5 4.5-4.5h29c2.5 0 4.5 2 4.5 4.5 0 1-.3 2-.9 2.8L40 36l-3.2 14.2c-.3 1.1-1.2 1.8-2.3 1.8H21.5c-1.1 0-2-.7-2.3-1.8L16 36l-6.1-8.7c-.6-.8-.9-1.8-.9-2.8z"/></symbol>
+  <symbol id="b-thick" viewBox="0 0 56 56"><circle cx="28" cy="12" r="7.5"/><rect x="14" y="21" width="28" height="31" rx="8"/><rect x="5" y="23" width="8" height="21" rx="4"/><rect x="43" y="23" width="8" height="21" rx="4"/></symbol>
+  <symbol id="b-mass" viewBox="0 0 56 56"><circle cx="28" cy="13" r="8"/><path d="M28 22c-13 0-22 6.5-22 17v10a3 3 0 0 0 3 3h38a3 3 0 0 0 3-3V39c0-10.5-9-17-22-17z"/></symbol>
+</svg>
 <div class="app" id="app">
   <main id="scr-onb" class="scr" hidden></main>
   <main id="scr-home" class="scr" hidden></main>
@@ -35,25 +43,27 @@
 </div>
 
 <nav class="tabbar" aria-label="메인" id="tabbar" hidden>
-  <button data-go="home"><svg class="ico" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>홈</button>
-  <button data-go="diet"><svg class="ico" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>식단</button>
-  <button data-go="cam" aria-label="음식 기록"><span class="cam"><svg class="ico" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span></button>
-  <button data-go="work"><svg class="ico" viewBox="0 0 24 24"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z"/><path d="m9.6 14.4 4.8-4.8"/></svg>운동</button>
-  <button data-go="grow"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/></svg>성장</button>
+  <button data-go="home"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>홈</button>
+  <button data-go="diet"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>식단</button>
+  <button data-go="cam" aria-label="음식 기록"><span class="cam"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span></button>
+  <button data-go="work"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z"/><path d="m9.6 14.4 4.8-4.8"/></svg>운동</button>
+  <button data-go="grow"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>성장</button>
 </nav>
 
 <div id="overlay"></div>
 <div class="toast-wrap" id="toast"></div>
 <div class="fq-sr" aria-live="polite" id="live"></div>
 
-<dialog class="fq-levelup" id="lvl" aria-labelledby="lvl-sub">
-  <div class="fq-levelup__rays"></div>
-  <p class="fq-hud fq-hud--24" style="color:#ECAB37;margin:0">레벨 업!</p>
-  <p class="fq-t-mega fq-levelup__num" id="lvl-num">2</p>
-  <p class="fq-outline" style="font-size:48px">Level Up</p>
-  <p class="levelup-sub" id="lvl-sub"></p>
-  <div class="rewards" id="lvl-rw"></div>
-  <form method="dialog"><button class="fq-btn fq-btn--lg fq-btn--signal" style="min-width:200px">계속</button></form>
+<dialog class="lvl" id="lvl" aria-labelledby="lvl-title" aria-describedby="lvl-sub">
+  <div class="lvl-in">
+    <div class="stage" id="lvl-stage"><i class="wave"></i><i class="wave"></i><i class="wave"></i><div class="burst" id="lvl-burst"></div>
+      <div class="badge" id="lvl-badge"><span class="num" id="lvl-num">2</span><span class="ribbon">레벨 업</span></div>
+      <span class="coach" data-face="proud" aria-hidden="true" id="lvl-coach"></span></div>
+    <p class="lvline" id="lvl-title">레벨이 올랐어요</p>
+    <p class="lvsub" id="lvl-sub"></p>
+    <div class="rewards" id="lvl-rw"></div>
+    <form method="dialog"><button class="fq-btn fq-btn--lg fq-btn--block">계속</button></form>
+  </div>
 </dialog>
 
 <script src="data.js"></script>

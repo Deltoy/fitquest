@@ -1,770 +1,201 @@
 /* =====================================================================
-   FITQUEST — Design Tokens + Core Components   v1.0 · 2026-09-27
-   Base: Nike athletic minimalism (black/white, tower numerals, pills)
-   Game layer: Nintendo 2001 console chrome (plates, signal glow, halftone)
-   Spec: docs/03-design-system.md · Contrast: python3 design/contrast_check.py
-   ---------------------------------------------------------------------
-   <head> 에 넣으면 폰트가 더 빨리 뜹니다 (아래 @import 만으로도 동작):
-     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-     <meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
-     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-   테마: <html data-theme="dark"> / "light" / 속성 없음 = OS 설정을 따름.
-   색 토큰은 light-dark(라이트값, 다크값) 한 줄로 두 테마를 담습니다.
-   ponytail: light-dark() needs iOS Safari 17.5+ / Chrome 123+; older
-   browsers lose theme colors — add a static dark fallback block if needed.
+   FITQUEST — Design Tokens + Core Components   v2 · 2026-09-27
+   시안 2v2 "순수 닌텐도": 밝은 회색 바탕 + 둥근 흰 타일, 누르면 쑥 들어가는 빨간 버튼,
+   빨간 둥근 사각 코치, "지금 할 것" 하나에만 숨 쉬는 하늘색 테두리, 노랑은 XP·보상에만.
+   헬스장 모드 = 같은 모양, 어두운 바탕 (<html class="gym">, 운동 화면에서 자동).
+   Contrast: 글자 4.5:1 이상 (흰 글자 on #E0202C = 4.76, 보조 #62656F on #ECEDF1 = 4.97)
    ===================================================================== */
 
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..100,500..900&display=swap");
-
-/* Galmuri11 Bold only (167 KB, full 11,172 Hangul). galmuri.css would
-   also declare the 505 KB Regular (with Kanji) — we never need it. */
-@font-face {
-  font-family: "Galmuri11";
-  src: url("https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
-
-/* ---------------------------------------------------------------------
-   1. TOKENS
-   --------------------------------------------------------------------- */
 :root {
-  color-scheme: light dark;
-
-  /* fonts */
-  --fq-font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --fq-font-display: "Archivo", "Pretendard Variable", Pretendard, system-ui, sans-serif;
-  --fq-font-pixel: "Galmuri11", "Pretendard Variable", monospace;
-
-  /* static brand colors (same in both themes) */
-  --fq-carbon: #21242E;        /* Nintendo carbon — command layer, XP track   */
-  --fq-carbon-deep: #05060D;   /* derived — modal scrim, hard drop line       */
-  --fq-chrome: #3D4F97;        /* Nintendo chrome-indigo — bevel edge         */
-  --fq-sky: #9FBEE7;           /* Nintendo pale sky                           */
-  --fq-amber: #ECAB37;         /* Nintendo amber — XP fill                    */
-  --fq-signal: #F68D1F;        /* Nintendo signal orange — forward / level-up */
-  --fq-on-signal: #111111;     /* Nike ink on every warm fill                 */
-  --fq-danger-fill: #D30005;   /* Nike sale red — white text on it            */
-  --fq-warning-fill: #FFC53D;  /* derived caution yellow — ink text on it     */
-
-  /* surfaces & text — light-dark(LIGHT, DARK) */
-  --fq-bg:          light-dark(#FFFFFF, #0A0A0A);
-  --fq-surface-1:   light-dark(#F5F5F5, #161617);
-  --fq-surface-2:   light-dark(#EBEBEC, #1F1F21);
-  --fq-surface-3:   light-dark(#E0E0E2, #2A2A2D);
-  --fq-line:        light-dark(#E5E5E5, #2C2C2F);
-  --fq-line-strong: light-dark(#86868A, #6B6B70);
-  --fq-text:        light-dark(#111111, #F5F5F5);
-  --fq-text-2:      light-dark(#636366, #9E9EA0);
-  --fq-primary:       light-dark(#111111, #F5F5F5);
-  --fq-primary-press: light-dark(#39393B, #D4D4D6);
-  --fq-on-primary:    light-dark(#FFFFFF, #111111);
-  --fq-focus:         light-dark(#1151FF, #9FBEE7);
-
-  /* game layer — console plate */
-  --fq-plate-top:    light-dark(#CBDAEF, #2B3568);
-  --fq-plate-bottom: light-dark(#A9C1E6, #1C2248);
-  --fq-plate-edge:   light-dark(#7A8ABA, #3D4F97);
-  --fq-plate-hi:     light-dark(rgba(255, 255, 255, .9), rgba(172, 172, 231, .32));
-  --fq-plate-lo:     light-dark(rgba(61, 79, 151, .4), rgba(0, 0, 0, .45));
-  --fq-plate-brush:  light-dark(rgba(255, 255, 255, .12), rgba(255, 255, 255, .02));
-  --fq-plate-ink:    light-dark(#21242E, #F5F5F5);
-  --fq-plate-label:  light-dark(#33427F, #9FBEE7);
-  --fq-glow:         light-dark(rgba(246, 141, 31, 0), rgba(246, 141, 31, .55));
-
-  /* semantic */
-  --fq-xp-text:      light-dark(#8F5B00, #ECAB37);
-  --fq-levelup-text: light-dark(#A94F06, #F68D1F);
-  --fq-pr:           light-dark(#ED1AA0, #FF4FB8);   /* fill, ink text */
-  --fq-pr-text:      light-dark(#C0137F, #FF4FB8);
-  --fq-protein:      light-dark(#3D4F97, #9FBEE7);
-  --fq-kcal:         light-dark(#111111, #F5F5F5);
-  --fq-success:      light-dark(#007D48, #1EAA52);
-  --fq-on-success:   light-dark(#FFFFFF, #111111);
-  --fq-danger:       light-dark(#D30005, #FF4D4F);
-  --fq-warning:      light-dark(#8A5A00, #FFC53D);
-  --fq-ring-track:   light-dark(#EBEBEC, #2A2A2D);
-
-  /* blueprint (always rendered dark) */
-  --fq-bp-bg: #0E1330;
-  --fq-bp-grid: rgba(159, 190, 231, .07);
-  --fq-bp-grid-major: rgba(159, 190, 231, .16);
-
-  /* type scale */
-  --fq-fs-mega: 120px;   --fq-fs-hero: 88px;   --fq-fs-display: 56px;
-  --fq-fs-num-lg: 40px;  --fq-fs-num-md: 28px; --fq-fs-title: 24px;
-  --fq-fs-heading: 18px; --fq-fs-body: 16px;   --fq-fs-label: 14px;
-  --fq-fs-caption: 13px; --fq-fs-eyebrow: 12px; --fq-fs-hud: 12px;
-
-  /* spacing (4px base) */
-  --fq-s-1: 4px;  --fq-s-2: 8px;  --fq-s-3: 12px; --fq-s-4: 16px;
-  --fq-s-5: 20px; --fq-s-6: 24px; --fq-s-8: 32px; --fq-s-12: 48px;
-  --fq-gutter: 16px;
-
-  /* shape: containers sharp, controls round */
-  --fq-r-card: 4px;
-  --fq-r-plate: 10px;
-  --fq-r-pill: 999px;
-
-  /* touch */
-  --fq-hit: 48px;      /* default control */
-  --fq-hit-lg: 56px;   /* logger steppers, set check */
-  --fq-hit-xl: 64px;   /* “세트 완료” thumb button */
-
-  /* motion */
-  --fq-ease-out: cubic-bezier(.2, .8, .2, 1);
-  --fq-ease-spring: cubic-bezier(.34, 1.56, .64, 1);
-  --fq-dur-press: 90ms;
-  --fq-dur-fast: 160ms;
-  --fq-dur-base: 240ms;
-  --fq-dur-slow: 600ms;
+  color-scheme: light;
+  --canvas: #ECEDF1; --surface: #FFFFFF; --ink: #26272D; --ink-2: #62656F;
+  --red: #E0202C; --red-ledge: #A8121C; --red-tint: #FFECEE; --red-ink: #A8121C;
+  --cyan: #0896BD; --cyan-soft: #8FD8EC; --cyan-tint: #DDF3F9; --cyan-chip: #0A7897; --on-cyan: #FFFFFF;
+  --gold: #FFC23D; --gold-ink: #8A5A00; --on-gold: #3A2A00; --gold-ledge: #B98300;
+  --soft: #E2E4EA; --soft-ledge: #C9CCD5; --line: #DADCE2;
+  --shadow: 0 1px 2px rgba(38, 39, 45, .06), 0 12px 28px -16px rgba(38, 39, 45, .28);
+  --photo: none;
+  --scrim: rgba(18, 19, 23, .5);
+  --toast-bg: #26272D; --toast-fg: #FFFFFF; --toast-em: var(--gold);
+  --kr: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --num: "Nunito", "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --out: cubic-bezier(.22, 1, .36, 1);
+}
+/* 헬스장 모드: 같은 모양, 바탕만 어둡게. 빨간 버튼·노란 XP·코치는 그대로 */
+html.gym {
+  color-scheme: dark;
+  --canvas: #121317; --surface: #1E2026; --ink: #EEF0F4; --ink-2: #9A9EA9;
+  --red-ledge: #7A0B13; --red-tint: #3A171B; --red-ink: #FF8A92;
+  --cyan: #3CC8EC; --cyan-soft: #1B5E72; --cyan-tint: #123A46; --cyan-chip: #3CC8EC; --on-cyan: #0B2A33;
+  --gold-ink: #FFC23D; --gold-ledge: #8A5A00;
+  --soft: #2B2E36; --soft-ledge: #0B0C0F; --line: #2E3139;
+  --shadow: 0 0 0 1px rgba(255, 255, 255, .045);
+  --photo: brightness(.78) saturate(.9);
+  --scrim: rgba(0, 0, 0, .6);
+  --toast-bg: #F2F3F5; --toast-fg: #26272D; --toast-em: #8A5A00;
 }
 
-html[data-theme="light"] { color-scheme: light; }
-html[data-theme="dark"]  { color-scheme: dark; }
-
-/* ---------------------------------------------------------------------
-   2. BASE
-   --------------------------------------------------------------------- */
-html {
-  background: var(--fq-bg);
-  color: var(--fq-text);
-  font-family: var(--fq-font-sans);
-  -webkit-text-size-adjust: 100%;
-}
-body {
-  margin: 0;
-  font-size: var(--fq-fs-body);
-  line-height: 1.5;
-  background: var(--fq-bg);
-  color: var(--fq-text);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-}
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--canvas); color: var(--ink); font-family: var(--kr); -webkit-text-size-adjust: 100%; transition: background-color .35s; }
+body { margin: 0; font: 500 16px/1.45 var(--kr); background: var(--canvas); color: var(--ink); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; word-break: keep-all; }
 :where(button, input, select, textarea) { font: inherit; color: inherit; }
 :where(button) { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--fq-focus); outline-offset: 2px; }
+:where(p, h1, h2, h3, h4) { margin: 0; }
+:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+img { filter: var(--photo); transition: filter .35s; }
 .fq-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.num, .fq-num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
-/* ---------------------------------------------------------------------
-   3. TYPE
-   --------------------------------------------------------------------- */
-.fq-num,
-.fq-t-mega, .fq-t-hero, .fq-t-display, .fq-t-num-lg, .fq-t-num-md {
-  font-family: var(--fq-font-display);
-  font-variant-numeric: tabular-nums;
-  font-stretch: 62%;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: .85;
-  margin: 0;
-}
-.fq-t-mega    { font-size: var(--fq-fs-mega); }
-.fq-t-hero    { font-size: var(--fq-fs-hero); }
-.fq-t-display { font-size: var(--fq-fs-display); font-stretch: 70%; line-height: .9; text-transform: uppercase; }
-.fq-t-num-lg  { font-size: var(--fq-fs-num-lg); font-stretch: 75%; font-weight: 700; line-height: 1; }
-.fq-t-num-md  { font-size: var(--fq-fs-num-md); font-stretch: 75%; font-weight: 700; line-height: 1; }
+/* ---------- type ---------- */
+.fq-t-mega, .fq-t-hero, .fq-t-display, .fq-t-num-lg, .fq-t-num-md { font-family: var(--num); font-variant-numeric: tabular-nums; font-weight: 900; letter-spacing: -.02em; line-height: 1; margin: 0; }
+.fq-t-display { font-size: 44px; }
+.fq-t-num-lg { font-size: 34px; }
+.fq-t-num-md { font-size: 24px; }
+.fq-t-title { font-size: 24px; font-weight: 800; line-height: 1.25; letter-spacing: -.02em; }
+.fq-t-heading { font-size: 18px; font-weight: 800; line-height: 1.35; letter-spacing: -.01em; }
+.fq-t-body { font-size: 16px; font-weight: 500; line-height: 1.5; }
+.fq-t-label { font-size: 14px; font-weight: 700; line-height: 1.4; }
+.fq-t-caption { font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--ink-2); }
+.fq-eyebrow { font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--ink-2); }
+.fq-unit { font: 700 14px/1 var(--kr); color: var(--ink-2); }
 
-.fq-t-title   { font-size: var(--fq-fs-title);   font-weight: 700; line-height: 1.25; letter-spacing: -0.02em; margin: 0; }
-.fq-t-heading { font-size: var(--fq-fs-heading); font-weight: 700; line-height: 1.35; letter-spacing: -0.015em; margin: 0; }
-.fq-t-body    { font-size: var(--fq-fs-body);    font-weight: 400; line-height: 1.5; }
-.fq-t-label   { font-size: var(--fq-fs-label);   font-weight: 600; line-height: 1.4; }
-.fq-t-caption { font-size: var(--fq-fs-caption); font-weight: 500; line-height: 1.4; color: var(--fq-text-2); }
+/* ---------- surfaces ---------- */
+.fq-card, .tile { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow); transition: background-color .35s; }
+.fq-card { padding: 16px 18px; }
 
-/* English system labels: KG, REPS, SET, TODAY … */
-.fq-eyebrow, .fq-unit {
-  font-family: var(--fq-font-display);
-  font-size: var(--fq-fs-eyebrow);
-  font-stretch: 100%;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--fq-text-2);
-}
-.fq-unit { font-size: 14px; letter-spacing: .04em; }
+/* "지금 할 것" 하나에만: 숨 쉬는 하늘색 테두리 */
+.sel { box-shadow: 0 0 0 3px var(--cyan), var(--shadow); animation: sel 1.8s ease-in-out infinite; }
+@keyframes sel { 50% { box-shadow: 0 0 0 3px var(--cyan-soft), var(--shadow); } }
 
-/* Pixel HUD — sizes must be 12 / 24 / 36 px (Galmuri11 = 11px cap on a 12px grid) */
-.fq-hud {
-  font-family: var(--fq-font-pixel);
-  font-size: var(--fq-fs-hud);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0;
-  font-synthesis: none;
-  font-variant-numeric: tabular-nums;
-  -webkit-font-smoothing: none;
-}
-.fq-hud--24 { font-size: 24px; }
-
-/* Nintendo box-art wordmark — only on always-dark stages (level-up, PR) */
-.fq-outline {
-  font-family: var(--fq-font-display);
-  font-stretch: 100%;
-  font-weight: 900;
-  text-transform: uppercase;
-  line-height: .95;
-  color: #F5F5F5;
-  -webkit-text-stroke: .09em var(--fq-carbon);
-  paint-order: stroke fill;
-  text-shadow: .06em .06em 0 var(--fq-signal);
-  margin: 0;
-}
-
-/* ---------------------------------------------------------------------
-   4. SURFACES
-   --------------------------------------------------------------------- */
-/* Nike flat card: no shadow, no border, one fill step above bg */
-.fq-card {
-  background: var(--fq-surface-1);
-  border-radius: var(--fq-r-card);
-  padding: var(--fq-s-4);
-}
-
-/* Nintendo console plate: edge-lit bevel, hard lines, chamfer where supported */
-.fq-plate {
-  position: relative;
-  padding: var(--fq-s-4);
-  color: var(--fq-plate-ink);
-  background:
-    repeating-linear-gradient(90deg, var(--fq-plate-brush) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, var(--fq-plate-top), var(--fq-plate-bottom));
-  border: 1px solid var(--fq-plate-edge);
-  border-radius: var(--fq-r-plate);
-  --fq-text: var(--fq-plate-ink);          /* children inherit plate-safe text colors */
-  --fq-text-2: var(--fq-plate-label);
-  --fq-xp-text: light-dark(#21242E, #ECAB37);      /* warm text fails on light periwinkle */
-  --fq-levelup-text: light-dark(#21242E, #F68D1F);
-  box-shadow:
-    inset 0 1px 0 var(--fq-plate-hi),
-    inset 0 -2px 0 var(--fq-plate-lo),
-    0 2px 0 light-dark(rgba(61, 79, 151, .25), var(--fq-carbon-deep));
-}
-@supports (corner-shape: bevel) {
-  .fq-plate { corner-shape: bevel; border-radius: 14px 6px; }
-}
-/* section-label bar: pixel title + dotted seam */
-.fq-plate__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fq-s-2);
-  margin: calc(var(--fq-s-1) * -1) 0 var(--fq-s-3);
-  padding-bottom: var(--fq-s-2);
-  border-bottom: 1px dotted var(--fq-plate-edge);
-  color: var(--fq-plate-label);
-}
-/* comeback / warm welcome: amber sunrise, never red */
-.fq-plate--warm {
-  background:
-    radial-gradient(90% 60% at 50% 0%, rgba(236, 171, 55, .18), transparent 70%),
-    repeating-linear-gradient(90deg, var(--fq-plate-brush) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, var(--fq-plate-top), var(--fq-plate-bottom));
-  border-top-color: var(--fq-amber);
-}
-
-/* Halftone carbon slab (speaker-grille dots) */
-.fq-halftone {
-  color-scheme: dark;
-  background-color: var(--fq-carbon);
-  background-image: radial-gradient(circle, rgba(159, 190, 231, .16) .9px, transparent 1.4px);
-  background-size: 5px 5px;
-  color: #F5F5F5;
-}
-/* dots fading out — hero backdrops, locked achievements */
-.fq-halftone--fade {
-  -webkit-mask-image: linear-gradient(180deg, #000 20%, transparent);
-          mask-image: linear-gradient(180deg, #000 20%, transparent);
-}
-
-/* ---------------------------------------------------------------------
-   5. BUTTONS — pill (Nike form) · signal (Nike form + Nintendo material)
-   --------------------------------------------------------------------- */
+/* ---------- buttons: 누르면 쑥 들어가는 알약 (아래 턱) ---------- */
 .fq-btn {
-  --_bg: var(--fq-primary);
-  --_fg: var(--fq-on-primary);
-  --_bg-press: var(--fq-primary-press);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--fq-s-2);
-  min-height: var(--fq-hit);
-  padding: 0 var(--fq-s-6);
-  border: 0;
-  border-radius: var(--fq-r-pill);
-  background: var(--_bg);
-  color: var(--_fg);
-  font: 600 16px/1.2 var(--fq-font-sans);
-  letter-spacing: -0.01em;
-  text-decoration: none;
-  user-select: none;
-  touch-action: manipulation;
-  transition: transform var(--fq-dur-press) var(--fq-ease-out), background-color var(--fq-dur-fast) linear, box-shadow var(--fq-dur-fast) linear;
+  --_bg: var(--red); --_fg: #FFFFFF; --_ledge: var(--red-ledge);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; padding: 0 22px; margin-bottom: 5px; border: 0; border-radius: 999px;
+  background: var(--_bg); color: var(--_fg); font: 800 16px/1.2 var(--kr); letter-spacing: -.01em; text-decoration: none;
+  box-shadow: 0 5px 0 var(--_ledge); user-select: none; touch-action: manipulation;
+  transition: transform .45s var(--spring), box-shadow .45s var(--spring), background-color .35s;
 }
-.fq-btn:active { transform: scale(.96); background-color: var(--_bg-press); }
-.fq-btn:disabled, .fq-btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
-.fq-btn svg { width: 20px; height: 20px; flex: none; }
-
-.fq-btn--secondary { --_bg: var(--fq-surface-2); --_fg: var(--fq-text); --_bg-press: var(--fq-surface-3); }
-.fq-btn--ghost     { --_bg: transparent; --_fg: var(--fq-text); --_bg-press: var(--fq-surface-2); }
-.fq-btn--lg    { min-height: var(--fq-hit-lg); padding: 0 var(--fq-s-8); font-size: 17px; font-weight: 700; }
-.fq-btn--xl    { min-height: var(--fq-hit-xl); padding: 0 var(--fq-s-8); font-size: 18px; font-weight: 800; }
+.fq-btn:active { transform: translateY(4px) scale(.985); box-shadow: 0 1px 0 var(--_ledge); transition-duration: .07s; }
+.fq-btn:disabled, .fq-btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.fq-btn svg { width: 22px; height: 22px; flex: none; }
+.fq-btn--signal { --_bg: var(--red); --_fg: #FFFFFF; --_ledge: var(--red-ledge); }
+.fq-btn--secondary { --_bg: var(--soft); --_fg: var(--ink); --_ledge: var(--soft-ledge); }
+.fq-btn--ghost { --_bg: transparent; --_fg: var(--ink); --_ledge: transparent; margin-bottom: 0; }
+.fq-btn--lg { min-height: 58px; font-size: 18px; }
+.fq-btn--xl { min-height: 78px; font-size: 21px; }
 .fq-btn--block { display: flex; width: 100%; }
-.fq-btn--icon  { --_bg: var(--fq-surface-2); --_fg: var(--fq-text); --_bg-press: var(--fq-surface-3); width: var(--fq-hit); padding: 0; }
+.fq-btn--icon, .round { --_bg: var(--surface); --_fg: var(--ink); --_ledge: var(--soft-ledge); width: 44px; min-height: 44px; height: 44px; padding: 0; margin-bottom: 3px; border-radius: 50%; box-shadow: 0 3px 0 var(--_ledge); flex: none; }
+.round { display: grid; place-items: center; border: 0; background: var(--_bg); color: var(--_fg); transition: transform .4s var(--spring), box-shadow .4s var(--spring), background-color .35s; }
+.round:active, .fq-btn--icon:active { transform: translateY(3px); box-shadow: 0 0 0 var(--_ledge); transition-duration: .07s; }
+.fq-btn.sel { box-shadow: 0 5px 0 var(--_ledge), 0 0 0 4px var(--canvas), 0 0 0 7px var(--cyan); animation: selb 1.8s ease-in-out infinite; }
+@keyframes selb { 50% { box-shadow: 0 5px 0 var(--_ledge), 0 0 0 4px var(--canvas), 0 0 0 7px var(--cyan-soft); } }
 
-.fq-btn--signal {
-  --_fg: var(--fq-on-signal);
-  background: linear-gradient(180deg, #FFBE5C 0%, var(--fq-signal) 58%, #E57A12 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .6),
-    inset 0 -2px 0 rgba(122, 52, 0, .35),
-    0 0 0 1px rgba(122, 52, 0, .3),
-    0 0 28px -6px var(--fq-glow);
-}
-.fq-btn--signal:active {
-  transform: translateY(1px) scale(.98);
-  box-shadow: inset 0 2px 3px rgba(122, 52, 0, .4), 0 0 0 1px rgba(122, 52, 0, .35);
-}
-
-/* ---------------------------------------------------------------------
-   6. CHIPS & BADGES
-   --------------------------------------------------------------------- */
+/* ---------- chips & badges ---------- */
 .fq-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 var(--fq-s-4);
-  border: 1px solid var(--fq-line-strong);
-  border-radius: var(--fq-r-pill);
-  background: transparent;
-  color: var(--fq-text);
-  font-size: var(--fq-fs-label);
-  font-weight: 600;
-  white-space: nowrap;
-  transition: background-color var(--fq-dur-fast) linear, color var(--fq-dur-fast) linear;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; margin-bottom: 3px;
+  border: 0; border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 700; white-space: nowrap;
+  box-shadow: 0 3px 0 var(--soft-ledge); transition: transform .4s var(--spring), box-shadow .4s var(--spring), background-color .2s, color .2s;
 }
-.fq-chip svg { width: 16px; height: 16px; stroke-width: 2; }
-.fq-chip[aria-pressed="true"], .fq-chip[aria-selected="true"], .fq-chip.is-active {
-  background: var(--fq-primary);
-  color: var(--fq-on-primary);
-  border-color: transparent;
-}
+.fq-chip:active { transform: translateY(3px); box-shadow: 0 0 0 var(--soft-ledge); transition-duration: .07s; }
+.fq-card .fq-chip, .tile .fq-chip { background: var(--canvas); }
+.fq-chip svg { width: 16px; height: 16px; }
+.fq-chip[aria-pressed="true"], .fq-chip[aria-selected="true"] { background: var(--ink) !important; color: var(--canvas); box-shadow: 0 3px 0 var(--soft-ledge); }
+.fq-chip:disabled { opacity: .45; }
+.chip, .fq-badge { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--canvas); color: var(--ink-2); font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip svg, .fq-badge svg { width: 14px; height: 14px; }
+.chip.gd, .fq-badge--xp, .fq-badge--pr { background: var(--gold); color: var(--on-gold); }
+.chip.cy { background: var(--cyan-chip); color: var(--on-cyan); }
+.chip.rd, .fq-badge--signal, .fq-badge--success { background: var(--red-tint); color: var(--red-ink); }
 
-.fq-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 24px;
-  padding: 0 10px;
-  border-radius: var(--fq-r-pill);
-  background: var(--fq-surface-2);
-  color: var(--fq-text);
-  font: 800 12px/1 var(--fq-font-display);
-  font-stretch: 100%;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.fq-badge svg { width: 14px; height: 14px; stroke-width: 2; }
-.fq-badge--signal  { background: var(--fq-signal); color: var(--fq-on-signal); }   /* +2.5KG  */
-.fq-badge--pr      { background: var(--fq-pr); color: var(--fq-on-signal); }       /* PR      */
-.fq-badge--success { background: var(--fq-success); color: var(--fq-on-success); }
-.fq-badge--xp      { background: var(--fq-carbon); color: var(--fq-amber); font-family: var(--fq-font-pixel); font-weight: 700; letter-spacing: 0; }
+/* ---------- toast ---------- */
+.fq-toast { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 6px 0 18px; border-radius: 999px; background: var(--toast-bg); color: var(--toast-fg); font-size: 14px; font-weight: 700; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, .45); animation: toastin .5s var(--spring) both; }
+.fq-toast em { font-style: normal; color: var(--toast-em); }
+.fq-toast > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fq-toast .sub { color: inherit; opacity: .78; font-weight: 600; padding-right: 12px; white-space: nowrap; }
+.fq-toast button { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; background: rgba(127, 127, 127, .18); color: inherit; font-size: 14px; font-weight: 800; }
+@keyframes toastin { from { opacity: 0; transform: translateY(16px) scale(.96); } }
 
-/* Level badge: chamfered octagon of periwinkle chrome (same in both themes) */
-.fq-level {
-  display: inline-grid;
-  place-items: center;
-  align-content: center;
-  gap: 2px;
-  width: 56px;
-  height: 56px;
-  color: var(--fq-carbon);
-  background: linear-gradient(180deg, #DCE5F7 0%, #A9BBE6 46%, #8B9DD2 54%, #7D8EC4 100%);
-  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
-  box-shadow: inset 0 0 0 2px rgba(61, 79, 151, .55);
-}
-.fq-level__lv  { font: 700 12px/1 var(--fq-font-pixel); }
-.fq-level__num { font: 800 28px/.85 var(--fq-font-display); font-stretch: 75%; font-variant-numeric: tabular-nums; }
+/* ---------- slider ---------- */
+.fq-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; }
+.fq-slider::-webkit-slider-runnable-track { height: 8px; border-radius: 99px; background: var(--soft); }
+.fq-slider::-moz-range-track { height: 8px; border-radius: 99px; background: var(--soft); }
+.fq-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%; background: var(--red); box-shadow: 0 3px 0 var(--red-ledge); }
+.fq-slider::-moz-range-thumb { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--red); box-shadow: 0 3px 0 var(--red-ledge); }
 
-/* ---------------------------------------------------------------------
-   7. INPUTS — stepper, slider
-   --------------------------------------------------------------------- */
-.fq-stepper {
-  display: grid;
-  grid-template-columns: var(--fq-hit-lg) 1fr var(--fq-hit-lg);
-  align-items: center;
-  gap: var(--fq-s-2);
-}
-.fq-stepper__btn {
-  display: grid;
-  place-items: center;
-  width: var(--fq-hit-lg);
-  height: var(--fq-hit-lg);
-  border: 0;
-  border-radius: 50%;
-  background: var(--fq-surface-2);
-  color: var(--fq-text);
-  touch-action: manipulation;
-  transition: transform var(--fq-dur-press) var(--fq-ease-out), background-color var(--fq-dur-fast) linear;
-}
-.fq-stepper__btn:active { transform: scale(.92); background: var(--fq-surface-3); }
-.fq-stepper__btn svg { width: 24px; height: 24px; stroke-width: 2; }
-.fq-stepper__value {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  min-height: var(--fq-hit-lg);
-  padding: 0;
-  border: 0;
-  border-radius: var(--fq-r-card);
-  background: transparent;
-  color: var(--fq-text);
-  font: 800 64px/1 var(--fq-font-display);
-  font-stretch: 62%;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-input.fq-stepper__value { width: 100%; }
+/* ---------- 코치 (독자 도형: 빨간 둥근 사각 + 흰 눈, 표정 7가지 data-face) ---------- */
+.coach { --s: 44px; display: inline-block; flex: none; width: var(--s); height: var(--s); transform-origin: 50% 100%; }
+.coach svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.coach .cb { fill: var(--red); }
+.coach .arm { stroke: var(--red); stroke-width: 5.5; stroke-linecap: round; fill: none; }
+.coach .cl { fill: #A8121C; }
+.coach .sh { fill: #fff; opacity: .3; }
+.coach .w { fill: #fff; }
+.coach .st { fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.coach .blush { fill: #FF8A93; opacity: .75; }
+.coach .drop { fill: #BDEBF8; }
+.coach .spark { fill: none; stroke: var(--gold); stroke-width: 2.6; stroke-linecap: round; }
+.coach .f { display: none; }
+.coach[data-face="idle"] .f-idle, .coach[data-face="happy"] .f-happy, .coach[data-face="focus"] .f-focus, .coach[data-face="rest"] .f-rest,
+.coach[data-face="wow"] .f-wow, .coach[data-face="proud"] .f-proud, .coach[data-face="think"] .f-think { display: inline; }
+.coach .blink { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
+@keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+.coach[data-face="happy"] svg { animation: bob 2.4s ease-in-out infinite; }
+.coach .wv { transform-origin: 44px 24px; animation: wave 1.2s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-2px); } }
+@keyframes wave { 50% { transform: rotate(-24deg); } }
+.coach[data-face="focus"] .tail { transform-origin: 45px 12px; animation: tail .5s ease-in-out infinite alternate; }
+@keyframes tail { to { transform: rotate(-10deg); } }
+.coach[data-face="rest"] svg { transform-origin: 50% 100%; animation: breathe 4s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.07, 1.05); } }
+.coach[data-face="rest"] .drop { animation: drop 2.8s ease-in infinite; }
+@keyframes drop { 0%, 40% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(6px); opacity: 0; } }
+.coach[data-face="wow"] svg { animation: wow .6s var(--spring); }
+@keyframes wow { 0% { transform: scale(.8, 1.1); } 60% { transform: scale(1.14, .92); } }
+.coach[data-face="wow"] .spark { animation: spark .8s var(--out) both; }
+@keyframes spark { from { opacity: 0; transform: translateY(4px); } }
+.coach[data-face="proud"] svg { animation: jump .9s var(--out) infinite; }
+@keyframes jump { 0%, 100% { transform: translateY(0) scale(1.08, .9); } 15% { transform: translateY(0) scale(.94, 1.08); } 50% { transform: translateY(-16%) scale(1); } 85% { transform: translateY(0) scale(1); } }
+.coach[data-face="think"] svg { transform-origin: 50% 100%; animation: tilt 3.2s ease-in-out infinite; }
+@keyframes tilt { 50% { transform: rotate(-6deg); } }
+.coach.swap { animation: swap .45s var(--spring); }
+@keyframes swap { 0% { transform: scale(1.12, .84); } }
 
-.fq-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 44px;
-  background: transparent;
-  --p: 50;
-}
-.fq-slider::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: var(--fq-r-pill);
-  background: linear-gradient(90deg, var(--fq-text) calc(var(--p) * 1%), var(--fq-surface-3) 0);
-}
-.fq-slider::-moz-range-track { height: 6px; border-radius: var(--fq-r-pill); background: var(--fq-surface-3); }
-.fq-slider::-moz-range-progress { height: 6px; border-radius: var(--fq-r-pill); background: var(--fq-text); }
-.fq-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 28px; height: 28px; margin-top: -11px;
-  border-radius: 50%;
-  background: var(--fq-primary);
-  box-shadow: 0 0 0 4px var(--fq-bg);
-}
-.fq-slider::-moz-range-thumb { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--fq-primary); box-shadow: 0 0 0 4px var(--fq-bg); }
+/* ---------- 롤모델 실루엣 (독자 도형) ---------- */
+.av { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--canvas); color: var(--ink-2); }
+.av svg { width: 78%; height: 78%; fill: currentColor; }
 
-/* ---------------------------------------------------------------------
-   8. PROGRESS — XP bar, charge bar, ring
-   --------------------------------------------------------------------- */
-/* Segmented Y2K XP bar. Set --p (0–100) inline. 20 cells. */
-.fq-xp {
-  --p: 0;
-  --cells: 20;
-  position: relative;
-  height: 14px;
-  padding: 2px;
-  border-radius: 3px;
-  background-color: var(--fq-carbon);
-  background-image: radial-gradient(circle, rgba(159, 190, 231, .14) .8px, transparent 1.2px);
-  background-size: 4px 4px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6), 0 0 0 1px var(--fq-plate-edge);
-}
-.fq-xp__fill {
-  height: 100%;
-  width: calc(var(--p) * 1%);
-  border-radius: 1px;
-  background: linear-gradient(180deg, #FFD98A 0%, var(--fq-amber) 45%, var(--fq-signal) 100%);
-  filter: drop-shadow(0 0 5px var(--fq-glow));
-  transition: width var(--fq-dur-slow) var(--fq-ease-out);
-}
-.fq-xp::after { /* cell gaps drawn over the fill, relative to the track */
-  content: "";
-  position: absolute;
-  inset: 2px;
-  background: repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--cells) - 2px), var(--fq-carbon) calc(100% / var(--cells) - 2px) calc(100% / var(--cells)));
-  pointer-events: none;
-}
+/* ---------- motion helpers ---------- */
+.pop { animation: pop .7s var(--spring) both; animation-delay: calc(var(--d, 0) * 80ms); }
+@keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+.bump { animation: bump .45s var(--spring); }
+@keyframes bump { 40% { transform: scale(1.14); } }
 
-/* Rest “charge” bar: cool while charging, turns signal when ready */
-.fq-charge { --cells: 12; height: 28px; padding: 3px; border-radius: 4px; }
-.fq-charge .fq-xp__fill {
-  background: linear-gradient(180deg, #CFE0F7 0%, var(--fq-sky) 55%, #7F9FD6 100%);
-  filter: none;
-  transition: width 1s linear;
-}
-.fq-charge::after { inset: 3px; }
-.fq-charge[data-ready] .fq-xp__fill {
-  background: linear-gradient(180deg, #FFBE5C 0%, var(--fq-signal) 60%, #E57A12 100%);
-  animation: fq-glow-pulse 900ms var(--fq-ease-out) 2;
-}
-
-/* Ring (SVG, pathLength=100). Set --p on the <svg>. */
-.fq-ring { --p: 0; --w: 3.2; display: block; width: 100%; height: auto; transform: rotate(-90deg); overflow: visible; }
-.fq-ring circle { fill: none; stroke-width: var(--w); }
-.fq-ring__track { stroke: var(--fq-ring-track); }
-.fq-ring__arc {
-  stroke: var(--_c, var(--fq-text));
-  stroke-linecap: round;
-  stroke-dasharray: calc(min(var(--p), 100) * 1px) 100px;
-  transition: stroke-dasharray var(--fq-dur-slow) var(--fq-ease-out);
-}
-.fq-ring--protein { --_c: var(--fq-protein); }
-.fq-ring--kcal    { --_c: var(--fq-kcal); }
-.fq-ring[data-over] { --_c: var(--fq-warning); }
-.fq-ring-wrap { position: relative; display: grid; place-items: center; }
-.fq-ring-wrap > .fq-ring { grid-area: 1 / 1; }
-.fq-ring-wrap > .fq-ring__center { grid-area: 1 / 1; text-align: center; }
-
-/* ---------------------------------------------------------------------
-   9. WORKOUT LOGGER
-   --------------------------------------------------------------------- */
-.fq-set-row {
-  display: grid;
-  grid-template-columns: 36px 1fr var(--fq-hit-lg);
-  align-items: center;
-  gap: var(--fq-s-3);
-  min-height: 72px;
-  padding: var(--fq-s-2) var(--fq-s-3);
-  border-bottom: 1px solid var(--fq-line);
-  color: var(--fq-text-2);
-}
-.fq-set-row__idx  { font: 700 12px/1 var(--fq-font-pixel); }
-.fq-set-row__load { font: 700 var(--fq-fs-num-md)/1 var(--fq-font-display); font-stretch: 75%; font-variant-numeric: tabular-nums; }
-.fq-set-row[data-state="active"] {
-  color: var(--fq-text);
-  background: var(--fq-surface-1);
-  box-shadow: inset 3px 0 0 var(--fq-signal);
-}
-.fq-set-row[data-state="done"] { color: var(--fq-text); }
-.fq-set-row__check {
-  display: grid;
-  place-items: center;
-  width: var(--fq-hit-lg);
-  height: var(--fq-hit-lg);
-  border: 2px solid var(--fq-line-strong);
-  border-radius: 50%;
-  background: transparent;
-  color: transparent;
-  touch-action: manipulation;
-  transition: transform var(--fq-dur-press) var(--fq-ease-out), background-color var(--fq-dur-fast) linear, border-color var(--fq-dur-fast) linear;
-}
-.fq-set-row__check:active { transform: scale(.9); }
-.fq-set-row[data-state="active"] .fq-set-row__check { border-color: var(--fq-signal); }
-.fq-set-row__check svg { width: 28px; height: 28px; stroke-width: 3; }
-.fq-set-row__check[aria-pressed="true"] { background: var(--fq-success); border-color: var(--fq-success); color: var(--fq-on-success); }
-.fq-set-row__check[aria-pressed="true"] svg path,
-.fq-set-row__check[aria-pressed="true"] svg polyline { stroke-dasharray: 24; animation: fq-draw var(--fq-dur-base) var(--fq-ease-out) both; }
-
-/* “+10 XP” pop that floats off the check button (position it absolutely) */
-.fq-xp-pop {
-  position: absolute;
-  pointer-events: none;
-  font: 700 12px/1 var(--fq-font-pixel);
-  color: var(--fq-xp-text);
-  animation: fq-float-up 700ms var(--fq-ease-out) both;
-}
-/* Combo counter chip: COMBO ×3 */
-.fq-combo {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 3px;
-  background: var(--fq-carbon);
-  color: var(--fq-amber);
-  font: 700 12px/1 var(--fq-font-pixel);
-  box-shadow: 0 0 0 1px var(--fq-chrome);
-}
-.fq-combo b { font: 800 24px/.8 var(--fq-font-display); font-stretch: 62%; font-variant-numeric: tabular-nums; color: #F5F5F5; }
-.fq-combo[data-bump] { animation: fq-pop 320ms var(--fq-ease-spring); }
-.fq-combo[data-hot] { color: var(--fq-signal); box-shadow: 0 0 0 1px var(--fq-signal), 0 0 18px -4px var(--fq-glow); }
-
-/* PR stamp */
-.fq-pr-stamp { display: inline-block; animation: fq-stamp 360ms var(--fq-ease-spring) both; }
-
-/* Undo toast near the thumb */
-.fq-toast {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fq-s-3);
-  min-height: 48px;
-  padding: 0 var(--fq-s-2) 0 var(--fq-s-5);
-  border-radius: var(--fq-r-pill);
-  background: var(--fq-carbon);
-  color: #F5F5F5;
-  font-size: var(--fq-fs-label);
-  font-weight: 600;
-  box-shadow: 0 0 0 1px var(--fq-chrome);
-  animation: fq-rise var(--fq-dur-base) var(--fq-ease-out) both;
-}
-.fq-toast button { min-height: 44px; padding: 0 var(--fq-s-4); border: 0; border-radius: var(--fq-r-pill); background: transparent; color: var(--fq-amber); font-weight: 700; }
-
-/* Bottom thumb dock for the one primary action */
-.fq-dock {
-  position: sticky;
-  bottom: 0;
-  display: grid;
-  gap: var(--fq-s-2);
-  padding: var(--fq-s-3) var(--fq-gutter) calc(var(--fq-s-3) + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--fq-bg) 72%, transparent);
-}
-
-/* ---------------------------------------------------------------------
-   10. BODY BLUEPRINT (always dark)
-   --------------------------------------------------------------------- */
-.fq-blueprint {
-  color-scheme: dark;
-  position: relative;
-  padding: var(--fq-s-4);
-  color: #F5F5F5;
-  background-color: var(--fq-bp-bg);
-  background-image:
-    linear-gradient(var(--fq-bp-grid-major) 1px, transparent 1px),
-    linear-gradient(90deg, var(--fq-bp-grid-major) 1px, transparent 1px),
-    linear-gradient(var(--fq-bp-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--fq-bp-grid) 1px, transparent 1px);
-  background-size: 64px 64px, 64px 64px, 16px 16px, 16px 16px;
-  background-position: -1px -1px;
-  border: 1px solid var(--fq-chrome);
-  border-radius: var(--fq-r-plate);
-}
-@supports (corner-shape: bevel) {
-  .fq-blueprint { corner-shape: bevel; border-radius: 14px 6px; }
-}
+/* ---------- body blueprint (바디 설계도, 밝은 타일 위) ---------- */
 .fq-body { display: block; width: 100%; height: auto; overflow: visible; }
-.fq-body__head, .fq-body__part { fill: rgba(159, 190, 231, .05); stroke: rgba(159, 190, 231, .55); stroke-width: 1; }
-.fq-body__target { fill: none; stroke: var(--fq-sky); stroke-width: 1.25; stroke-dasharray: 4 3; }
-.fq-muscle {
-  fill: var(--fq-sky);
-  fill-opacity: 0;
-  stroke: var(--fq-sky);
-  stroke-width: 1;
-  stroke-dasharray: 3 2;
-  stroke-linejoin: round;
-  transition: fill-opacity var(--fq-dur-slow) var(--fq-ease-out);
-}
-/* state lives on the <g data-muscle> group so both sides follow */
-.fq-body [data-level="1"] > .fq-muscle { fill-opacity: .2;  stroke-dasharray: none; }
-.fq-body [data-level="2"] > .fq-muscle { fill-opacity: .4;  stroke-dasharray: none; }
-.fq-body [data-level="3"] > .fq-muscle { fill-opacity: .65; stroke-dasharray: none; }
-.fq-body [data-level="4"] > .fq-muscle { fill-opacity: .9;  stroke-dasharray: none; }
-.fq-body [data-focus] > .fq-muscle     { stroke: var(--fq-signal); stroke-width: 2; stroke-dasharray: none; }
-.fq-body [data-gain] > .fq-muscle      { animation: fq-muscle-gain 1100ms var(--fq-ease-out) both; }
-.fq-body [data-excluded] > .fq-muscle  { fill: url(#fq-hatch); fill-opacity: 1; stroke: var(--fq-danger); stroke-dasharray: 3 2; }
+.fq-body__head, .fq-body__part { fill: var(--canvas); stroke: var(--ink-2); stroke-opacity: .5; stroke-width: 1.2; }
+.fq-body__target { fill: none; stroke: var(--ink-2); stroke-width: 1.25; stroke-dasharray: 4 3; }
+.fq-muscle { fill: var(--red); fill-opacity: 0; stroke: var(--ink-2); stroke-opacity: .5; stroke-width: 1.2; stroke-linejoin: round; transition: fill-opacity .6s var(--out); }
+.fq-body [data-level="0"] > .fq-muscle { fill: var(--canvas); fill-opacity: 1; }
+.fq-body [data-level="1"] > .fq-muscle { fill-opacity: .22; }
+.fq-body [data-level="2"] > .fq-muscle { fill-opacity: .45; }
+.fq-body [data-level="3"] > .fq-muscle { fill-opacity: .7; }
+.fq-body [data-level="4"] > .fq-muscle { fill-opacity: .95; }
+.fq-body [data-focus] > .fq-muscle { stroke: var(--ink); stroke-opacity: 1; stroke-width: 1.6; }
+.fq-body [data-gain] > .fq-muscle { animation: gain 1.1s var(--out) both; }
+@keyframes gain { 0% { fill: var(--gold); fill-opacity: .95; } }
 
-/* dimension line:  |—— 118 cm ——|  */
-.fq-dim {
-  display: flex;
-  align-items: center;
-  gap: var(--fq-s-2);
-  color: var(--fq-sky);
-  font: 700 12px/1 var(--fq-font-pixel);
-}
-.fq-dim::before, .fq-dim::after {
-  content: "";
-  flex: 1;
-  height: 9px;
-  background: linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat;
-  border: 0 solid currentColor;
-}
-.fq-dim::before { border-left-width: 1px; }
-.fq-dim::after  { border-right-width: 1px; }
-
-/* V-ratio gauge (shoulder ÷ waist). Set --v, --start, --goal inline. */
+/* ---------- V 비율 게이지 ---------- */
 .fq-vgauge { --min: 1.2; --max: 1.8; --v: 1.4; --start: 1.4; --goal: 1.6; }
-.fq-vgauge__scale {
-  position: relative;
-  height: 32px;
-  border-bottom: 1px solid var(--fq-sky);
-  background:
-    repeating-linear-gradient(90deg, rgba(159, 190, 231, .45) 0 1px, transparent 1px calc(100% / 30)) bottom / 100% 6px no-repeat,
-    repeating-linear-gradient(90deg, var(--fq-sky) 0 1px, transparent 1px calc(100% / 6)) bottom / 100% 12px no-repeat;
-}
-.fq-vgauge__run, .fq-vgauge__now, .fq-vgauge__goal { position: absolute; bottom: 0; }
-.fq-vgauge__run {
-  --a: clamp(0%, (var(--start) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%);
-  --b: clamp(0%, (var(--v) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%);
-  left: var(--a);
-  width: max(0%, var(--b) - var(--a));
-  height: 4px;
-  background: var(--fq-sky);
-}
-.fq-vgauge__now {
-  left: clamp(0%, (var(--v) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%);
-  width: 3px;
-  height: 28px;
-  margin-left: -1px;
-  background: #F5F5F5;
-  transition: left var(--fq-dur-slow) var(--fq-ease-out);
-}
-.fq-vgauge__goal {
-  left: clamp(0%, (var(--goal) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%);
-  width: 0;
-  height: 0;
-  margin-left: -7px;
-  bottom: -9px;
-  border: 7px solid transparent;
-  border-bottom: 9px solid var(--fq-signal);
-  border-top: 0;
-}
-.fq-vgauge__labels { display: flex; justify-content: space-between; margin-top: var(--fq-s-3); color: var(--fq-text-2); font: 700 12px/1 var(--fq-font-pixel); }
-
-/* ---------------------------------------------------------------------
-   11. LEVEL-UP (native <dialog>, always dark)
-   --------------------------------------------------------------------- */
-.fq-levelup {
-  color-scheme: dark;
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: var(--fq-s-6) var(--fq-gutter) calc(var(--fq-s-6) + env(safe-area-inset-bottom));
-  border: 0;
-  background: transparent;
-  color: var(--fq-text);
-  overflow: hidden;
-  text-align: center;
-}
-.fq-levelup[open] { display: grid; align-content: center; justify-items: center; gap: var(--fq-s-4); }
-.fq-levelup::backdrop { background: rgba(5, 6, 13, .94); }
-.fq-levelup > * { position: relative; }
-.fq-levelup__rays {
-  position: absolute;
-  inset: -40%;
-  pointer-events: none;
-  background: repeating-conic-gradient(from 9deg at 50% 50%, rgba(246, 141, 31, .12) 0 5deg, transparent 5deg 20deg);
-  -webkit-mask-image: radial-gradient(closest-side, #000, transparent 55%);
-          mask-image: radial-gradient(closest-side, #000, transparent 55%);
-  animation: fq-rays 1200ms var(--fq-ease-out) both;
-}
-.fq-levelup__num { animation: fq-pop 520ms var(--fq-ease-spring) 200ms both; color: var(--fq-signal); }
-.fq-levelup[open] .fq-outline { animation: fq-stamp 360ms var(--fq-ease-spring) 480ms both; }
-.fq-levelup[open] .fq-btn { animation: fq-rise var(--fq-dur-base) var(--fq-ease-out) 900ms both; }
-
-/* ---------------------------------------------------------------------
-   12. MOTION
-   --------------------------------------------------------------------- */
-@keyframes fq-pop        { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
-@keyframes fq-stamp      { 0% { transform: scale(1.6) rotate(-4deg); opacity: 0; } 60% { transform: scale(.94) rotate(0); opacity: 1; } 100% { transform: scale(1); } }
-@keyframes fq-rise       { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes fq-float-up   { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-28px); opacity: 0; } }
-@keyframes fq-draw       { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
-@keyframes fq-glow-pulse { 50% { filter: drop-shadow(0 0 10px rgba(246, 141, 31, .9)); } }
-@keyframes fq-rays       { from { transform: rotate(-20deg) scale(.6); opacity: 0; } 40% { opacity: 1; } to { transform: rotate(0) scale(1); opacity: 1; } }
-@keyframes fq-muscle-gain { 0% { fill: var(--fq-amber); fill-opacity: .95; } 100% { fill: var(--fq-sky); } }
+.fq-vgauge__scale { position: relative; height: 14px; border-radius: 99px; background: var(--canvas); }
+.fq-vgauge__run, .fq-vgauge__now, .fq-vgauge__goal { position: absolute; }
+.fq-vgauge__run { --a: clamp(0%, (var(--start) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); --b: clamp(0%, (var(--v) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); left: var(--a); width: max(0%, var(--b) - var(--a)); top: 0; bottom: 0; border-radius: 99px; background: var(--red); }
+.fq-vgauge__now { left: clamp(0%, (var(--v) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); top: -5px; width: 24px; height: 24px; margin-left: -12px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 5px var(--red), 0 2px 0 var(--red-ledge); transition: left .6s var(--out); }
+.fq-vgauge__goal { left: clamp(0%, (var(--goal) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); top: -4px; bottom: -4px; width: 3px; margin-left: -1px; border-radius: 2px; background: var(--gold-ink); }
+.fq-vgauge__labels { display: flex; justify-content: space-between; margin-top: 10px; color: var(--ink-2); font: 800 13px/1 var(--num); }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important;
-    animation-delay: 0ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
-    scroll-behavior: auto !important;
-  }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
