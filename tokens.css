@@ -13,6 +13,8 @@
   --cyan: #0896BD; --cyan-soft: #8FD8EC; --cyan-tint: #DDF3F9; --cyan-chip: #0A7897; --on-cyan: #FFFFFF;
   --gold: #FFC23D; --gold-ink: #8A5A00; --on-gold: #3A2A00; --gold-ledge: #B98300;
   --soft: #E2E4EA; --soft-ledge: #C9CCD5; --line: #DADCE2;
+  /* 색 하나에 뜻 하나: 빨강 = 누를 것·오늘, 하늘 = 좋은 추세·지금, 금색 = 보상, 호박 = 주의 (나쁜 빨강은 없음) */
+  --cyan-ink: #076A86; --amber: #F08A00; --amber-ink: #A14E00; --amber-tint: #FFEBD1;
   /* 부위 색 (운동 달력) — 빨강·노랑과 겹치지 않게, 흰 글자 5:1 이상 · 헬스장 모드도 그대로 */
   --p-back: #2F5FD0; --p-chest: #C0307A; --p-shoulder: #0B7A6E; --p-legs: #7047C9; --p-arms: #B45309; --p-full: #4B5263;
   --shadow: 0 1px 2px rgba(38, 39, 45, .06), 0 12px 28px -16px rgba(38, 39, 45, .28);
@@ -32,6 +34,7 @@ html.gym {
   --cyan: #3CC8EC; --cyan-soft: #1B5E72; --cyan-tint: #123A46; --cyan-chip: #3CC8EC; --on-cyan: #0B2A33;
   --gold-ink: #FFC23D; --gold-ledge: #8A5A00;
   --soft: #2B2E36; --soft-ledge: #0B0C0F; --line: #2E3139;
+  --cyan-ink: #3CC8EC; --amber-ink: #FFB347; --amber-tint: #3A2A12;
   --shadow: 0 0 0 1px rgba(255, 255, 255, .045);
   --photo: brightness(.78) saturate(.9);
   --scrim: rgba(0, 0, 0, .6);
@@ -49,6 +52,10 @@ body { margin: 0; font: 500 16px/1.45 var(--kr); background: var(--canvas); colo
 img { filter: var(--photo); transition: filter .35s; }
 .fq-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .num, .fq-num { font-family: var(--num); font-variant-numeric: tabular-nums; }
+:where(h1, h2, h3, .fq-t-title, .fq-t-heading) { text-wrap: balance; }
+:where(p, small, .fq-t-caption) { text-wrap: pretty; }
+/* 사진 가장자리가 바탕에 번지지 않게 (중립 1px 안쪽 선) */
+.vthumb img, .exthumb img, .photo img, .quest > img, .ph-cell img { outline: 1px solid rgba(0, 0, 0, .08); outline-offset: -1px; }
 
 /* ---------- type ---------- */
 .fq-t-mega, .fq-t-hero, .fq-t-display, .fq-t-num-lg, .fq-t-num-md { font-family: var(--num); font-variant-numeric: tabular-nums; font-weight: 900; letter-spacing: -.02em; line-height: 1; margin: 0; }
@@ -56,7 +63,7 @@ img { filter: var(--photo); transition: filter .35s; }
 .fq-t-num-lg { font-size: 34px; }
 .fq-t-num-md { font-size: 24px; }
 .fq-t-title { font-size: 24px; font-weight: 800; line-height: 1.25; letter-spacing: -.02em; }
-.fq-t-heading { font-size: 18px; font-weight: 800; line-height: 1.35; letter-spacing: -.01em; }
+.fq-t-heading { font-size: 17px; font-weight: 800; line-height: 1.35; letter-spacing: -.01em; }
 .fq-t-body { font-size: 16px; font-weight: 500; line-height: 1.5; }
 .fq-t-label { font-size: 14px; font-weight: 700; line-height: 1.4; }
 .fq-t-caption { font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--ink-2); }
@@ -66,12 +73,14 @@ img { filter: var(--photo); transition: filter .35s; }
 /* ---------- surfaces ---------- */
 .fq-card, .tile { background: var(--surface); border-radius: 24px; box-shadow: var(--shadow); transition: background-color .35s; }
 .fq-card { padding: 16px 18px; }
+@media (min-width: 700px) { .fq-card { padding: 20px 22px; } }
 
 /* "지금 할 것" 하나에만: 숨 쉬는 하늘색 테두리 */
 .sel { box-shadow: 0 0 0 3px var(--cyan), var(--shadow); animation: sel 1.8s ease-in-out infinite; }
 @keyframes sel { 50% { box-shadow: 0 0 0 3px var(--cyan-soft), var(--shadow); } }
 
-/* ---------- buttons: 누르면 쑥 들어가는 알약 (아래 턱) ---------- */
+/* ---------- buttons: 누르면 쑥 들어가는 알약 (아래 턱) ----------
+   깊이 예산: 아래 턱(3D)은 빨간 주 버튼 · 가운데 기록 버튼 · 기록하기 타일 · 세트 완료에만. 나머지는 평평하게 */
 .fq-btn {
   --_bg: var(--red); --_fg: #FFFFFF; --_ledge: var(--red-ledge);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -84,33 +93,36 @@ img { filter: var(--photo); transition: filter .35s; }
 .fq-btn:disabled, .fq-btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
 .fq-btn svg { width: 22px; height: 22px; flex: none; }
 .fq-btn--signal { --_bg: var(--red); --_fg: #FFFFFF; --_ledge: var(--red-ledge); }
-.fq-btn--secondary { --_bg: var(--soft); --_fg: var(--ink); --_ledge: var(--soft-ledge); }
+.fq-btn--secondary { --_bg: var(--soft); --_fg: var(--ink); --_ledge: transparent; border-radius: 14px; margin-bottom: 0; box-shadow: none !important; }
+.fq-btn--secondary:active { transform: scale(.97); }
 .fq-btn--ghost { --_bg: transparent; --_fg: var(--ink); --_ledge: transparent; margin-bottom: 0; }
-.fq-btn--lg { min-height: 58px; font-size: 18px; }
-.fq-btn--xl { min-height: 78px; font-size: 21px; }
+.fq-btn--lg { min-height: 58px; font-size: 17px; }
+.fq-btn--sm { min-height: 44px; padding: 0 16px; font-size: 14px; margin-bottom: 3px; box-shadow: 0 3px 0 var(--_ledge); }
+.fq-btn--secondary.fq-btn--sm { margin-bottom: 0; border-radius: 12px; }
+.fq-btn--sm svg { width: 16px; height: 16px; }
+.fq-btn--xl { min-height: 78px; font-size: 20px; }
 .fq-btn--block { display: flex; width: 100%; }
-.fq-btn--icon, .round { --_bg: var(--surface); --_fg: var(--ink); --_ledge: var(--soft-ledge); width: 44px; min-height: 44px; height: 44px; padding: 0; margin-bottom: 3px; border-radius: 50%; box-shadow: 0 3px 0 var(--_ledge); flex: none; }
-.round { display: grid; place-items: center; border: 0; background: var(--_bg); color: var(--_fg); transition: transform .4s var(--spring), box-shadow .4s var(--spring), background-color .35s; }
-.round:active, .fq-btn--icon:active { transform: translateY(3px); box-shadow: 0 0 0 var(--_ledge); transition-duration: .07s; }
+.fq-btn--icon, .round { --_bg: var(--surface); --_fg: var(--ink); --_ledge: transparent; width: 44px; min-height: 44px; height: 44px; padding: 0; margin-bottom: 0; border-radius: 50%; box-shadow: var(--shadow); flex: none; }
+.round { display: grid; place-items: center; border: 0; background: var(--_bg); color: var(--_fg); transition: transform .4s var(--spring), background-color .35s; }
+.round:active, .fq-btn--icon:active { transform: scale(.94); box-shadow: var(--shadow); transition-duration: .07s; }
 .fq-btn.sel { box-shadow: 0 5px 0 var(--_ledge), 0 0 0 4px var(--canvas), 0 0 0 7px var(--cyan); animation: selb 1.8s ease-in-out infinite; }
 @keyframes selb { 50% { box-shadow: 0 5px 0 var(--_ledge), 0 0 0 4px var(--canvas), 0 0 0 7px var(--cyan-soft); } }
 
 /* ---------- chips & badges ---------- */
 .fq-chip {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; margin-bottom: 3px;
-  border: 0; border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 700; white-space: nowrap;
-  box-shadow: 0 3px 0 var(--soft-ledge); transition: transform .4s var(--spring), box-shadow .4s var(--spring), background-color .2s, color .2s;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px;
+  border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); font-size: 14px; font-weight: 700; white-space: nowrap;
+  transition: transform .3s var(--spring), background-color .2s, color .2s, border-color .2s;
 }
-.fq-chip:active { transform: translateY(3px); box-shadow: 0 0 0 var(--soft-ledge); transition-duration: .07s; }
-.fq-card .fq-chip, .tile .fq-chip { background: var(--canvas); }
+.fq-chip:active { transform: scale(.96); transition-duration: .07s; }
 .fq-chip svg { width: 16px; height: 16px; }
-.fq-chip[aria-pressed="true"], .fq-chip[aria-selected="true"] { background: var(--ink) !important; color: var(--canvas); box-shadow: 0 3px 0 var(--soft-ledge); }
+.fq-chip[aria-pressed="true"], .fq-chip[aria-selected="true"] { background: var(--ink) !important; color: var(--canvas); border-color: var(--ink); }
 .fq-chip:disabled { opacity: .45; }
-.chip, .fq-badge { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--canvas); color: var(--ink-2); font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.chip svg, .fq-badge svg { width: 14px; height: 14px; }
-.chip.gd, .fq-badge--xp, .fq-badge--pr { background: var(--gold); color: var(--on-gold); }
-.chip.cy { background: var(--cyan-chip); color: var(--on-cyan); }
-.chip.rd, .fq-badge--signal, .fq-badge--success { background: var(--red-tint); color: var(--red-ink); }
+.chip { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--canvas); color: var(--ink-2); font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip svg { width: 14px; height: 14px; }
+.chip.gd { background: var(--gold); color: var(--on-gold); }
+.chip.cy { background: var(--cyan-tint); color: var(--cyan-ink); }
+.chip.rd { background: var(--red-tint); color: var(--red-ink); }
 
 /* ---------- toast ---------- */
 .fq-toast { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 52px; padding: 0 6px 0 18px; border-radius: 999px; background: var(--toast-bg); color: var(--toast-fg); font-size: 14px; font-weight: 700; box-shadow: 0 12px 28px -12px rgba(0, 0, 0, .45); animation: toastin .5s var(--spring) both; }

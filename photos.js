@@ -56,17 +56,16 @@ const metricsLine = m => m ? `${m.weight}kg · 체지방 ${m.pbf}% · 골격근 
 function photoSection() {
   const weeks = photoWeeks(), blur = DB.settings.blurPhotos !== false;
   const cover = set => set.front_lat || set.front_relax || set.side || set.back_lat;
-  return `<section class="tile card-pad stack" style="--o:5;gap:12px" aria-label="바디 기록" id="bodyLog">
-    <div class="row row--between"><h2 class="fq-t-heading">바디 기록</h2><button class="fq-chip" aria-pressed="${blur}" data-act="phBlur">${ico(blur ? 'lock' : 'image', 'ico--16')}${blur ? '가리기 켜짐' : '가리기'}</button></div>
+  return `<section class="tile card-pad stack" style="gap:12px" aria-label="바디 기록" id="bodyLog">
+    <div class="card-h"><h2 class="fq-t-heading">바디 기록</h2><button class="fq-chip" aria-pressed="${blur}" data-act="phBlur">${ico(blur ? 'lock' : 'image', 'ico--16')}${blur ? '가리기 켜짐' : '가리기'}</button></div>
     ${weeks.length ? `<div class="ph-strip ${blur ? 'is-blur' : ''}">${weeks.map(([wk, set]) => { const c = cover(set); return `<button class="ph-cell" data-act="phCmp" data-w="${wk}" aria-label="${wk} 주 사진"><img src="${pURL(c)}" alt=""><span>${kDate(wk).getMonth() + 1}/${kDate(wk).getDate()}</span><small>${c.metrics ? c.metrics.weight + 'kg · ' + c.metrics.pbf + '%' : ''}</small></button>`; }).join('')}</div>`
-      : `<p class="fq-t-caption" style="margin:0">매주 일요일 아침, 정면 1장이면 끝. 느린 변화도 사진은 기억해요.</p>`}
-    <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="phShoot">${ico('camera')}촬영하기</button><button class="fq-btn fq-btn--secondary" data-act="phCmp">${ico('swap')}비교하기</button></div>
-    <p class="fq-t-caption" style="margin:0">사진은 이 폰에만 저장돼요. 어디에도 올라가지 않아요.</p></section>`;
+      : `<p class="fq-t-caption" style="margin:0">매주 일요일 아침 정면 1장, 이 폰에만 저장돼요</p>`}
+    <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="phShoot">${ico('camera')}촬영하기</button><button class="fq-btn fq-btn--secondary" data-act="phCmp">${ico('swap')}비교하기</button></div>${weeks.length ? '\n    <p class="fq-t-caption" style="margin:0">사진은 이 폰에만 저장돼요</p>' : ''}</section>`;
 }
 function photoHomeCard() {
   const k = dayKey(), done = thisWeekDone(), left = REQ.filter(p => !done.includes(p));
   if (!left.length || (dow(k) !== 0 && !(dow(k) === 1 && done.length === 0 && PHOTOS.length))) return '';
-  return `<section class="tile card-pad ph-home" aria-label="이번 주 몸 기록"><span class="ph-ic">${ico('camera')}</span><div><h2 class="fq-t-heading">이번 주 몸 기록</h2><p class="fq-t-caption">아침 공복에 정면 1장 · <span class="gold-t">+30 XP</span></p></div><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영</button></section>`;
+  return `<section class="tile card-pad ph-home" style="--o:5" aria-label="이번 주 몸 기록"><span class="ph-ic">${ico('camera')}</span><div><h2 class="fq-t-heading">이번 주 몸 기록</h2><p class="fq-t-caption">아침 공복에 정면 1장 · <span class="gold-t">+30 XP</span></p></div><button class="fq-btn fq-btn--secondary fq-btn--sm" data-act="phShoot">촬영</button></section>`;
 }
 
 /* ---------- 촬영 화면 ---------- */
@@ -94,7 +93,7 @@ async function renderShoot() {
              <p class="shoot-cam-msg" id="camMsg" hidden></p>`}
       </div>
       <p class="shoot-cue">${SH.shot ? metricsLine(snapMetrics()) : prev ? '반투명한 지난 사진에 맞춰 서 보세요' : '첫 기록이에요. 다음 주부터 비교가 열려요'} <br><span>${pose.cue}</span></p>
-      ${SH.shot ? '' : `<div class="shoot-tools"><button class="fq-chip ph-mini" aria-pressed="${SH.timer === 3}" data-act="phTimer">${SH.timer ? '타이머 3초' : '타이머 끔'}</button><button class="fq-chip ph-mini" aria-pressed="${SH.neck}" data-act="phNeck">목 아래만</button><span class="fq-t-caption" style="color:#C8C8CC">${SH.facing === 'user' ? '전면' : '후면'} 카메라</span></div>`}
+      ${SH.shot ? '' : `<div class="shoot-tools"><button class="fq-chip" aria-pressed="${SH.timer === 3}" data-act="phTimer">${SH.timer ? '타이머 3초' : '타이머 끔'}</button><button class="fq-chip" aria-pressed="${SH.neck}" data-act="phNeck">목 아래만</button><span class="fq-t-caption" style="color:#C8C8CC">${SH.facing === 'user' ? '전면' : '후면'} 카메라</span></div>`}
       <div class="shoot-dock">
         ${SH.shot ? `<button class="fq-btn fq-btn--secondary" data-act="phRetake">다시 찍기</button><button class="fq-btn fq-btn--signal fq-btn--lg" data-act="phSave">저장</button>`
           : `<label class="fq-btn fq-btn--icon" style="position:relative;--_bg:rgba(255,255,255,.12);--_fg:#fff" aria-label="갤러리에서 고르기">${ico('image')}<input type="file" accept="image/*" id="phFile" style="position:absolute;inset:0;opacity:0"></label>
@@ -102,12 +101,15 @@ async function renderShoot() {
              <button class="fq-btn fq-btn--icon" data-act="phFlip" aria-label="${SH.facing === 'user' ? '후면' : '전면'} 카메라로 바꾸기" style="--_bg:rgba(255,255,255,.12);--_fg:#fff">${ico('swap')}</button>`}
       </div>
     </div>`;
-  const f = $('#phFile'); if (f) f.addEventListener('change', async e => { const file = e.target.files && e.target.files[0]; if (!file) return; stopCam(); SH.shot = await fileToJpeg(file); renderShoot(); });
+  const f = $('#phFile'); if (f) f.addEventListener('change', phPicked);
   if (!SH.shot) startCam();
 }
+/* 갤러리 · 기본 카메라 앱에서 고른 사진 → 같은 저장 흐름 */
+async function phPicked(e) { const file = e.target.files && e.target.files[0]; if (!file) return; stopCam(); SH.shot = await fileToJpeg(file); renderShoot(); }
 async function startCam() {
   const v = $('#camv'); if (!v) return;
-  const msg = t => { const m = $('#camMsg'); if (m) { m.hidden = false; m.textContent = t; } };
+  // 앱 안 카메라를 못 열면: 폰 기본 카메라(capture) 버튼을 대신 보여 줌 — 갤러리는 왼쪽 아래 그대로
+  const msg = t => { const m = $('#camMsg'); if (!m) return; m.hidden = false; m.innerHTML = `<span>${t}</span><label class="fq-btn fq-btn--secondary ph-cap">${ico('camera')}기본 카메라로 찍기<input type="file" accept="image/*" capture="${SH.facing === 'user' ? 'user' : 'environment'}"></label>`; m.querySelector('input').addEventListener('change', phPicked); };
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return msg('이 브라우저는 카메라를 못 열어요. 왼쪽 아래 갤러리에서 사진을 골라도 돼요');
   try {
     stopCam();
@@ -171,7 +173,7 @@ async function renderCmp() {
   $('#scr-cmp').innerHTML = `
     <header class="topbar"><h1 class="fq-t-title">몸 비교</h1><button class="round" data-go="grow" aria-label="닫기">${ico('x')}</button></header>
     <div class="chips" role="tablist">${[['side', '나란히'], ['wipe', '슬라이더'], ['lapse', '타임랩스']].map(([m, n]) => `<button class="fq-chip" role="tab" aria-selected="${CM.mode === m}" data-act="phMode" data-m="${m}">${n}</button>`).join('')}</div>
-    <div class="chips" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip ph-mini" aria-pressed="${CM.pose === p.id}" data-act="phCPose" data-p="${p.id}" ${byPose(p.id).length ? '' : 'disabled'}>${p.n} ${byPose(p.id).length}</button>`).join('')}</div>
+    <div class="chips" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip" aria-pressed="${CM.pose === p.id}" data-act="phCPose" data-p="${p.id}" ${byPose(p.id).length ? '' : 'disabled'}>${p.n} ${byPose(p.id).length}</button>`).join('')}</div>
     ${blur && list.length ? '<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="phReveal">가리기 잠깐 풀기</button>' : ''}
     ${body}`;
   document.querySelectorAll('#scr-cmp [data-sel]').forEach(s => s.addEventListener('change', () => { CM[s.dataset.sel] = s.value; renderCmp(); }));

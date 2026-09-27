@@ -52,13 +52,14 @@ const bkAuto = () => { bkRun(false).catch(() => {}); };
 const bkStatText = () => { if (!BK.at) return bkOn() ? '아직 백업하지 않았어요' : '백업 암호를 정하면 자동으로 백업해요'; const d = new Date(BK.at); return `마지막 백업 ${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())} · 사진 ${Object.keys(BK.weeks || {}).length}장`; };
 function bkStat() { const s = $('#bkStat'); if (s) s.textContent = bkStatText(); }
 const bkFields = () => `<label class="stack" for="bkTok" style="gap:6px"><span class="fq-t-label">백업 암호 (직접 정해요 · 4자 이상)</span><input id="bkTok" class="inp" type="password" autocomplete="new-password" autocapitalize="off" spellcheck="false" value="${esc(BK.token || '')}"></label>
-  <details><summary class="fq-t-caption">다른 백업 서버 쓰기 (보통은 비워 두세요)</summary><input id="bkUrl" class="inp" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(BK.url || '')}" style="margin-top:8px"></details>`;
-function bkSection() {
-  return `<section class="fq-card stack" style="gap:12px" aria-labelledby="bkH"><span class="fq-t-heading" id="bkH">구글 드라이브 자동 백업</span>
-    <p class="note" style="margin:0">앱을 열 때와 운동을 마칠 때 기록과 주간 몸 사진을 내 드라이브 "FITQUEST 백업" 폴더에 저장해요. 처음 넣은 암호로 백업이 잠겨요. 다시 설치하면 같은 암호로 불러와요 — 잊지 않게 적어 두세요.</p>
+  <details class="bk-more"><summary class="fq-t-caption">다른 백업 서버 쓰기 (보통은 비워 두세요)</summary><input id="bkUrl" class="inp" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(BK.url || '')}" style="margin-top:8px"></details>`;
+/* 백업 한 카드: 드라이브 자동 백업 + (extra) 파일 백업 */
+function bkSection(extra = '') {
+  return `<section class="fq-card stack" style="gap:12px" aria-labelledby="bkH"><span class="fq-t-heading" id="bkH">백업</span>
+    <p class="note" style="margin:0">기록과 몸 사진을 내 드라이브에 저장해요</p>
     ${bkFields()}
     <p class="fq-t-caption" id="bkStat" role="status" style="margin:0">${bkStatText()}</p>
-    <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="bkNow">${ico('cup')}지금 백업</button><button class="fq-btn fq-btn--secondary fq-btn--block" data-act="bkLoad">${ico('cdown')}드라이브에서 불러오기</button></section>`;
+    <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="bkNow">${ico('cup')}지금 백업</button><button class="fq-btn fq-btn--secondary" data-act="bkLoad">${ico('cdown')}불러오기</button></div>${extra}</section>`;
 }
 /* 입력칸 → BK. 잘못된 주소면 false */
 function bkRead() {
