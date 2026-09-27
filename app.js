@@ -375,9 +375,9 @@ R.home = () => {
       <p class="fq-t-display" style="font-size:44px">REST</p><p class="fq-t-body" style="margin:8px 0 12px">근육은 쉬는 날 자라요. 오늘 할 일은 단백질 ${T.p}g과 걷기예요. 연속 기록은 이어져요.</p>
       <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="pickTpl">그래도 운동할래요</button></section>`
     : done ? `<section class="fq-plate" aria-label="오늘의 퀘스트"><div class="fq-plate__head"><span class="fq-hud">TODAY'S QUEST</span><span class="fq-hud" style="color:var(--fq-success)">CLEAR</span></div>
-      <p class="fq-t-display" style="font-size:44px">${T0.code}</p><p class="fq-t-body" style="margin:8px 0 0">오늘 운동 완료. ${left > 0 ? `남은 할 일은 단백질 ${left}g이에요.` : '단백질까지 끝! 푹 쉬어요.'}</p></section>`
+      <p class="fq-t-title">${T0.ko}</p><p class="fq-t-body" style="margin:8px 0 0">오늘 운동 완료. ${left > 0 ? `남은 할 일은 단백질 ${left}g이에요.` : '단백질까지 끝! 푹 쉬어요.'}</p></section>`
     : `<section class="fq-plate" aria-label="오늘의 퀘스트"><div class="fq-plate__head"><span class="fq-hud">TODAY'S QUEST</span><span class="fq-hud">${DOW[dow(k)]} · ${weekDone()}/${trainDaysPerWeek()}</span></div>
-      <p class="fq-t-display" style="font-size:48px">${T0.code}</p><p class="fq-t-caption" style="margin-top:6px">${T0.ko} — 약 ${P.sessionMin}분</p>
+      <p class="fq-t-title" style="font-size:28px">${T0.ko}</p><p class="fq-t-caption" style="margin-top:6px">${T0.code} · 약 ${P.sessionMin}분 · ${T0.ex.length}개 운동</p>
       <div class="q-list">${T0.ex.slice(0, 3).map(([id, n]) => { const pl = plannedFor(id, n); return `<div class="q-item"><span>${EX[id].n}</span><span class="fq-num">${wLabel(id, pl.w)} × ${pl.reps[0]}</span></div>`; }).join('')}<div class="q-item muted"><span>외 ${T0.ex.length - 3}개 운동</span><span></span></div></div>
       <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="startQuest">퀘스트 시작</button></section>`;
   const q = checkDaily3();
@@ -562,16 +562,24 @@ R.work = () => {
   const ws = weekSets();
   $('#scr-work').innerHTML = `
     <header class="topbar"><h1 class="fq-t-title">운동</h1><button class="linkbtn" data-act="schedule">요일 바꾸기</button></header>
-    <ol class="week" aria-label="이번 주 루틴">${week.map(w => `<li class="day" data-s="${w.s}" aria-label="${DOW[dow(w.d)]}요일, ${w.t ? TPL[w.t].code : '휴식'}"><small>${DOW[dow(w.d)]}</small>${w.t ? `<b>${TPL[w.t].code.replace(' ', '<br>')}</b>` : ico('moon', 'ico--16')}</li>`).join('')}</ol>
+    <ol class="week" aria-label="이번 주 루틴">${week.map(w => `<li class="day" data-s="${w.s}" aria-label="${DOW[dow(w.d)]}요일, ${w.t ? TPL[w.t].code : '휴식'}"><small>${DOW[dow(w.d)]}</small>${w.t ? `<b>${TPL[w.t].code.replace('·', '<br>')}</b>` : ico('moon', 'ico--16')}</li>`).join('')}</ol>
     <section class="fq-card stack" style="gap:6px"><div class="row row--between"><span class="fq-t-heading">이번 주 우선 부위</span><span class="fq-t-caption">완료 / 목표 세트</span></div>
       ${[['측면 삼각근', 'delt-side'], ['광배근', 'lats'], ['윗가슴', 'chest-upper']].map(p => `<div class="stack" style="gap:4px"><div class="row row--between"><span class="fq-t-label">${p[0]}</span><span class="fq-t-caption">${ws[p[1]] || 0}/${BP_T[p[1]]}</span></div><div class="bar" style="--p:${Math.min(100, (ws[p[1]] || 0) / BP_T[p[1]] * 100)};--_c:var(--fq-sky)"><i></i></div></div>`).join('')}</section>
-    ${tpl ? `<div class="sec-title"><h2 class="fq-t-heading">오늘 · ${TPL[tpl].code}</h2><span class="fq-t-caption">${TPL[tpl].ko}</span></div>
+    ${tpl ? `<div class="sec-title"><h2 class="fq-t-heading">오늘 · ${TPL[tpl].ko}</h2><span class="fq-t-caption">약 ${DB.profile.sessionMin}분</span></div>
       ${DB.done[k] ? '<p class="fq-badge fq-badge--success" style="justify-self:start">오늘 완료</p>' : `<button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="startQuest">퀘스트 시작</button>${DB.flags['pp_' + mon] ? '' : '<button class="linkbtn" data-act="postpone" style="justify-self:center;margin-top:-8px">내일로 미루기 (주 1회)</button>'}`}
       ${TPL[tpl].ex.map(([id, n]) => exCard(id, n)).join('')}`
     : `<section class="fq-card stack"><span class="fq-t-heading">오늘은 휴식일</span><span class="fq-t-caption">걷기 7천 보면 충분해요. 그래도 하고 싶으면 루틴을 골라요.</span><button class="fq-btn fq-btn--secondary fq-btn--block" data-act="pickTpl">루틴 골라서 운동하기</button></section>`}
-    <div class="sec-title"><h2 class="fq-t-heading">프로 루틴 공략서</h2><span class="fq-t-caption">유튜브 영상 정리</span></div>
-    <div class="pro">${ROUTINES.map((r, i) => `<button class="pro-card" data-act="pro" data-i="${i}"><div class="who"><span class="fq-badge">${esc(r.creator)}</span><span class="fq-t-caption">${esc(r.meta || '')}</span></div><h4>${esc(r.title)}</h4><span class="fq-t-caption">${esc(r.sub || '')}</span></button>`).join('')}</div>`;
+    ${proSection(tpl)}`;
 };
+const PART_KO = { back: '등', chest: '가슴', shoulder: '어깨', arms: '팔', legs: '하체' };
+let proAll = false;
+function proSection(tpl) {
+  const want = tpl ? TPL_PARTS[tpl] : null, card = (r, i) => `<button class="pro-card" data-act="pro" data-i="${i}"><div class="who"><span class="fq-badge">${esc(r.creator)}</span><span class="fq-t-caption">${esc(r.meta || '')}</span></div><h4>${esc(r.title)}</h4><span class="fq-t-caption">${esc(r.sub || '')}</span></button>`;
+  const idx = ROUTINES.map((r, i) => i), mine = want ? idx.filter(i => ROUTINES[i].parts.some(p => want.includes(p))) : [], rest = idx.filter(i => !mine.includes(i));
+  return `<div class="sec-title"><h2 class="fq-t-heading">프로 루틴 공략서</h2><span class="fq-t-caption">${want ? `오늘 부위 · ${want.map(p => PART_KO[p]).join('·')}` : '부위별'}</span></div>
+    ${mine.length ? `<div class="pro">${mine.map(i => card(ROUTINES[i], i)).join('')}</div>` : want ? '<p class="note" style="margin:0">오늘 부위에 맞는 공략서가 아직 없어요.</p>' : ''}
+    ${proAll || !want ? `<div class="pro">${(want ? rest : idx).map(i => card(ROUTINES[i], i)).join('')}</div>${want ? '<button class="linkbtn" data-act="proAll" style="justify-self:center">접기</button>' : ''}` : `<button class="linkbtn" data-act="proAll" style="justify-self:center">다른 부위 공략서 보기 (${rest.length})</button>`}`;
+}
 function exCard(id, n) {
   const E = EX[id], st = prog(id), pl = plannedFor(id, n), [bt, why] = badgeFor(id);
   const bcls = /KG/.test(bt) && !/DELOAD/.test(bt) ? 'fq-badge--signal' : '';
@@ -903,7 +911,7 @@ document.addEventListener('click', ev => {
       if (a.dataset.v === '2') { if (W.i < W.ex.length - 1) { W.i++; W.rest = null; R.logger(); } else finish(); } },
     endAsk: () => sheet(`<h2 class="fq-t-title">운동을 끝낼까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">계획의 80% 이상이면 완료로 쳐요. 모자라도 기록한 세트는 저장돼요.</p><button class="fq-btn fq-btn--lg fq-btn--block" data-act="finishNow">끝내고 저장</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">계속하기</button>`),
     finishNow: () => { closeSheet(); finish(); }, finish: () => finish(),
-    pro: () => proSheet(+a.dataset.i), howtoId: () => howSheet(a.dataset.id),
+    pro: () => proSheet(+a.dataset.i), proAll: () => { proAll = !proAll; R.work(); }, howtoId: () => howSheet(a.dataset.id),
     schedule: () => scheduleSheet(), sched: () => { const d = +a.dataset.d; if (a.dataset.v) DB.schedule[d] = a.dataset.v; else delete DB.schedule[d]; save(); scheduleSheet(); R[TAB] && R[TAB](); },
     chapter: () => sheet(`<div class="row row--between"><h2 class="fq-t-title">챕터 바꾸기</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>${CH.map((c, i) => `<button class="pro-card" data-act="setCh" data-c="${i}"><div class="who"><span class="fq-badge">CH.${i}</span>${i === DB.profile.rec ? '<span class="fq-badge fq-badge--signal">추천</span>' : ''}</div><h4>${c.name} · ${c.sub}</h4><span class="fq-t-caption">칼로리 ${c.off > 0 ? '+' : ''}${c.off} · 단백질 ${c.pkg}g/kg</span></button>`).join('')}`),
     setCh: () => { DB.profile.chapter = +a.dataset.c; DB.profile.chapterStart = dayKey(); save(); closeSheet(); R[TAB](); toast(`<span>챕터 ${a.dataset.c} ${CH[+a.dataset.c].name} 시작!</span>`); },
