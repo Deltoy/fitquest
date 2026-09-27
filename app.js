@@ -99,7 +99,7 @@ function curWeight() {
 }
 function recChapter(sex, pbf) { const k = sex === 'F' ? 8 : 0; return pbf >= 20 + k ? 1 : pbf > 15 + k ? 2 : 3; }
 const isTrainDay = k => !!tplFor(k);
-function trainDaysPerWeek() { return Object.keys(DB.schedule).length || 4; }
+function trainDaysPerWeek() { return (DB.rot && DB.rot.on ? Object.keys(DB.rot.slots).length : Object.keys(DB.schedule).length) || 4; }
 function targets(k = dayKey()) {
   const P = DB.profile, b = ib(), w = curWeight(), ch = CH[P.chapter];
   const pbf = b.pbf, lbm = w * (1 - pbf / 100), bmr = b.bmr || Math.round(370 + 21.6 * lbm);
@@ -154,7 +154,20 @@ function checkDaily3() {
   if (q.every(Boolean)) addXP('daily3', 30);
   return q;
 }
-function tplFor(k) { const o = DB.overrides[k]; if (o === 'rest') return null; return o || DB.schedule[dow(k)] || null; }
+function tplFor(k) {
+  const o = DB.overrides[k]; if (o === 'rest') return null; if (o) return o;
+  const d = dow(k);
+  if (DB.pins && DB.pins[d]) return DB.pins[d];
+  if (DB.rot && DB.rot.on) return rotFor(k);
+  return DB.schedule[d] || null;
+}
+function rotWeek(k) { return Math.max(0, Math.floor(daysBetween(DB.rot.start, mondayOf(k)) / 7)); }
+function rotFor(k) {
+  const d = dow(k), part = DB.rot.slots[d]; if (!part) return null;
+  const mon = mondayOf(k), order = [1, 2, 3, 4, 5, 6, 0]; let j = 0;
+  for (const x of order) { if (x === d) break; if (DB.rot.slots[x] === part) j++; }
+  const c = ROT[part]; return c[(rotWeek(k) + j) % c.length];
+}
 function settleStreak() {
   const S = DB.streak, today = dayKey();
   if (!S.last) { S.last = addDays(today, -1); return; }
@@ -177,8 +190,8 @@ function comebackGap() { const l = lastSessionDay(); return l ? daysBetween(l, d
 const isLower = id => EX[id].mus.includes('quads') || EX[id].mus.includes('calves');
 function incOf(id) { const E = EX[id]; if (E.kind === 'bbl') return DB.profile.level === 'beginner' ? 5 : 2.5; return E.inc; }
 function prog(id) { return DB.prog[id] = DB.prog[id] || { w: EX[id].def, reps: null, f: 0, prev: 0, n: 0, best: 0, last: 'first', lastDay: null }; }
-function plannedFor(id, sets) {
-  const E = EX[id], st = prog(id), [lo] = E.range;
+function plannedFor(id, sets, range) {
+  const E = EX[id], st = prog(id), [lo] = range || E.range;
   let w = st.w; const gap = st.lastDay ? daysBetween(st.lastDay, dayKey()) : 0;
   const k = gap > 42 ? .7 : gap > 20 ? .8 : gap > 10 ? .9 : 1;
   if (k < 1) w = E.kind === 'as' ? w + Math.ceil(w * (1 - k) / incOf(id)) * incOf(id) : Math.floor(w * k / incOf(id)) * incOf(id);
@@ -190,8 +203,8 @@ function badgeFor(id) {
   return { first: ['첫 기록', '10회 할 수 있는 무게로 가볍게 시작해요'], up: [EX[id].kind === 'as' ? `보조 −${inc}KG` : `+${inc}KG`, '지난번 모든 세트 윗끝 달성 → 증량'], prog: ['+1회', '총반복 기준 통과 → 세트마다 +1회'],
     hold: ['유지', '"한계"였어서 같은 무게로 한 번 더'], fail: ['유지', '같은 무게로 다시 도전'], deload: ['DELOAD −10%', '잠깐 물러서서 더 멀리 — 반복은 끝까지'] }[st.last] || ['유지', ''];
 }
-function applyProgress(id, done, planned, feel) {
-  const E = EX[id], st = prog(id), [lo, hi] = E.range, inc = incOf(id);
+function applyProgress(id, done, planned, feel, range) {
+  const E = EX[id], st = prog(id), [lo, hi] = range || E.range, inc = incOf(id);
   if (!done.length) return;
   const reps = done.map(s => s.r), w = done[0].w, total = reps.reduce((a, b) => a + b, 0), N = planned;
   const first = st.n === 0, up = x => E.kind === 'as' ? Math.max(0, x - inc) : x + inc;
@@ -347,6 +360,11 @@ function obRead() {
   if (!(d.age >= 14 && d.age <= 90)) bad.push('나이');
   return { d, bad };
 }
+function rotFromDays(days) {
+  const order = [1, 2, 3, 4, 5, 6, 0].filter(x => days.includes(x)), seq = SLOT_SEQ[Math.max(2, Math.min(7, order.length))], slots = {};
+  order.forEach((d, i) => slots[d] = seq[i % seq.length]);
+  return { on: true, start: mondayOf(dayKey()), slots };
+}
 function assignDays(days) {
   const order = [1, 2, 3, 4, 5, 6, 0].filter(x => days.includes(x)), seq = { 3: ['A', 'B', 'C'], 4: ['A', 'B', 'C', 'D'], 5: ['A', 'B', 'C', 'E', 'D'], 6: ['A', 'B', 'C', 'D', 'E', 'B'], 7: ['A', 'B', 'C', 'D', 'E', 'B', 'A'] }[order.length] || ['A', 'C'];
   const s = {}; order.forEach((d, i) => s[d] = seq[i % seq.length]); return s;
@@ -377,8 +395,8 @@ R.home = () => {
     : done ? `<section class="fq-plate" aria-label="오늘의 퀘스트"><div class="fq-plate__head"><span class="fq-hud">TODAY'S QUEST</span><span class="fq-hud" style="color:var(--fq-success)">CLEAR</span></div>
       <p class="fq-t-title">${T0.ko}</p><p class="fq-t-body" style="margin:8px 0 0">오늘 운동 완료. ${left > 0 ? `남은 할 일은 단백질 ${left}g이에요.` : '단백질까지 끝! 푹 쉬어요.'}</p></section>`
     : `<section class="fq-plate" aria-label="오늘의 퀘스트"><div class="fq-plate__head"><span class="fq-hud">TODAY'S QUEST</span><span class="fq-hud">${DOW[dow(k)]} · ${weekDone()}/${trainDaysPerWeek()}</span></div>
-      <p class="fq-t-title" style="font-size:28px">${T0.ko}</p><p class="fq-t-caption" style="margin-top:6px">${T0.code} · 약 ${P.sessionMin}분 · ${T0.ex.length}개 운동</p>
-      <div class="q-list">${T0.ex.slice(0, 3).map(([id, n]) => { const pl = plannedFor(id, n); return `<div class="q-item"><span>${EX[id].n}</span><span class="fq-num">${wLabel(id, pl.w)} × ${pl.reps[0]}</span></div>`; }).join('')}<div class="q-item muted"><span>외 ${T0.ex.length - 3}개 운동</span><span></span></div></div>
+      <p class="fq-t-title" style="font-size:28px">${T0.ko}</p><p class="fq-t-caption" style="margin-top:6px">${T0.by ? `${T0.by} 루틴 · ` : '기본 V자 루틴 · '}약 ${P.sessionMin}분 · ${T0.ex.length}개 운동${DB.rot && DB.rot.on ? ` · 로테이션 ${rotWeek(k) + 1}주차` : ''}</p>
+      <div class="q-list">${T0.ex.slice(0, 3).map(([id, n, o]) => { const pl = plannedFor(id, n, o && o.r); return `<div class="q-item"><span>${EX[id].n}</span><span class="fq-num">${wLabel(id, pl.w)} × ${pl.reps[0]}</span></div>`; }).join('')}<div class="q-item muted"><span>외 ${T0.ex.length - 3}개 운동</span><span></span></div></div>
       <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="startQuest">퀘스트 시작</button></section>`;
   const q = checkDaily3();
   const dq = [['단백질 퀘스트 ' + T.p + 'g', `${Math.round(S.p)}/${T.p}`, q[0], 50],
@@ -577,13 +595,14 @@ R.work = () => {
   const week = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = addDays(mon, i), t = tplFor(d); return { d, t, s: DB.done[d] ? 'done' : d === k ? 'today' : t ? '' : 'rest' }; });
   const ws = weekSets();
   $('#scr-work').innerHTML = `
-    <header class="topbar"><h1 class="fq-t-title">운동</h1><button class="linkbtn" data-act="schedule">요일 바꾸기</button></header>
+    <header class="topbar"><h1 class="fq-t-title">운동</h1><button class="linkbtn" data-act="schedule">${DB.rot && DB.rot.on ? `로테이션 ${rotWeek(k) + 1}주차 · 바꾸기` : '요일 바꾸기'}</button></header>
     <ol class="week" aria-label="이번 주 루틴">${week.map(w => `<li class="day" data-s="${w.s}" aria-label="${DOW[dow(w.d)]}요일, ${w.t ? TPL[w.t].code : '휴식'}"><small>${DOW[dow(w.d)]}</small>${w.t ? `<b>${TPL[w.t].code.replace('·', '<br>')}</b>` : ico('moon', 'ico--16')}</li>`).join('')}</ol>
     <section class="fq-card stack" style="gap:6px"><div class="row row--between"><span class="fq-t-heading">이번 주 우선 부위</span><span class="fq-t-caption">완료 / 목표 세트</span></div>
       ${[['측면 삼각근', 'delt-side'], ['광배근', 'lats'], ['윗가슴', 'chest-upper']].map(p => `<div class="stack" style="gap:4px"><div class="row row--between"><span class="fq-t-label">${p[0]}</span><span class="fq-t-caption">${ws[p[1]] || 0}/${BP_T[p[1]]}</span></div><div class="bar" style="--p:${Math.min(100, (ws[p[1]] || 0) / BP_T[p[1]] * 100)};--_c:var(--fq-sky)"><i></i></div></div>`).join('')}</section>
     ${tpl ? `<div class="sec-title"><h2 class="fq-t-heading">오늘 · ${TPL[tpl].ko}</h2><span class="fq-t-caption">약 ${DB.profile.sessionMin}분</span></div>
       ${DB.done[k] ? '<p class="fq-badge fq-badge--success" style="justify-self:start">오늘 완료</p>' : `<button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="startQuest">퀘스트 시작</button>${DB.flags['pp_' + mon] ? '' : '<button class="linkbtn" data-act="postpone" style="justify-self:center;margin-top:-8px">내일로 미루기 (주 1회)</button>'}`}
-      ${TPL[tpl].ex.map(([id, n]) => exCard(id, n)).join('')}`
+      ${TPL[tpl].by ? `<a class="src" href="${TPL[tpl].video}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${esc(TPL[tpl].by)} 원본 영상 · 운동별 팁도 이 영상에서 가져왔어요</span></a>` : ''}
+      ${TPL[tpl].ex.map(([id, n, o]) => exCard(id, n, o, tpl)).join('')}`
     : `<section class="fq-card stack"><span class="fq-t-heading">오늘은 휴식일</span><span class="fq-t-caption">걷기 7천 보면 충분해요. 그래도 하고 싶으면 루틴을 골라요.</span><button class="fq-btn fq-btn--secondary fq-btn--block" data-act="pickTpl">루틴 골라서 운동하기</button></section>`}
     ${proSection(tpl)}`;
 };
@@ -596,22 +615,22 @@ function proSection(tpl) {
     ${mine.length ? `<div class="pro">${mine.map(i => card(ROUTINES[i], i)).join('')}</div>` : want ? '<p class="note" style="margin:0">오늘 부위에 맞는 공략서가 아직 없어요.</p>' : ''}
     ${proAll || !want ? `<div class="pro">${(want ? rest : idx).map(i => card(ROUTINES[i], i)).join('')}</div>${want ? '<button class="linkbtn" data-act="proAll" style="justify-self:center">접기</button>' : ''}` : `<button class="linkbtn" data-act="proAll" style="justify-self:center">다른 부위 공략서 보기 (${rest.length})</button>`}`;
 }
-function exCard(id, n) {
-  const E = EX[id], st = prog(id), pl = plannedFor(id, n), [bt, why] = badgeFor(id);
+function exCard(id, n, o = {}, tk = '') {
+  const E = EX[id], st = prog(id), rg = o.r || E.range, pl = plannedFor(id, n, rg), [bt, why] = badgeFor(id);
   const bcls = /KG/.test(bt) && !/DELOAD/.test(bt) ? 'fq-badge--signal' : '';
   return `<article class="fq-card ex">
-    <div class="ex-head"><button class="ex-thumb" data-act="howtoId" data-id="${id}" aria-label="${E.n} 동작 보기">${howto(id)}</button><div style="flex:1;min-width:0"><h3 class="fq-t-heading">${E.n}</h3><span class="fq-t-caption">${E.eq} · ${n}세트 · ${E.range[0]}–${E.range[1]}회</span></div><span class="fq-badge ${bcls}">${bt}</span></div>
+    <div class="ex-head"><button class="ex-thumb" data-act="howtoId" data-id="${id}" data-t="${tk}" aria-label="${E.n} 동작 보기">${howto(id)}</button><div style="flex:1;min-width:0"><h3 class="fq-t-heading">${E.n}</h3><span class="fq-t-caption">${E.eq} · ${n}세트 · ${rg[0]}–${rg[1]}회${o.d ? ' (앱 기본값)' : ''}</span></div><span class="fq-badge ${bcls}">${bt}</span></div>
     <div class="ex-cmp"><div class="last"><span class="fq-eyebrow">Last</span><span class="fq-t-num-md">${st.n ? lastStr(id) : '—'}</span></div>
     <div class="today"><span class="fq-eyebrow">Today</span><span class="v"><span class="fq-t-num-lg" style="font-size:48px">${wLabel(id, pl.w)}</span><span class="fq-unit">KG</span><span class="fq-t-num-md">× ${pl.reps.join('/')}</span></span></div></div>
-    <span class="fq-t-caption">${pl.gap > 10 ? `${pl.gap}일 쉬어서 무게를 낮췄어요` : why}</span></article>`;
+    <span class="fq-t-caption">${pl.gap > 10 ? `${pl.gap}일 쉬어서 무게를 낮췄어요` : why}</span>${o.tip && tk ? `<span class="fq-t-caption" style="color:var(--fq-text)"><b>${esc(TPL[tk].by)}</b> · ${esc(o.tip)}</span>` : ''}</article>`;
 }
 function lastStr(id) {
   for (let i = DB.sessions.length - 1; i >= 0; i--) { const e = DB.sessions[i].ex.find(x => x.id === id); if (e && e.sets.length) return `${wLabel(id, e.sets[0].w)} × ${e.sets.map(s => s.r).join('/')}`; }
   return '—';
 }
 const howto = id => `<div class="howto" role="img" aria-label="${esc(EX[id].n)} 시작 자세와 끝 자세"><img src="media/${EX[id].img}_0.jpg" alt="" loading="lazy"><img src="media/${EX[id].img}_1.jpg" alt="" loading="lazy"><span class="lbl"></span></div>`;
-function howSheet(id) {
-  const E = EX[id], tip = TIPS[id];
+function howSheet(id, o = {}) {
+  const E = { ...EX[id], v: o.v || EX[id].v, range: o.range || EX[id].range }, tip = o.tip || TIPS[id];
   sheet(`<div class="row row--between"><h2 class="fq-t-title">${E.n}</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
     ${howto(id)}<p class="fq-t-caption" style="margin:-4px 0 0">시작 ↔ 끝 자세 · 사진 free-exercise-db (퍼블릭 도메인)</p>
     <section class="fq-card stack"><span class="fq-eyebrow">세팅</span><span class="fq-t-body" style="font-size:15px">${E.eq} · 목표 ${E.range[0]}–${E.range[1]}회 · 휴식 ${E.rest}초</span>${tip ? `<span class="fq-eyebrow" style="margin-top:6px">${esc(tip.who)} 팁</span><span class="fq-t-body" style="font-size:15px">${esc(tip.t)}</span>` : ''}</section>
@@ -631,7 +650,8 @@ function condSheet(tplKey) {
 }
 function buildSession(c, tplKey) {
   const k = dayKey(), t = tplKey || tplFor(k) || 'A';
-  let ex = TPL[t].ex.map(([id, n]) => { const pl = plannedFor(id, n); return { id, n, rest: EX[id].rest, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
+  const by = TPL[t].by;
+  let ex = TPL[t].ex.map(([id, n, o = {}]) => { const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
   if (c === 'tired') ex = ex.slice(0, Math.max(2, ex.length - 1)).map(e => ({ ...e, sets: e.sets.slice(0, Math.max(2, e.sets.length - 1)) }));
   if (c === 'short') { const side = ex.find(e => EX[e.id].mus.includes('delt-side')) || (() => { const pl = plannedFor('slr', 3); return { id: 'slr', n: 3, rest: 75, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; })(); ex = [ex[0], side].filter((e, i, a) => a.indexOf(e) === i).map(e => ({ ...e, rest: 75, sets: e.sets.slice(0, 3) })); }
   if (c === 'good') { const s = ex.find(e => EX[e.id].mus.includes('delt-side')); if (s) { const l = s.sets[s.sets.length - 1]; s.sets.push({ w: l.w, r: l.r, done: false, bonus: true }); } }
@@ -643,14 +663,14 @@ function curSet() { const e = W.ex[W.i]; return { e, k: e.sets.findIndex(s => !s
 R.logger = () => {
   const { e, k } = curSet(), E = EX[e.id];
   const done = W.ex.reduce((s, x) => s + x.sets.filter(y => y.done).length, 0), total = W.ex.reduce((s, x) => s + x.sets.length, 0);
-  const s = k >= 0 ? e.sets[k] : null, tip = TIPS[e.id], st = prog(e.id), last = st.n ? lastStr(e.id) : null;
+  const s = k >= 0 ? e.sets[k] : null, tip = e.tip || TIPS[e.id], st = prog(e.id), last = st.n ? lastStr(e.id) : null, rg = e.range || E.range, vv = e.v || E.v;
   $('#scr-logger').innerHTML = `
     <div>
       <div class="lg-top">
         <div class="row row--between"><button class="fq-btn fq-btn--icon" data-act="endAsk" aria-label="운동 끝내기">${ico('x')}</button><span class="fq-hud muted">EX ${W.i + 1}/${W.ex.length} · ${done}/${total} SETS · <span id="clock">00:00</span></span><span class="fq-combo" id="combo" ${W.combo >= 5 ? 'data-hot' : ''}>COMBO <b>×${W.combo}</b></span></div>
         <h1 class="lg-name">${E.n}</h1>
-        <div class="lg-meta">${E.mus.some(m => ['delt-side', 'lats', 'chest-upper'].includes(m)) ? `<span class="fq-badge fq-badge--signal">V자 우선</span>` : ''}<span class="fq-t-caption">${E.eq} · 목표 ${E.range[0]}–${E.range[1]}회 · 휴식 ${e.rest}초${last ? ` · 지난번 ${last}` : ''}</span></div>
-        <button class="demo-row" data-act="howtoId" data-id="${e.id}">${howto(e.id)}<span class="stack" style="gap:2px"><b style="font-size:15px">동작 보기</b><span class="fq-t-caption">사진${E.v ? ` · 프로 영상 ${esc(E.v.who)}` : ''}</span></span>${ico('chev')}</button>
+        <div class="lg-meta">${E.mus.some(m => ['delt-side', 'lats', 'chest-upper'].includes(m)) ? `<span class="fq-badge fq-badge--signal">V자 우선</span>` : ''}<span class="fq-t-caption">${E.eq} · 목표 ${rg[0]}–${rg[1]}회${e.d ? ' (앱 기본값)' : ''} · 휴식 ${e.rest}초${last ? ` · 지난번 ${last}` : ''}</span></div>
+        <button class="demo-row" data-act="howtoEx" data-i="${W.i}">${howto(e.id)}<span class="stack" style="gap:2px"><b style="font-size:15px">동작 보기</b><span class="fq-t-caption">사진${vv ? ` · ${esc(vv.who)} 영상 ${vv.t !== '00:00' ? vv.t : ''}` : ''}</span></span>${ico('chev')}</button>
       </div>
       <div class="lg-sets" role="list">${e.sets.map((x, j) => { const stt = x.done ? 'done' : j === k ? 'active' : 'wait';
         return `<div class="fq-set-row" role="listitem" data-state="${stt}" ${x.pr ? 'data-pr' : ''}><span class="fq-set-row__idx">${x.bonus ? 'B' : 'S' + (j + 1)}</span><span class="set-load"><span class="fq-set-row__load">${wLabel(e.id, x.w)} × ${x.r}</span>${x.pr ? '<span class="fq-badge fq-badge--pr fq-pr-stamp">PR</span>' : ''}</span>
@@ -727,7 +747,7 @@ function finish() {
   if (completed) bonus += addXP('workout', W.c === 'short' ? 60 : 100);
   if (completed && W.comeback) { bonus += W.xp + bonus; DB.xp += W.xp; }
   W.xp += bonus;
-  W.ex.forEach(e => { const d = e.sets.filter(s => s.done); if (d.length) { applyProgress(e.id, d.map(s => ({ w: s.w, r: s.r })), e.sets.filter(s => !s.bonus).length, W.feels[e.id]); const st = prog(e.id); st.best = Math.max(st.best || 0, ...d.map(s => EX[e.id].kind === 'as' ? 0 : e1(s.w, s.r))); } });
+  W.ex.forEach(e => { const d = e.sets.filter(s => s.done); if (d.length) { applyProgress(e.id, d.map(s => ({ w: s.w, r: s.r })), e.sets.filter(s => !s.bonus).length, W.feels[e.id], e.range); const st = prog(e.id); st.best = Math.max(st.best || 0, ...d.map(s => EX[e.id].kind === 'as' ? 0 : e1(s.w, s.r))); } });
   if (done) DB.sessions.push({ id: uid(), day: k, tpl: W.tpl, cond: W.c, t0: W.t0, t1: Date.now(), xp: W.xp, prs: W.prList, complete: completed, ex: W.ex.map(e => ({ id: e.id, sets: e.sets.filter(s => s.done).map(s => ({ w: s.w, r: s.r, pr: !!s.pr })) })).filter(e => e.sets.length) });
   if (completed) DB.done[k] = true;
   checkDaily3(); save();
@@ -832,13 +852,21 @@ R.set = () => {
   });
 };
 function scheduleSheet() {
-  sheet(`<div class="row row--between"><h2 class="fq-t-title">요일별 루틴</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
-    ${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="stack" style="gap:6px"><span class="fq-t-label">${DOW[d]}요일</span><div class="chips">${[['', '휴식'], ...Object.entries(TPL).map(([k, t]) => [k, t.code])].map(([k, l]) => `<button class="fq-chip" style="min-height:40px;padding:0 12px" aria-pressed="${(DB.schedule[d] || '') === k}" data-act="sched" data-d="${d}" data-v="${k}">${l}</button>`).join('')}</div></div>`).join('')}
-    <p class="note" style="margin:0">${Object.entries(TPL).map(([, t]) => `${t.code} = ${t.ko}`).join(' · ')}</p>`);
+  const on = DB.rot && DB.rot.on, k = dayKey(), mon = mondayOf(k);
+  if (!DB.rot) DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number));
+  const partChip = (d, v, l) => `<button class="fq-chip" style="min-height:40px;padding:0 12px" aria-pressed="${(DB.rot.slots[d] || '') === v}" data-act="slot" data-d="${d}" data-v="${v}">${l}</button>`;
+  const preview = w => [1, 2, 3, 4, 5, 6, 0].map(d => { const day = addDays(mon, ((d + 6) % 7) + w * 7), t = tplFor(day); return `<div><span class="fq-t-label">${DOW[d]}</span><span class="fq-t-caption" style="text-align:right">${t ? esc(TPL[t].ko) : '휴식'}${DB.pins && DB.pins[d] ? ' · 고정' : ''}</span></div>`; }).join('');
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">주간 루틴</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <div class="chips"><button class="fq-chip" aria-pressed="${!!on}" data-act="rotOn" data-v="1">매주 바뀌는 로테이션</button><button class="fq-chip" aria-pressed="${!on}" data-act="rotOn" data-v="0">고정 루틴</button></div>
+    ${on ? `<p class="note" style="margin:0">요일마다 부위만 정하면, 매주 기본 V자 루틴과 이도황·제로범·조정현 루틴을 돌아가며 넣어요. 같은 부위는 3주에 한 번꼴로 같은 루틴이 돌아와요.</p>
+      ${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="stack" style="gap:6px"><span class="fq-t-label">${DOW[d]}요일</span><div class="chips">${partChip(d, '', '휴식')}${Object.entries(PART_NAME).map(([v, l]) => partChip(d, v, l)).join('')}</div></div>`).join('')}
+      <span class="fq-t-heading">이번 주</span><div class="list">${preview(0)}</div><span class="fq-t-heading">다음 주</span><div class="list">${preview(1)}</div>`
+    : `${[1, 2, 3, 4, 5, 6, 0].map(d => `<div class="stack" style="gap:6px"><span class="fq-t-label">${DOW[d]}요일 · 지금 ${DB.schedule[d] ? esc(TPL[DB.schedule[d]].ko) : '휴식'}</span><div class="chips">${[['', '휴식'], ...Object.entries(TPL).map(([kk, t]) => [kk, t.by ? `${t.by.split('·')[0]} ${t.code}` : t.code])].map(([kk, l]) => `<button class="fq-chip" style="min-height:40px;padding:0 12px" aria-pressed="${(DB.schedule[d] || '') === kk}" data-act="sched" data-d="${d}" data-v="${kk}">${l}</button>`).join('')}</div></div>`).join('')}`}
+    ${DB.pins && Object.keys(DB.pins).length ? `<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="unpin">요일 고정 ${Object.keys(DB.pins).length}개 풀기</button>` : ''}`);
 }
 function pickTplSheet() {
   sheet(`<div class="row row--between"><h2 class="fq-t-title">어떤 루틴을 할까요?</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
-    ${Object.entries(TPL).map(([k, t]) => `<button class="pro-card" data-act="pickGo" data-t="${k}"><div class="who"><span class="fq-badge">${t.code}</span></div><h4>${t.ko}</h4><span class="fq-t-caption">${t.ex.map(([id]) => EX[id].n).join(' · ')}</span></button>`).join('')}`);
+    ${Object.entries(TPL).map(([k, t]) => `<button class="pro-card" data-act="pickGo" data-t="${k}"><div class="who"><span class="fq-badge">${t.code}</span>${t.by ? `<span class="fq-t-caption">${esc(t.by)}</span>` : ''}</div><h4>${t.ko}</h4><span class="fq-t-caption">${t.ex.map(([id]) => EX[id].n).join(' · ')}</span></button>`).join('')}`);
 }
 function wteSheet(cat) {
   const T = targets(), S = daySum(), { left, nt } = nextTarget();
@@ -864,7 +892,8 @@ function proSheet(i) {
     ${r.tips && r.tips.length ? `<section class="fq-card stack"><span class="fq-eyebrow">크리에이터 핵심 팁</span>${r.tips.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}</section>` : ''}
     <div class="pro-ex">${r.ex.map((e, j) => `<div><span class="fq-hud muted">${j + 1}</span><span><b>${esc(e.n)}</b><small>${esc(e.how || '')}</small></span><span class="fq-t-label">${esc(e.sr || '')}</span></div>`).join('')}</div>
     <div class="src">${ico('ext', 'ico--16')}<span>출처: ${r.videos.map(v => `<a href="${v.u}" target="_blank" rel="noopener">${esc(v.t)}</a>`).join(', ')}</span></div>
-    <p class="note" style="margin:0">영상 자막과 화면을 보고 정리했어요. 영상에서 말하지 않은 세트·횟수는 비워 뒀어요. 이 루틴을 내 요일에 넣는 "장착"은 다음 업데이트에서 열려요.</p>`);
+    ${r.tpl ? `<button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="proGo" data-t="${r.tpl}">이 루틴으로 지금 운동하기</button><button class="fq-btn fq-btn--secondary fq-btn--block" data-act="proDay" data-t="${r.tpl}">요일에 고정하기</button>` : '<p class="note" style="margin:0">이 공략서는 요일마다 조금씩 섞어 쓰는 계획이에요. 로테이션의 어깨날에 이도황 20분 어깨 루틴이 들어가요.</p>'}
+    <p class="note" style="margin:0">영상 자막과 화면을 보고 정리했어요. 영상에서 말하지 않은 세트·횟수는 앱 기본값으로 채워요. 로테이션을 켜 두면 이 루틴도 몇 주에 한 번씩 자동으로 들어와요.</p>`);
 }
 
 /* ================= events ================= */
@@ -882,7 +911,7 @@ document.addEventListener('click', ev => {
       if (OB.days.length < 2) { $('#obResult').innerHTML = `<p class="fq-card" style="margin:0">운동 요일을 2일 이상 골라 주세요.</p>`; return; }
       const rec = recChapter(OB.sex, d.pbf);
       DB.profile = { sex: OB.sex, age: d.age, height: d.h, steps: OB.steps, meals: OB.meals, sessionMin: OB.min, level: OB.level, chapter: 0, chapterStart: dayKey(), rec };
-      DB.inbody = [{ date: d.date, w: d.w, smm: d.smm, pbf: d.pbf, bmr: d.bmr }]; DB.schedule = assignDays(OB.days);
+      DB.inbody = [{ date: d.date, w: d.w, smm: d.smm, pbf: d.pbf, bmr: d.bmr }]; DB.schedule = assignDays(OB.days); DB.rot = rotFromDays(OB.days);
       DB.flags.obDraft = true;
       const t0 = targets(); const save0 = DB.profile.chapter; DB.profile.chapter = rec; const tr = targets(); DB.profile.chapter = save0;
       $('#obResult').innerHTML = `<section class="fq-plate stack" style="gap:10px"><div class="fq-plate__head"><span class="fq-hud">YOUR PLAN</span><span class="fq-hud">체지방 ${d.pbf}%</span></div>
@@ -927,7 +956,14 @@ document.addEventListener('click', ev => {
       if (a.dataset.v === '2') { if (W.i < W.ex.length - 1) { W.i++; W.rest = null; R.logger(); } else finish(); } },
     endAsk: () => sheet(`<h2 class="fq-t-title">운동을 끝낼까요?</h2><p class="fq-t-body" style="margin:-6px 0 0">계획의 80% 이상이면 완료로 쳐요. 모자라도 기록한 세트는 저장돼요.</p><button class="fq-btn fq-btn--lg fq-btn--block" data-act="finishNow">끝내고 저장</button><button class="fq-btn fq-btn--ghost fq-btn--block" data-act="close">계속하기</button>`),
     finishNow: () => { closeSheet(); finish(); }, finish: () => finish(),
-    pro: () => proSheet(+a.dataset.i), proAll: () => { proAll = !proAll; R.work(); }, howtoId: () => howSheet(a.dataset.id),
+    proGo: () => condSheet(a.dataset.t),
+    proDay: () => sheet(`<h2 class="fq-t-title">어느 요일에 고정할까요?</h2><p class="fq-t-caption" style="margin:-6px 0 0">${esc(TPL[a.dataset.t].ko)} · 로테이션과 상관없이 매주 이 요일은 이 루틴</p><div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" style="min-width:52px;justify-content:center" data-act="proDaySet" data-d="${d}" data-t="${a.dataset.t}">${DOW[d]}</button>`).join('')}</div>`),
+    proDaySet: () => { DB.pins = DB.pins || {}; DB.pins[+a.dataset.d] = a.dataset.t; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${DOW[+a.dataset.d]}요일은 ${esc(TPL[a.dataset.t].ko)}로 고정했어요</span>`); },
+    unpin: () => { DB.pins = {}; save(); scheduleSheet(); R[TAB] && R[TAB](); },
+    rotOn: () => { if (!DB.rot) DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); DB.rot.on = a.dataset.v === '1'; save(); scheduleSheet(); R[TAB] && R[TAB](); },
+    slot: () => { const d = +a.dataset.d; if (a.dataset.v) DB.rot.slots[d] = a.dataset.v; else delete DB.rot.slots[d]; save(); scheduleSheet(); R[TAB] && R[TAB](); },
+    pro: () => proSheet(+a.dataset.i), proAll: () => { proAll = !proAll; R.work(); }, howtoId: () => { const t = a.dataset.t && TPL[a.dataset.t], row = t && t.ex.find(x => x[0] === a.dataset.id), o = row && row[2] || {}; howSheet(a.dataset.id, { v: o.t, range: o.r, tip: o.tip ? { who: t.by, t: o.tip } : null }); },
+    howtoEx: () => { const e = W.ex[+a.dataset.i]; howSheet(e.id, { v: e.v, range: e.range, tip: e.tip }); },
     schedule: () => scheduleSheet(), sched: () => { const d = +a.dataset.d; if (a.dataset.v) DB.schedule[d] = a.dataset.v; else delete DB.schedule[d]; save(); scheduleSheet(); R[TAB] && R[TAB](); },
     chapter: () => sheet(`<div class="row row--between"><h2 class="fq-t-title">챕터 바꾸기</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>${CH.map((c, i) => `<button class="pro-card" data-act="setCh" data-c="${i}"><div class="who"><span class="fq-badge">CH.${i}</span>${i === DB.profile.rec ? '<span class="fq-badge fq-badge--signal">추천</span>' : ''}</div><h4>${c.name} · ${c.sub}</h4><span class="fq-t-caption">칼로리 ${c.off > 0 ? '+' : ''}${c.off} · 단백질 ${c.pkg}g/kg</span></button>`).join('')}`),
     setCh: () => { DB.profile.chapter = +a.dataset.c; DB.profile.chapterStart = dayKey(); save(); closeSheet(); R[TAB](); toast(`<span>챕터 ${a.dataset.c} ${CH[+a.dataset.c].name} 시작!</span>`); },
@@ -957,4 +993,4 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ================= boot ================= */
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); }); }
+else { if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); }); }

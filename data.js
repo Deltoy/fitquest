@@ -489,7 +489,7 @@ const TIPS = {
 };
 const ROUTINES = [
   {
-    creator: '이도황', meta: '등 · 한 달', title: '한 달 등 넓히기', parts: ['back'],
+    creator: '이도황', meta: '등 · 한 달', title: '한 달 등 넓히기', tpl: 'P1', parts: ['back'],
     sub: '풀오버와 암풀다운으로 광배를 먼저 늘리고, 풀업·T바로우로 넓이, 롱풀로 하부 광배 마무리.',
     tips: ['견갑골을 먼저 앞으로 뻗은 뒤 당기기 — 이완 구간에서도 텐션 유지', '암풀다운은 팔꿈치 말고 어깨 관절만 써요', '광배만 키우면 몸이 말려요. 승모근도 같이 키워야 진짜 넓어져요'],
     ex: [
@@ -503,7 +503,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/1L4HGN2w4gM', t: '이도황 · 한 달이면 등이 넓어진다' }]
   },
   {
-    creator: '이도황', meta: '어깨 · 20분', title: '대근육 뒤 20분 어깨 마무리', parts: ['shoulder'],
+    creator: '이도황', meta: '어깨 · 20분', title: '대근육 뒤 20분 어깨 마무리', tpl: 'P4', parts: ['shoulder'],
     sub: '측면 → 측후면 → 후면 순서, 슈퍼세트로 짧게. 가슴·등 운동 뒤에 붙이는 V자 마무리.',
     tips: ['쇄골을 들어 어깨 라인을 일자로, 몸이 말리지 않게', '벤트오버 레이즈는 높이 올리기보다 멀리 던지는 느낌', '페이스풀은 미간 높이 — 너무 높으면 측면이 빠져요'],
     ex: [
@@ -517,7 +517,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/mVuisK2FaE0', t: '이도황 · 하루 20분 어깨' }]
   },
   {
-    creator: '이도황', meta: '가슴 · 55분', title: '넓고 각진 가슴', parts: ['chest'],
+    creator: '이도황', meta: '가슴 · 55분', title: '넓고 각진 가슴', tpl: 'P3', parts: ['chest'],
     sub: '플라이로 먼저 늘리고, 인클라인은 "로우하듯" 팔꿈치를 당겨 내리기. 흉곽을 여닫아 윗가슴·안쪽을 나눠 자극.',
     tips: ['0–45도는 벌어지는 힘, 45도 이후는 뒤로 넘어간다는 느낌', '인클라인 덤벨은 쇄골 고정 → 팔꿈치를 뒤로 넘기면 견갑은 알아서 모여요', '프리웨이트는 새끼손가락 쪽, 머신은 엄지 쪽으로 받기'],
     ex: [
@@ -543,7 +543,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/zUBnDNu32gk', t: '이도황 · 한 달 어깨 루틴 2' }]
   },
   {
-    creator: '제로범', meta: '푸시 · 55분 실시간', title: '고대로 따라하는 가슴·어깨·삼두', parts: ['chest','shoulder','arms'],
+    creator: '제로범', meta: '푸시 · 55분 실시간', title: '고대로 따라하는 가슴·어깨·삼두', tpl: 'P7', parts: ['chest','shoulder','arms'],
     sub: '실시간 노컷. 탑세트는 실패 지점까지, 이후 가벼운 드랍세트. "들고 싶은 무게가 맞는 무게".',
     tips: ['케이블 크로스오버는 딥스하듯 제자리에서, 고개는 바닥', '숄더프레스는 어깨와 몸통이 같이 움직여야 — 팔만 뻗으면 어깨가 갈려요', '사이드 레이즈는 살짝 앞쪽, 내 각도에서 최대한 높이'],
     ex: [
@@ -558,7 +558,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/wQFAUUfWfno', t: '제로범 · 가슴·어깨·삼두 55분' }]
   },
   {
-    creator: '제로범', meta: '등 · 40분 · 3종목', title: '직장인 등 40분 · 딱 3개', parts: ['back'],
+    creator: '제로범', meta: '등 · 40분 · 3종목', title: '직장인 등 40분 · 딱 3개', tpl: 'P8', parts: ['back'],
     sub: '랫풀다운 → 바벨로우 → 원암 덤벨로우. 무게보다 자세, 무너지면 무게를 낮추면 된다.',
     tips: ['랫풀다운은 목을 가만히, 어깨만 앞-위-아래로', '바벨로우는 바를 뽑는 순간부터 몸통 세팅', '원암로우는 골반 고정하고 상체만 — 그것만 돼도 70% 성공'],
     ex: [
@@ -570,7 +570,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/zWLWu5QMlcc', t: '제로범 · 등운동 40분 노컷' }]
   },
   {
-    creator: '조정현', meta: '어깨 · 2종목', title: '어깨는 딱 2개로 넓힌다', parts: ['shoulder'],
+    creator: '조정현', meta: '어깨 · 2종목', title: '어깨는 딱 2개로 넓힌다', tpl: 'P9', parts: ['shoulder'],
     sub: '선수가 아니면 전면·후면을 나눌 필요 없음. 사이드 레터럴 + 숄더프레스, 가장 힘든 구간에서 고반복.',
     tips: ['완전히 옆이 아니라 살짝 앞(사선)으로 — 관절 간섭이 없어요', '다 내리고 다 올리려 하지 말고, 가장 힘든 구간에서 반복', '초보는 머신이 가장 쉽고 안전'],
     ex: [
@@ -581,7 +581,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/nDVbAon1wHg', t: '조정현 · 어깨 넓히는 비밀' }]
   },
   {
-    creator: '제로범', meta: '하체 · 5종목', title: '최소한으로 하체가 좋아지는 루틴',
+    creator: '제로범', meta: '하체 · 5종목', title: '최소한으로 하체가 좋아지는 루틴', tpl: 'P2',
     sub: '레그 익스텐션·레그컬로 무릎을 데우고 핵스쿼트가 메인. 햄스트링은 스티프 데드가 핵심. "3~4세트 채우기보다 한 세트를 100%로".',
     parts: ['legs'],
     tips: ['핵스쿼트는 발바닥 전체 접지, 뒤꿈치 뜨면 안 돼요', '스티프 데드는 고관절만 깊게 접고, 정면 말고 아래를 봐요', '스플릿 스쿼트는 앞무릎을 70~80%만 펴서 긴장 유지'],
@@ -595,7 +595,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/ZuOzNb7wPn4', t: '제로범 · 최소한의 하체 루틴' }]
   },
   {
-    creator: '제로범', meta: '하체 · 41분 실시간', title: '고대로 따라하는 하체',
+    creator: '제로범', meta: '하체 · 41분 실시간', title: '고대로 따라하는 하체', tpl: 'P6',
     sub: '스플릿 스쿼트로 시작, 핵스쿼트 드롭세트, 스티프 데드 + 아웃타이 슈퍼세트. 약한 다리 기준으로 반대쪽도 맞추기.',
     parts: ['legs'],
     tips: ['발 간격은 억지로 대칭 맞추지 말고 자연스럽게', '핵스쿼트는 엉덩이가 뜨기 직전까지만 내려가요', '스티프 데드는 팔로 당기지 말고 늘어뜨린 느낌'],
@@ -608,7 +608,7 @@ const ROUTINES = [
     videos: [{ u: 'https://youtu.be/6Qx19PKkAE0', t: '제로범 · 하체 고대로 41분' }]
   },
   {
-    creator: '제로범', meta: '팔 · 32분 슈퍼세트', title: '팔 30분 슈퍼세트',
+    creator: '제로범', meta: '팔 · 32분 슈퍼세트', title: '팔 30분 슈퍼세트', tpl: 'P5',
     sub: '이두→삼두를 쉬지 않고 번갈아 3쌍. 무게보다 자세, 팔은 90%만 펴고 접기.',
     parts: ['arms'],
     tips: ['팔을 다 펴지 말고 90%만 펴고 접는 게 베스트', '오버헤드 익스텐션은 손을 좁게 잡을수록 삼두가 늘어나요', '로프 푸시다운은 로프를 감아쥐지 말고 살짝 열어 잡기'],
@@ -647,3 +647,13 @@ const BASE_FAVS = [
   { n: '그릭요거트 1컵', p: 10, k: 100, c: 6, f: 3 },
   { n: '삶은 달걀 2개', p: 13, k: 155, c: 1, f: 10 }
 ];
+
+/* 유튜버 루틴 실행용 — 영상 속 세트·횟수 그대로, 말하지 않은 값은 앱 기본값(d:1) */
+Object.assign(EX, {"pov": {"n": "덤벨 풀오버", "img": "Straight-Arm_Dumbbell_Pullover", "eq": "덤벨 · 벤치에 누워", "kind": "db", "inc": 2, "rest": 75, "range": [10, 12], "mus": ["lats", "chest"], "def": 16, "v": null}, "sap": {"n": "스트레이트암 풀다운", "img": "Straight-Arm_Pulldown", "eq": "케이블 · 스트레이트 바 (불편하면 로프)", "kind": "cb", "inc": 2.5, "rest": 75, "range": [15, 20], "mus": ["lats"], "def": 15, "v": null}, "lpl": {"n": "롱풀 (좁은 그립 로우)", "img": "Seated_Cable_Rows", "eq": "케이블 · 좁은 그립 손잡이", "kind": "cb", "inc": 5, "rest": 90, "range": [10, 12], "mus": ["lats"], "def": 40, "v": null}, "bor": {"n": "벤트오버 레터럴 레이즈", "img": "Seated_Bent-Over_Rear_Delt_Raise", "eq": "덤벨 · 상체 숙여서", "kind": "db", "inc": 1, "rest": 60, "range": [15, 20], "mus": ["traps"], "def": 5, "v": null}, "crd": {"n": "케이블 리어델트 플라이", "img": "Cable_Rear_Delt_Fly", "eq": "케이블 · 양쪽 교차", "kind": "cb", "inc": 2.5, "rest": 60, "range": [12, 15], "mus": ["traps"], "def": 5, "v": null}, "pdk": {"n": "펙덱 플라이", "img": "Butterfly", "eq": "머신 · 손잡이 회전형이면 더 좋아요", "kind": "mc", "inc": 5, "rest": 75, "range": [10, 15], "mus": ["chest", "chest-upper"], "def": 30, "v": null}, "cpm": {"n": "체스트 프레스 머신", "img": "Leverage_Chest_Press", "eq": "머신 · 엄지 쪽으로 받기", "kind": "mc", "inc": 5, "rest": 105, "range": [8, 12], "mus": ["chest"], "def": 40, "v": null}, "cco": {"n": "케이블 크로스오버", "img": "Cable_Crossover", "eq": "케이블 · 로우 풀리", "kind": "cb", "inc": 2.5, "rest": 75, "range": [10, 15], "mus": ["chest"], "def": 10, "v": null}, "spm": {"n": "숄더 프레스 머신", "img": "Leverage_Shoulder_Press", "eq": "머신 (없으면 덤벨)", "kind": "mc", "inc": 5, "rest": 105, "range": [8, 12], "mus": ["delt-front", "delt-side"], "def": 30, "v": null}, "dte": {"n": "덤벨 오버헤드 익스텐션", "img": "Standing_Dumbbell_Triceps_Extension", "eq": "덤벨 1개 · 양손", "kind": "db", "inc": 2, "rest": 75, "range": [10, 12], "mus": ["forearm"], "def": 16, "v": null}, "lde": {"n": "라잉 덤벨 익스텐션", "img": "Lying_Dumbbell_Tricep_Extension", "eq": "덤벨 · 벤치에 누워", "kind": "db", "inc": 2, "rest": 75, "range": [10, 12], "mus": ["forearm"], "def": 8, "v": null}, "bbr": {"n": "바벨 벤트오버 로우", "img": "Bent_Over_Barbell_Row", "eq": "바벨", "kind": "bb", "inc": 2.5, "rest": 120, "range": [6, 8], "mus": ["lats", "traps"], "def": 40, "v": null}, "odr": {"n": "원암 덤벨 로우 (서서)", "img": "One-Arm_Dumbbell_Row", "eq": "덤벨 · 랙을 잡고", "kind": "db", "inc": 2, "rest": 90, "range": [8, 12], "mus": ["lats", "traps"], "def": 20, "v": null}, "lex": {"n": "레그 익스텐션", "img": "Leg_Extensions", "eq": "머신 · 등받이 뒤로", "kind": "mc", "inc": 5, "rest": 75, "range": [12, 15], "mus": ["quads"], "def": 30, "v": null}, "sdl": {"n": "스티프 데드리프트", "img": "Stiff-Legged_Dumbbell_Deadlift", "eq": "덤벨 또는 바벨", "kind": "db", "inc": 2, "rest": 105, "range": [8, 12], "mus": ["quads"], "def": 20, "v": null}, "spl": {"n": "스플릿 스쿼트", "img": "Split_Squat_with_Dumbbells", "eq": "뒷발 벤치 · 맨몸이면 0kg", "kind": "db", "inc": 2, "rest": 90, "range": [6, 12], "mus": ["quads"], "def": 0, "v": null}, "abd": {"n": "아웃타이 (힙 어브덕션)", "img": "Thigh_Abductor", "eq": "머신", "kind": "mc", "inc": 5, "rest": 60, "range": [12, 15], "mus": ["quads"], "def": 30, "v": null}, "bcu": {"n": "바벨 컬", "img": "Barbell_Curl", "eq": "바벨 · 스트레이트 바", "kind": "bb", "inc": 2.5, "rest": 60, "range": [10, 12], "mus": ["biceps"], "def": 20, "v": null}, "obe": {"n": "바벨 오버헤드 익스텐션", "img": "Standing_Overhead_Barbell_Triceps_Extension", "eq": "바벨 · 좁게 잡기", "kind": "bb", "inc": 2.5, "rest": 60, "range": [10, 12], "mus": ["forearm"], "def": 20, "v": null}, "dbc": {"n": "덤벨 컬 (봉우리 컬)", "img": "Dumbbell_Bicep_Curl", "eq": "덤벨 · 벤치에 기대서", "kind": "db", "inc": 2, "rest": 60, "range": [10, 12], "mus": ["biceps"], "def": 10, "v": null}});
+Object.assign(TPL, {"P1": {"code": "등", "ko": "이도황 · 한 달 등 넓히기", "by": "이도황", "video": "https://youtu.be/1L4HGN2w4gM", "pro": 1, "parts": ["back"], "ex": [["pov", 3, {"t": {"u": "https://youtu.be/1L4HGN2w4gM?t=240", "t": "04:00", "who": "이도황", "label": "이도황 · 한 달 등 넓히기"}, "tip": "팔꿈치를 살짝 구부린 채, 겨드랑이 아래(광배)가 늘어나는지 확인", "d": 1}], ["sap", 3, {"t": {"u": "https://youtu.be/1L4HGN2w4gM?t=363", "t": "06:03", "who": "이도황", "label": "이도황 · 한 달 등 넓히기"}, "tip": "팔꿈치 말고 어깨 관절만. 새끼손가락으로 바를 바깥으로 밀듯 견갑을 옆으로 벌리기", "r": [15, 20]}], ["apu", 3, {"t": {"u": "https://youtu.be/1L4HGN2w4gM?t=656", "t": "10:56", "who": "이도황", "label": "이도황 · 한 달 등 넓히기"}, "tip": "넓은 그립은 대각선으로 당겨 어깨뼈를 더 써요", "d": 1}], ["scr", 3, {"t": {"u": "https://youtu.be/1L4HGN2w4gM?t=828", "t": "13:48", "who": "이도황", "label": "이도황 · 한 달 등 넓히기"}, "tip": "견갑을 앞으로 최대한 뻗은 뒤 당기기. 원래는 T바로우(없으면 시티드 로우)", "d": 1}], ["lpl", 3, {"t": {"u": "https://youtu.be/1L4HGN2w4gM?t=1042", "t": "17:22", "who": "이도황", "label": "이도황 · 한 달 등 넓히기"}, "tip": "어깨를 낮추고 이두를 바깥으로 돌리며 당기기. 늘어난 지점에서 고정 후 당기기", "d": 1}]]}, "P2": {"code": "하체", "ko": "제로범 · 최소한의 하체", "by": "제로범", "video": "https://youtu.be/ZuOzNb7wPn4", "pro": 1, "parts": ["legs"], "ex": [["lex", 3, {"t": {"u": "https://youtu.be/ZuOzNb7wPn4?t=66", "t": "01:06", "who": "제로범", "label": "제로범 · 최소한의 하체"}, "tip": "등받이를 뒤로 눕혀야 대퇴직근에 들어가요. 발은 자연스럽게", "d": 1}], ["lcu", 3, {"t": {"u": "https://youtu.be/ZuOzNb7wPn4?t=184", "t": "03:04", "who": "제로범", "label": "제로범 · 최소한의 하체"}, "tip": "무릎 보호용 펌핑. 종아리가 아프면 발목 힘 빼기", "d": 1}], ["hks", 4, {"t": {"u": "https://youtu.be/ZuOzNb7wPn4?t=313", "t": "05:13", "who": "제로범", "label": "제로범 · 최소한의 하체"}, "tip": "발바닥 전체 접지. 가볍게 시작해 세트마다 무게를 올려요", "r": [6, 10], "d": 1}], ["sdl", 3, {"t": {"u": "https://youtu.be/ZuOzNb7wPn4?t=457", "t": "07:37", "who": "제로범", "label": "제로범 · 최소한의 하체"}, "tip": "고관절만 깊게 접고, 정면 말고 아래를 봐요", "d": 1}], ["spl", 2, {"t": {"u": "https://youtu.be/ZuOzNb7wPn4?t=612", "t": "10:12", "who": "제로범", "label": "제로범 · 최소한의 하체"}, "tip": "앞무릎을 70~80%만 펴서 긴장 유지", "d": 1}]]}, "P3": {"code": "가슴", "ko": "이도황 · 넓고 각진 가슴", "by": "이도황", "video": "https://youtu.be/dp3uFH2x-Jc", "pro": 1, "parts": ["chest"], "ex": [["pdk", 3, {"t": {"u": "https://youtu.be/dp3uFH2x-Jc?t=180", "t": "03:00", "who": "이도황", "label": "이도황 · 넓고 각진 가슴"}, "tip": "45도 이후부터는 뒤로 넘어간다고 생각하고 최대 가동범위로", "r": [10, 15]}], ["idp", 3, {"t": {"u": "https://youtu.be/dp3uFH2x-Jc?t=330", "t": "05:30", "who": "이도황", "label": "이도황 · 넓고 각진 가슴"}, "tip": "쇄골 고정 → 팔꿈치를 뒤로 넘기면 견갑은 알아서 모여요 (로우하듯)", "d": 1}], ["cpm", 3, {"t": {"u": "https://youtu.be/dp3uFH2x-Jc?t=760", "t": "12:40", "who": "이도황", "label": "이도황 · 넓고 각진 가슴"}, "tip": "머신은 엄지 쪽으로 받으면 자극이 더 잘 와요", "d": 1}], ["cco", 3, {"t": {"u": "https://youtu.be/dp3uFH2x-Jc?t=954", "t": "15:54", "who": "이도황", "label": "이도황 · 넓고 각진 가슴"}, "tip": "어깨 관절만 축이 되지 말고 몸통 기준으로 크게", "d": 1}]]}, "P4": {"code": "어깨", "ko": "이도황 20분 어깨 + 조정현 프레스", "by": "이도황·조정현", "video": "https://youtu.be/mVuisK2FaE0", "pro": 1, "parts": ["shoulder"], "ex": [["slr", 3, {"t": {"u": "https://youtu.be/mVuisK2FaE0?t=67", "t": "01:07", "who": "이도황", "label": "이도황 20분 어깨 + 조정현 프레스"}, "tip": "쇄골을 들어 어깨 라인을 일자로, 살짝 앞으로. 마지막 세트는 쉬지 않고 드롭세트", "r": [15, 20]}], ["spm", 3, {"tip": "(조정현) 사이드 레이즈 + 숄더프레스 2개면 충분. 초보는 머신이 가장 안전", "d": 1}], ["bor", 3, {"t": {"u": "https://youtu.be/mVuisK2FaE0?t=229", "t": "03:49", "who": "이도황", "label": "이도황 20분 어깨 + 조정현 프레스"}, "tip": "높이보다 멀리 던지는 느낌. 페이스풀과 슈퍼세트", "r": [15, 20]}], ["fpl", 3, {"t": {"u": "https://youtu.be/mVuisK2FaE0?t=280", "t": "04:40", "who": "이도황", "label": "이도황 20분 어깨 + 조정현 프레스"}, "tip": "미간 높이로 — 너무 높으면 측면이 빠져요", "r": [15, 20]}], ["crd", 3, {"t": {"u": "https://youtu.be/mVuisK2FaE0?t=492", "t": "08:12", "who": "이도황", "label": "이도황 20분 어깨 + 조정현 프레스"}, "tip": "수축·이완 모두 텐션 유지", "d": 1}]]}, "P5": {"code": "팔", "ko": "제로범 · 팔 30분 슈퍼세트", "by": "제로범", "video": "https://youtu.be/9K2IgwobaAw", "pro": 1, "parts": ["arms"], "ex": [["bcu", 3, {"t": {"u": "https://youtu.be/9K2IgwobaAw?t=113", "t": "01:53", "who": "제로범", "label": "제로범 · 팔 30분 슈퍼세트"}, "tip": "팔은 90%만 펴고 접기. 끝나면 쉬지 말고 바로 다음(삼두)", "d": 1}], ["obe", 3, {"t": {"u": "https://youtu.be/9K2IgwobaAw?t=152", "t": "02:32", "who": "제로범", "label": "제로범 · 팔 30분 슈퍼세트"}, "tip": "손을 좁게 잡을수록 삼두가 늘어나요", "d": 1}], ["dbc", 3, {"t": {"u": "https://youtu.be/9K2IgwobaAw?t=862", "t": "14:22", "who": "제로범", "label": "제로범 · 팔 30분 슈퍼세트"}, "tip": "팔이 뒤로 빠지지 않게, 이두 봉우리 만들기", "d": 1}], ["dte", 3, {"t": {"u": "https://youtu.be/9K2IgwobaAw?t=987", "t": "16:27", "who": "제로범", "label": "제로범 · 팔 30분 슈퍼세트"}, "tip": "관자놀이 옆으로 내렸다 위로 쭉. 밀 때 고개를 뒤로", "d": 1}], ["ccu", 3, {"t": {"u": "https://youtu.be/9K2IgwobaAw?t=1483", "t": "24:43", "who": "제로범", "label": "제로범 · 팔 30분 슈퍼세트"}, "tip": "내렸을 때 팔을 살짝 뒤로 빼서 스트레칭", "d": 1}], ["cpd", 3, {"t": {"u": "https://youtu.be/9K2IgwobaAw?t=1573", "t": "26:13", "who": "제로범", "label": "제로범 · 팔 30분 슈퍼세트"}, "tip": "로프를 감아쥐지 말고 살짝 열어 잡기", "d": 1}]]}, "P6": {"code": "하체", "ko": "제로범 · 고대로 하체 41분", "by": "제로범", "video": "https://youtu.be/6Qx19PKkAE0", "pro": 1, "parts": ["legs"], "ex": [["spl", 2, {"t": {"u": "https://youtu.be/6Qx19PKkAE0?t=49", "t": "00:49", "who": "제로범", "label": "제로범 · 고대로 하체 41분"}, "tip": "약한 다리부터 실패 지점까지, 반대쪽도 같은 횟수로", "r": [6, 12]}], ["hks", 3, {"t": {"u": "https://youtu.be/6Qx19PKkAE0?t=796", "t": "13:16", "who": "제로범", "label": "제로범 · 고대로 하체 41분"}, "tip": "엉덩이가 뜨기 직전까지만. 3세트 후 드롭세트로 20개 채우기", "r": [6, 10]}], ["sdl", 3, {"t": {"u": "https://youtu.be/6Qx19PKkAE0?t=1779", "t": "29:39", "who": "제로범", "label": "제로범 · 고대로 하체 41분"}, "tip": "팔로 당기지 말고 늘어뜨린 느낌, 무릎은 살짝 구부린 채", "d": 1}], ["abd", 3, {"t": {"u": "https://youtu.be/6Qx19PKkAE0?t=1781", "t": "29:41", "who": "제로범", "label": "제로범 · 고대로 하체 41분"}, "tip": "고관절이 컴퍼스 축. 몸통이 앞으로 빠지지 않게", "d": 1}]]}, "P7": {"code": "가슴·어깨", "ko": "제로범 · 고대로 가슴·어깨·삼두", "by": "제로범", "video": "https://youtu.be/wQFAUUfWfno", "pro": 1, "parts": ["chest", "shoulder", "arms"], "ex": [["cco", 3, {"t": {"u": "https://youtu.be/wQFAUUfWfno?t=120", "t": "02:00", "who": "제로범", "label": "제로범 · 고대로 가슴·어깨·삼두"}, "tip": "딥스하듯 제자리에서, 고개 숙이고 시작", "d": 1}], ["idp", 3, {"t": {"u": "https://youtu.be/wQFAUUfWfno?t=736", "t": "12:16", "who": "제로범", "label": "제로범 · 고대로 가슴·어깨·삼두"}, "tip": "무거운 세트는 실패까지, 약 7회. 벤치 약 45도", "r": [6, 8]}], ["spm", 4, {"t": {"u": "https://youtu.be/wQFAUUfWfno?t=1572", "t": "26:12", "who": "제로범", "label": "제로범 · 고대로 가슴·어깨·삼두"}, "tip": "어깨와 몸통이 같이 움직여야 — 팔만 뻗으면 어깨가 갈려요. 4세트째 드롭"}], ["slr", 3, {"t": {"u": "https://youtu.be/wQFAUUfWfno?t=2428", "t": "40:28", "who": "제로범", "label": "제로범 · 고대로 가슴·어깨·삼두"}, "tip": "살짝 앞쪽, 내 각도에서 최대한 높이", "d": 1}], ["dte", 3, {"t": {"u": "https://youtu.be/wQFAUUfWfno?t=2716", "t": "45:16", "who": "제로범", "label": "제로범 · 고대로 가슴·어깨·삼두"}, "tip": "내릴 때 팔꿈치를 안쪽으로 모으기", "d": 1}], ["lde", 3, {"t": {"u": "https://youtu.be/wQFAUUfWfno?t=3072", "t": "51:12", "who": "제로범", "label": "제로범 · 고대로 가슴·어깨·삼두"}, "tip": "그립이 자연스럽게 도는 걸 막지 않기", "d": 1}]]}, "P8": {"code": "등", "ko": "제로범 · 직장인 등 40분", "by": "제로범", "video": "https://youtu.be/zWLWu5QMlcc", "pro": 1, "parts": ["back"], "ex": [["lpd", 3, {"t": {"u": "https://youtu.be/zWLWu5QMlcc?t=71", "t": "01:11", "who": "제로범", "label": "제로범 · 직장인 등 40분"}, "tip": "목은 가만히, 몸을 뒤로 젖히지 말고 제자리에서", "d": 1}], ["bbr", 3, {"t": {"u": "https://youtu.be/zWLWu5QMlcc?t=583", "t": "09:43", "who": "제로범", "label": "제로범 · 직장인 등 40분"}, "tip": "바를 뽑는 순간부터 몸통 세팅. 약 7회", "r": [6, 8]}], ["odr", 3, {"t": {"u": "https://youtu.be/zWLWu5QMlcc?t=1245", "t": "20:45", "who": "제로범", "label": "제로범 · 직장인 등 40분"}, "tip": "골반 고정, 반대편 몸통이 같이 돌지 않게", "d": 1}]]}, "P9": {"code": "어깨", "ko": "조정현 · 어깨 2종목", "by": "조정현", "video": "https://youtu.be/nDVbAon1wHg", "pro": 1, "parts": ["shoulder"], "ex": [["slr", 4, {"t": {"u": "https://youtu.be/nDVbAon1wHg?t=638", "t": "10:38", "who": "조정현", "label": "조정현 · 어깨 2종목"}, "tip": "완전히 옆이 아니라 살짝 앞(사선). 가장 힘든 구간에서 고반복", "r": [12, 20]}], ["spm", 3, {"t": {"u": "https://youtu.be/nDVbAon1wHg?t=905", "t": "15:05", "who": "조정현", "label": "조정현 · 어깨 2종목"}, "tip": "초보는 머신이 제일 쉽고 안전", "d": 1}]]}});
+Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
+const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
+/* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
+const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'C'], shoulder: ['P4', 'C', 'E'], arms: ['P5', 'E'], full: ['D', 'P7'] };
+const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
+const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
