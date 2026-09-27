@@ -189,12 +189,20 @@ img { filter: var(--photo); transition: filter .35s; }
 
 /* ---------- V 비율 게이지 ---------- */
 .fq-vgauge { --min: 1.2; --max: 1.8; --v: 1.4; --start: 1.4; --goal: 1.6; }
-.fq-vgauge__scale { position: relative; height: 14px; border-radius: 99px; background: var(--canvas); }
+.fq-vgauge__scale { position: relative; display: flex; gap: 2px; height: 14px; }
+.fq-vgauge__scale > i { background: var(--canvas); }
+.fq-vgauge__scale > i:nth-of-type(even) { background: var(--soft); }
+.fq-vgauge__scale > i:first-child { border-radius: 99px 0 0 99px; }
+.fq-vgauge__scale > i:last-of-type { border-radius: 0 99px 99px 0; }
 .fq-vgauge__run, .fq-vgauge__now, .fq-vgauge__goal { position: absolute; }
 .fq-vgauge__run { --a: clamp(0%, (var(--start) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); --b: clamp(0%, (var(--v) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); left: var(--a); width: max(0%, var(--b) - var(--a)); top: 0; bottom: 0; border-radius: 99px; background: var(--red); }
 .fq-vgauge__now { left: clamp(0%, (var(--v) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); top: -5px; width: 24px; height: 24px; margin-left: -12px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 5px var(--red), 0 2px 0 var(--red-ledge); transition: left .6s var(--out); }
 .fq-vgauge__goal { left: clamp(0%, (var(--goal) - var(--min)) / (var(--max) - var(--min)) * 100%, 100%); top: -4px; bottom: -4px; width: 3px; margin-left: -1px; border-radius: 2px; background: var(--gold-ink); }
-.fq-vgauge__labels { display: flex; justify-content: space-between; margin-top: 10px; color: var(--ink-2); font: 800 13px/1 var(--num); }
+.fq-vgauge__bands { display: flex; gap: 2px; margin-top: 10px; color: var(--ink-2); text-align: center; }
+.fq-vgauge__bands > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 13px; font-weight: 700; line-height: 1.2; }
+.fq-vgauge__bands small { font-size: 12px; font-weight: 800; }
+.fq-vgauge__bands [data-now] { color: var(--red-ink); }
+.fq-vgauge__bands [data-now] b { font-weight: 900; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

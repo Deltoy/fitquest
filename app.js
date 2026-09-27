@@ -308,14 +308,24 @@ function weekSets() {
 }
 function bpLevels() { const c = weekSets(), L = {}; Object.keys(BP_T).forEach(m => L[m] = Math.min(4, Math.floor((c[m] || 0) / BP_T[m] * 4))); return L; }
 const bpPct = L => Math.round(Object.values(L).reduce((a, b) => a + b, 0) / (Object.keys(L).length * 4) * 100);
-function blueprintSVG(L, gain = []) {
-  const g = (m, t, polys) => `<g data-muscle="${m}" data-level="${L[m] || 0}" ${['delt-side', 'lats', 'chest-upper'].includes(m) ? 'data-focus' : ''} ${gain.includes(m) ? 'data-gain' : ''}><title>${t}</title>${polys.map(p => `<polygon class="fq-muscle" points="${p}"/>`).join('')}</g>`;
-  return `<svg class="fq-body" viewBox="0 0 240 380" role="img" aria-label="바디 설계도: 이번 주 부위별 운동량">
-  <path class="fq-body__target" d="M78 198 60 128 46 98 50 82 108 58M132 58l58 24 4 16-14 30-18 70"/>
+/* V 비율(어깨 둘레÷허리 둘레) — 그림은 V_BASE 몸을 기준으로 어깨는 √(r/기준), 허리는 그 역수만큼 가로로 늘이고 줄여요 */
+const V_BASE = 1.45, V_GOAL = 1.6, V_MIN = 1.2, V_MAX = 1.8;
+const V_BANDS = [[V_MIN, '일반', '~1.3'], [1.35, '운동', '1.4'], [1.45, '운동선수', '1.5–1.6'], [1.618, '황금비', '1.62']]; // 남성 참고치(대략)
+const V_NAMES = { 일반: '일반 체형', 운동: '꾸준히 운동한 체형', 운동선수: '운동선수 체형', 황금비: '황금비 체형' };
+const vBand = r => V_BANDS.filter(b => r >= b[0]).pop() || V_BANDS[0];
+function vWarp(pts, r) { // y 높이별로 어깨(y 82–130)·허리(y ~198) 배율을 섞어 x를 중심(120)에서 늘여요
+  const kS = Math.sqrt(Math.min(V_MAX, Math.max(V_MIN, r)) / V_BASE), kW = 1 / kS, mix = (a, b, t) => a + (b - a) * t;
+  const k = y => y < 58 ? 1 : y < 82 ? mix(1, kS, (y - 58) / 24) : y < 130 ? kS : y < 198 ? mix(kS, kW, (y - 130) / 68) : y < 232 ? mix(kW, 1, (y - 198) / 34) : 1;
+  return pts.split(' ').map(p => { const [x, y] = p.split(',').map(Number); return `${+(120 + (x - 120) * k(y)).toFixed(1)},${y}`; }).join(' ');
+}
+function blueprintSVG(L, gain = [], r = V_BASE, goal = V_BASE, label = '바디 설계도: 이번 주 부위별 운동량') {
+  const W = pts => vWarp(pts, r), poly = (c, p) => `<polygon class="${c}" points="${W(p)}"/>`;
+  const g = (m, t, polys) => `<g data-muscle="${m}" data-level="${L[m] || 0}" ${['delt-side', 'lats', 'chest-upper'].includes(m) ? 'data-focus' : ''} ${gain.includes(m) ? 'data-gain' : ''}><title>${t}</title>${polys.map(p => poly('fq-muscle', p)).join('')}</g>`;
+  const tgt = goal ? ['78,198 60,128 46,98 50,82 108,58', '132,58 190,82 194,98 180,128 162,198'].map(p => `<polyline class="fq-body__target" points="${vWarp(p, goal)}"/>`).join('') : '';
+  return `<svg class="fq-body" viewBox="0 0 240 380" role="img" aria-label="${label}">
+  ${tgt}
   <ellipse class="fq-body__head" cx="120" cy="34" rx="16" ry="20"/><path class="fq-body__part" d="M111 53h18l3 12h-24z"/>
-  <polygon class="fq-body__part" points="51,211 65,213 63,230 49,226"/><polygon class="fq-body__part" points="189,211 175,213 177,230 191,226"/>
-  <polygon class="fq-body__part" points="81,202 119,205 119,240 97,248 78,226"/><polygon class="fq-body__part" points="159,202 121,205 121,240 143,248 162,226"/>
-  <polygon class="fq-body__part" points="90,364 108,364 110,372 86,372"/><polygon class="fq-body__part" points="150,364 132,364 130,372 154,372"/>
+  ${['51,211 65,213 63,230 49,226', '189,211 175,213 177,230 191,226', '81,202 119,205 119,240 97,248 78,226', '159,202 121,205 121,240 143,248 162,226', '90,364 108,364 110,372 86,372', '150,364 132,364 130,372 154,372'].map(p => poly('fq-body__part', p)).join('')}
   ${g('traps', '승모·후면 어깨', ['108,58 119,66 90,81 64,81', '132,58 121,66 150,81 176,81'])}
   ${g('delt-side', '측면 삼각근', ['64,83 71,84 61,124 56,125 51,108 53,92', '176,83 169,84 179,124 184,125 189,108 187,92'])}
   ${g('delt-front', '전면 삼각근', ['73,84 89,83 84,100 74,121 63,123', '167,84 151,83 156,100 166,121 177,123'])}
@@ -1053,6 +1063,27 @@ function finish() {
 }
 
 /* ================= GROWTH ================= */
+function vBlueprint(Lb, v, v0) {
+  const foot = '<p class="fq-t-caption">굵은 윤곽 = 우선 부위(측면 삼각근 · 광배 · 윗가슴). 이번 주 목표 세트만큼 빨갛게 채워지고 월요일에 새로 시작해요.</p>';
+  if (!v) return `<div class="bp-fig">${blueprintSVG(Lb)}</div><button class="fq-btn fq-btn--secondary fq-btn--block" data-act="tape">어깨·허리 둘레 재고 V 비율 열기</button>${foot}`;
+  const t = DB.tape[DB.tape.length - 1], G = V_GOAL, now = vBand(v), goal = vBand(G), done = v >= G;
+  const k = Math.sqrt(G / v), cm = x => Math.round(x), dl = (a, b) => { const x = cm(b) - cm(a); return `${x > 0 ? '+' : x < 0 ? '−' : '±'}${Math.abs(x)}`; };
+  const pos = x => (Math.min(V_MAX, Math.max(V_MIN, x)) - V_MIN) / (V_MAX - V_MIN) * 100;
+  const bands = V_BANDS.map((b, i) => [b, pos((V_BANDS[i + 1] || [V_MAX])[0]) - pos(b[0])]);
+  return `<div class="bp-duo">
+      <figure class="bp-fig"><figcaption><span class="fq-eyebrow">지금</span> <span class="fq-t-num-md">${v.toFixed(2)}</span></figcaption>${blueprintSVG(Lb, [], v, done ? 0 : G, `지금 몸: V 비율 ${v.toFixed(2)}, 점선은 목표 어깨선. 이번 주 부위별 운동량`)}</figure>
+      <figure class="bp-fig"><figcaption><span class="chip gd">목표 ${G.toFixed(2)}</span></figcaption>${blueprintSVG({}, [], G, 0, `목표 몸: V 비율 ${G.toFixed(2)}일 때 어깨와 허리 폭`)}</figure></div>
+      <p class="fq-t-label">지금 <b class="vb-now">${V_NAMES[now[1]]}</b>${done ? ' · 목표를 넘었어요!' : ` → 목표 <b>${V_NAMES[goal[1]]}</b>`}</p>
+      <div class="fq-vgauge" style="--v:${v.toFixed(2)};--start:${(v0 || v).toFixed(2)};--goal:${G}">
+        <div class="fq-vgauge__scale" role="meter" aria-valuemin="${V_MIN}" aria-valuemax="${V_MAX}" aria-valuenow="${v.toFixed(2)}" aria-valuetext="V 비율 ${v.toFixed(2)}, ${V_NAMES[now[1]]}, 목표 ${G.toFixed(2)}">${bands.map(([, w]) => `<i style="flex:${w}"></i>`).join('')}<span class="fq-vgauge__run"></span><span class="fq-vgauge__goal"></span><span class="fq-vgauge__now"></span></div>
+        <div class="fq-vgauge__bands" aria-hidden="true">${bands.map(([b, w]) => `<span style="flex:${w}" ${b === now ? 'data-now' : ''}><b>${b[1]}</b><small class="num">${b[2]}</small></span>`).join('')}</div>
+        <p class="fq-t-caption" style="margin-top:8px">남성 어깨÷허리 둘레의 흔한 참고치예요. 대략적인 기준으로만 봐 주세요.</p></div>
+      ${done ? '' : `<div class="bp-plan"><p class="fq-t-label">목표 ${G.toFixed(2)}이 되려면</p>
+        <p class="bp-plan__row"><span>어깨 <b class="num">${cm(t.sh)} → ${cm(t.sh * k)}</b>cm <small class="num">${dl(t.sh, t.sh * k)}</small></span><span>허리 <b class="num">${cm(t.wa)} → ${cm(t.wa / k)}</b>cm <small class="num">${dl(t.wa, t.wa / k)}</small></span></p>
+        <p class="fq-t-caption">둘 다 조금씩 바꾸는 계산이에요. 허리만 줄이면 <b class="num">${cm(t.sh / G)}</b>cm, 어깨만 키우면 <b class="num">${cm(t.wa * G)}</b>cm가 돼야 해요.</p></div>`}
+      <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="tape">줄자 다시 재기</button>
+      <p class="fq-t-caption">굵은 윤곽 = 우선 부위. 이번 주 목표 세트만큼 빨갛게 채워져요(월요일 새로 시작). 점선 = 목표 어깨선.</p>`;
+}
 R.grow = () => {
   const P = DB.profile, lv = lvInfo(), L = lv.L, b = ib(), first = DB.inbody[0], Lb = bpLevels(), v = vRatio(), v0 = DB.tape[0] ? DB.tape[0].sh / DB.tape[0].wa : null, k = dayKey();
   const goalBF = P.sex === 'F' ? 23 : 15, hp = first.pbf > goalBF ? Math.max(0, Math.min(100, Math.round((b.pbf - goalBF) / (first.pbf - goalBF) * 100))) : 0;
@@ -1075,11 +1106,7 @@ R.grow = () => {
       ${P.chapter === 1 ? `<div class="boss"><div class="row row--between"><span class="fq-t-label">${CH[1].boss} 걷어내기</span><span class="fq-t-caption">목표 체지방 ${goalBF}%</span></div><div class="hp" role="meter" aria-label="남은 지방 안개" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${hp}"><i style="--p:${hp}"></i></div><span class="fq-t-caption">체지방 ${first.pbf}% → ${b.pbf}% · 4주마다 인바디로 판정</span></div>` : ''}
       <button class="fq-btn fq-btn--secondary fq-btn--block" style="margin-top:14px" data-act="chapter">챕터 바꾸기</button></section>
     <section class="tile card-pad stack bp" style="--o:4;gap:12px" aria-label="바디 설계도"><div class="row row--between"><h2 class="fq-t-heading">바디 설계도</h2><span class="chip num">이번 주 ${bpPct(Lb)}%</span></div>
-      <div class="bp-fig">${blueprintSVG(Lb)}</div>
-      ${v ? `<div class="fq-vgauge" style="--v:${v.toFixed(2)};--start:${(v0 || v).toFixed(2)};--goal:1.6"><div class="row row--between" style="align-items:flex-end"><span><span class="fq-t-display">${v.toFixed(2)}</span> <span class="fq-eyebrow">V 비율${DB.tape.length ? ` · 어깨 ${DB.tape[DB.tape.length - 1].sh}cm` : ''}</span></span><span class="chip gd">목표 1.60</span></div>
-        <div class="fq-vgauge__scale" role="meter" aria-valuemin="1.2" aria-valuemax="1.8" aria-valuenow="${v.toFixed(2)}" aria-valuetext="V 비율 ${v.toFixed(2)}, 목표 1.60" style="margin-top:16px"><span class="fq-vgauge__run"></span><span class="fq-vgauge__goal"></span><span class="fq-vgauge__now"></span></div><div class="fq-vgauge__labels"><span>1.2</span><span>1.4</span><span>1.6</span><span>1.8</span></div></div>` : ''}
-      <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="tape">${v ? '줄자 다시 재기' : '어깨·허리 둘레 재고 V 비율 열기'}</button>
-      <p class="fq-t-caption">굵은 윤곽 = 우선 부위(측면 삼각근 · 광배 · 윗가슴). 이번 주 목표 세트만큼 빨갛게 채워지고 월요일에 새로 시작해요.</p></section>
+      ${vBlueprint(Lb, v, v0)}</section>
     </div><div class="col">
     <section class="tile card-pad stack" style="--o:2" aria-label="체중 기록"><div class="row row--between"><h2 class="fq-t-heading">오늘 체중</h2><span class="fq-t-caption">7일 평균 <b class="num">${curWeight().toFixed(1)}</b>kg</span></div>
       <div class="row"><input id="wIn" class="inp" inputmode="decimal" placeholder="${DB.weights[k] || curWeight().toFixed(1)}" aria-label="오늘 체중 kg" style="flex:1"><button class="fq-btn ${DB.weights[k] ? 'fq-btn--secondary' : ''}" data-act="weigh">기록 · +5 XP</button></div>
