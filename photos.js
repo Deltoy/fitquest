@@ -1,10 +1,7 @@
 "use strict";
 /* 바디 기록 (docs/05-body-photos.md) — 사진은 IndexedDB(이 폰)에만 저장. 서버·AI 전송 없음. */
-const POSES = [
-  { id: 'front_relax', n: '정면 이완', cue: '발은 어깨너비, 팔은 몸에서 주먹 하나 띄우고 힘 빼기' },
-  { id: 'front_lat', n: '정면 광배', cue: '주먹을 허리에 대고 팔꿈치를 바깥으로, 날개 펴듯 광배 벌리기' },
-  { id: 'side', n: '측면', cue: '오른쪽 옆모습, 팔은 살짝 앞으로, 배에 힘 빼기' },
-  { id: 'back_lat', n: '후면 광배', cue: '등을 보이고 주먹을 허리에, 광배 벌리기 (선택)', opt: true }
+const POSES = [ /* 사용자 요청(0927): 너무 많으면 안 하게 됨 → 정면 1장만 */
+  { id: 'front_relax', n: '정면', cue: '발은 어깨너비, 팔은 몸에서 주먹 하나 띄우고 힘 빼기. 매주 같은 자리·같은 거리' }
 ];
 const REQ = POSES.filter(p => !p.opt).map(p => p.id);
 const PH = {
@@ -62,14 +59,14 @@ function photoSection() {
   return `<section class="fq-card stack" style="gap:12px" aria-label="바디 기록" id="bodyLog">
     <div class="row row--between"><span class="fq-t-heading">바디 기록</span><button class="fq-chip" style="min-height:40px" aria-pressed="${blur}" data-act="phBlur">${blur ? '가리기 켜짐' : '가리기'}</button></div>
     ${weeks.length ? `<div class="ph-strip ${blur ? 'is-blur' : ''}">${weeks.map(([wk, set]) => { const c = cover(set); return `<button class="ph-cell" data-act="phCmp" data-w="${wk}" aria-label="${wk} 주 사진"><img src="${pURL(c)}" alt=""><span>${kDate(wk).getMonth() + 1}/${kDate(wk).getDate()}</span><small>${c.metrics ? c.metrics.weight + 'kg · ' + c.metrics.pbf + '%' : ''}</small></button>`; }).join('')}</div>`
-      : `<p class="fq-t-caption" style="margin:0">매주 일요일 아침, 정면·광배·측면 3장. 느린 변화도 사진은 기억해요.</p>`}
+      : `<p class="fq-t-caption" style="margin:0">매주 일요일 아침, 정면 1장이면 끝. 느린 변화도 사진은 기억해요.</p>`}
     <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영하기</button><button class="fq-btn fq-btn--secondary" data-act="phCmp">비교하기</button></div>
     <p class="fq-t-caption" style="margin:0">사진은 이 폰에만 저장돼요. 어디에도 올라가지 않아요.</p></section>`;
 }
 function photoHomeCard() {
   const k = dayKey(), done = thisWeekDone(), left = REQ.filter(p => !done.includes(p));
   if (!left.length || (dow(k) !== 0 && !(dow(k) === 1 && done.length === 0 && PHOTOS.length))) return '';
-  return `<section class="fq-card row row--between" aria-label="이번 주 몸 기록"><div class="stack" style="gap:4px"><span class="fq-t-heading">이번 주 몸 기록</span><span class="fq-t-caption">${done.length ? `${3 - left.length}/3장 · 남은 포즈 ${left.map(id => POSES.find(p => p.id === id).n).join(', ')}` : '아침 공복에 3장 · +30 XP'}</span></div><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영</button></section>`;
+  return `<section class="fq-card row row--between" aria-label="이번 주 몸 기록"><div class="stack" style="gap:4px"><span class="fq-t-heading">이번 주 몸 기록</span><span class="fq-t-caption">아침 공복에 정면 1장 · +30 XP</span></div><button class="fq-btn fq-btn--secondary" data-act="phShoot">촬영</button></section>`;
 }
 
 /* ---------- 촬영 화면 ---------- */
@@ -85,9 +82,9 @@ async function renderShoot() {
     <div class="shoot">
       <div class="shoot-top">
         <button class="fq-btn fq-btn--icon" data-act="phClose" aria-label="닫기" style="--_bg:rgba(0,0,0,.5);--_fg:#fff">${ico('x')}</button>
-        <div class="shoot-poses" role="tablist">${POSES.map(p => `<button class="fq-chip ph-pose" role="tab" aria-selected="${p.id === SH.pose}" data-act="phPose" data-p="${p.id}">${done.includes(p.id) ? '✓ ' : ''}${p.n}</button>`).join('')}</div>
+        <div class="shoot-poses" role="tablist" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip ph-pose" role="tab" aria-selected="${p.id === SH.pose}" data-act="phPose" data-p="${p.id}">${done.includes(p.id) ? '✓ ' : ''}${p.n}</button>`).join('')}</div>
       </div>
-      ${firstThisWeek && !SH.shot ? `<div class="shoot-check">같은 자리 · 같은 조명 · 아침 공복 · 2m 거리 · 같은 옷</div>` : ''}
+      ${firstThisWeek && !SH.shot ? `<div class="shoot-check">정면 1장 · 같은 자리 · 같은 조명 · 아침 공복</div>` : ''}
       <div class="shoot-stage" id="stage">
         ${SH.shot ? `<img class="shoot-shot" src="${URL.createObjectURL(SH.shot.blob)}" alt="방금 찍은 사진">`
           : `<video id="camv" playsinline muted autoplay ${SH.facing === 'user' ? 'class="mirror"' : ''}></video>
@@ -137,7 +134,6 @@ async function savePhoto() {
   const wk = weekOf(date), done = thisWeekDone();
   let xp = 0;
   if (REQ.every(p => done.includes(p)) && !DB.flags['ph_' + wk]) { DB.flags['ph_' + wk] = 1; DB.xp += 30; xp += 30; }
-  if (done.includes('back_lat') && REQ.every(p => done.includes(p)) && !DB.flags['phb_' + wk]) { DB.flags['phb_' + wk] = 1; DB.xp += 10; xp += 10; }
   const L = levelOf(DB.xp); if (xp && L > levelOf(DB.xp - xp)) pendingLevel = L;
   save(); SFX.food();
   const next = POSES.find(p => !done.includes(p.id) && !p.opt);
@@ -146,7 +142,7 @@ async function savePhoto() {
 }
 
 /* ---------- 비교 화면 ---------- */
-const CM = { mode: 'side', pose: 'front_lat', a: null, b: null, play: null, speed: 1, i: 0 };
+const CM = { mode: 'side', pose: 'front_relax', a: null, b: null, play: null, speed: 1, i: 0 };
 async function renderCmp() {
   await loadPhotos(); clearInterval(CM.play); CM.play = null;
   if (!byPose(CM.pose).length) CM.pose = (POSES.find(p => byPose(p.id).length) || POSES[1]).id;
@@ -175,7 +171,7 @@ async function renderCmp() {
   $('#scr-cmp').innerHTML = `
     <header class="topbar"><h1 class="fq-t-title">몸 비교</h1><button class="fq-btn fq-btn--icon" data-go="grow" aria-label="닫기">${ico('x')}</button></header>
     <div class="chips" role="tablist">${[['side', '나란히'], ['wipe', '슬라이더'], ['lapse', '타임랩스']].map(([m, n]) => `<button class="fq-chip" role="tab" aria-selected="${CM.mode === m}" data-act="phMode" data-m="${m}">${n}</button>`).join('')}</div>
-    <div class="chips">${POSES.map(p => `<button class="fq-chip ph-mini" aria-pressed="${CM.pose === p.id}" data-act="phCPose" data-p="${p.id}" ${byPose(p.id).length ? '' : 'disabled'}>${p.n} ${byPose(p.id).length}</button>`).join('')}</div>
+    <div class="chips" ${POSES.length < 2 ? 'hidden' : ''}>${POSES.map(p => `<button class="fq-chip ph-mini" aria-pressed="${CM.pose === p.id}" data-act="phCPose" data-p="${p.id}" ${byPose(p.id).length ? '' : 'disabled'}>${p.n} ${byPose(p.id).length}</button>`).join('')}</div>
     ${blur && list.length ? '<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="phReveal">가리기 잠깐 풀기</button>' : ''}
     ${body}`;
   document.querySelectorAll('#scr-cmp [data-sel]').forEach(s => s.addEventListener('change', () => { CM[s.dataset.sel] = s.value; renderCmp(); }));
