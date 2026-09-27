@@ -51,6 +51,14 @@ function fresh() {
 }
 let DB;
 try { DB = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch (e) { DB = fresh(); }
+mergeCustom();
+/* 사용자가 학습시킨 유튜버 루틴(BYO) 합치기 — 이 폰에만 저장 */
+function mergeCustom() {
+  const c = DB.custom; if (!c) return;
+  Object.assign(EX, c.ex || {}); Object.assign(TPL, c.tpls || {});
+  Object.entries(c.tpls || {}).forEach(([k, t]) => { TPL_PARTS[k] = t.parts; });
+  (c.creators || []).forEach(cr => { if (!CREATORS.some(x => x.id === cr.id)) CREATORS.push(cr); else Object.assign(CREATORS.find(x => x.id === cr.id), cr); });
+}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { toast('<span>저장 공간이 부족해요. 설정에서 백업을 내보내 주세요.</span>', 5000); } }
 
 /* ================= sound (8-bit style, Web Audio 합성 — 외부 음원 없음) ================= */
@@ -164,14 +172,16 @@ function checkDaily3() {
   return q;
 }
 function tplFor(k) {
-  const o = DB.overrides[k]; if (o === 'rest') return null; if (o) return o;
+  const ok = t => t && TPL[t] ? t : null;
+  const o = DB.overrides[k]; if (o === 'rest') return null; if (ok(o)) return o;
   const d = dow(k);
-  if (DB.pins && DB.pins[d]) return DB.pins[d];
-  if (DB.rot && DB.rot.on) return rotFor(k);
-  return DB.schedule[d] || null;
+  if (DB.pins && ok(DB.pins[d])) return DB.pins[d];
+  if (DB.rot && DB.rot.on) return ok(rotFor(k));
+  return ok(DB.schedule[d]);
 }
 function rotCands(part) {
-  const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []), base = ROT[part];
+  const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []);
+  const base = ROT[part].concat(Object.keys((DB.custom && DB.custom.tpls) || {}).filter(k => { const t = TPL[k]; return t && t.parts && t.parts.includes(part === 'full' ? 'legs' : part); }));
   const mine = base.filter(t => picks.includes(t)), rest = base.filter(t => !picks.includes(t));
   if (!mine.length) return base;
   return mine.length >= 2 ? mine.concat(rest.filter(t => !TPL[t].pro).slice(0, 1)) : [mine[0], rest[0], mine[0]].filter(Boolean);
@@ -660,7 +670,7 @@ let proAll = false;
 function roleStrip() {
   const mine = (DB.profile.creators || []).map(id => CREATORS.find(c => c.id === id)).filter(Boolean);
   return `<section class="fq-card stack" style="gap:8px" aria-label="롤모델"><div class="row row--between"><span class="fq-t-heading">내 롤모델</span><button class="linkbtn" style="min-height:0;padding:0" data-act="crPick">바꾸기</button></div>
-    ${mine.length ? `<div class="fav-row">${mine.map(c => `<button class="fav" data-act="crCard" data-v="${c.id}"><b>${c.name}</b><span>${c.tag} · 스타일 보기</span></button>`).join('')}</div>` : '<p class="note" style="margin:0">되고 싶은 몸의 유튜버를 고르면 그 사람 루틴이 더 자주 들어와요.</p>'}</section>`;
+    <div class="fav-row">${mine.map(c => `<button class="fav" data-act="crCard" data-v="${c.id}"><b>${esc(c.name)}</b><span>${esc(c.tag)} · 스타일 보기</span></button>`).join('')}<button class="fav" data-act="crAdd"><b>+ 유튜버 추가</b><span>영상 링크로 학습</span></button></div></section>`;
 }
 function crCard(id) {
   const c = CREATORS.find(x => x.id === id);
@@ -669,14 +679,100 @@ function crCard(id) {
     <section class="fq-card stack"><span class="fq-eyebrow">운동 방식</span>${c.style.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}</section>
     <section class="fq-card stack"><span class="fq-eyebrow">식단 방식</span>${c.diet.map(t => `<span class="fq-t-body" style="font-size:15px">· ${esc(t)}</span>`).join('')}<span class="fq-t-caption">숫자 목표는 내 인바디 기준으로 앱이 계산해요.</span></section>
     <section class="fq-card stack"><span class="fq-eyebrow">내 로테이션에 들어가는 루틴</span>${c.tpls.map(t => `<button class="linkbtn" style="color:var(--fq-text);text-align:left;min-height:44px" data-act="proGo" data-t="${t}">${esc(TPL[t].ko)} · 지금 하기</button>`).join('')}</section>
-    <a class="src" href="https://www.youtube.com/${c.ch}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${c.name} 채널 · 루틴 출처</span></a>`);
+    ${c.ch ? `<a class="src" href="https://www.youtube.com/${c.ch}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>${c.name} 채널 · 루틴 출처</span></a>` : ''}
+    ${c.user ? `<button class="fq-btn fq-btn--ghost fq-btn--block" data-act="crDel" data-v="${c.id}" style="color:var(--fq-danger)">${esc(c.name)} 학습 데이터 지우기</button>` : ''}`);
 }
 function crPickSheet() {
   const cur = DB.profile.creators || [];
   sheet(`<div class="row row--between"><h2 class="fq-t-title">되고 싶은 몸</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
     <p class="fq-t-caption" style="margin:-6px 0 0">고른 사람의 루틴이 매주 로테이션에 더 자주 들어와요.</p>
     ${CREATORS.map(c => `<button class="pro-card" data-act="crToggle" data-v="${c.id}" aria-pressed="${cur.includes(c.id)}" style="${cur.includes(c.id) ? 'box-shadow:inset 0 0 0 2px var(--fq-text)' : ''}"><div class="who"><span class="fq-badge">${c.name}</span><span class="fq-t-caption">${cur.includes(c.id) ? '선택됨' : c.tag}</span></div><span class="fq-t-body" style="font-size:15px">${c.body}</span></button>`).join('')}
-    <p class="note" style="margin:0">새 유튜버 추가(영상 링크로 학습)는 곧 열려요.</p>`);
+    <button class="fq-btn fq-btn--secondary fq-btn--block" data-act="crAdd">+ 내 유튜버 추가 (영상 링크로 학습)</button>`);
+}
+/* ---------- 유튜버 추가 (BYO): 제미나이가 유튜브 링크를 직접 보고 루틴으로 정리 — 영상은 내려받지 않음 ---------- */
+function crAddSheet(msg = '') {
+  const has = !!DB.settings.gkey;
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">내 유튜버 추가</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <p class="fq-t-caption" style="margin:-6px 0 0">좋아하는 유튜버의 루틴 영상 링크를 넣으면 앱이 학습해서 내 로테이션에 넣어요. 영상은 내려받지 않고, 운동 중 "동작 보기"는 원본 영상으로 재생돼요.</p>
+    ${has ? '' : '<p class="fq-card" style="margin:0">먼저 설정 → 사진 AI에 제미나이 무료 키를 넣어 주세요 (aistudio.google.com/apikey).</p>'}
+    <label class="stack" for="crName" style="gap:6px"><span class="fq-t-label">유튜버 이름</span><input id="crName" class="inp" placeholder="예: 김계란"></label>
+    <label class="stack" for="crUrls" style="gap:6px"><span class="fq-t-label">루틴 영상 링크 (한 줄에 하나, 최대 5개)</span><textarea id="crUrls" class="inp" rows="4" style="padding:12px;min-height:110px" placeholder="https://youtu.be/…"></textarea></label>
+    ${msg ? `<p class="fq-t-body" style="margin:0;color:var(--fq-danger)">${esc(msg)}</p>` : ''}
+    <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="crLearn" ${has ? '' : 'disabled'}>학습 시작</button>
+    <p class="note" style="margin:0">영상 1개에 30초~1분 걸려요. 영상에서 말하지 않은 세트·횟수는 비워 두고 앱 기본값으로 채워요. 학습한 루틴은 이 폰에만 저장돼요.</p>`);
+}
+const ytId = u => { const m = String(u).match(/(?:youtu\.be\/|v=|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : null; };
+async function geminiVideo(url) {
+  const key = DB.settings.gkey.trim(), cat = Object.entries(EX).filter(([k]) => !k.startsWith('X')).map(([k, e]) => `${k}=${e.n}`).join(', ');
+  const prompt = `이 유튜브 운동 영상을 보고 영상 속 운동 루틴을 정리해 줘. 영상에서 실제로 말하거나 화면에 보인 것만 쓰고, 없으면 null. JSON만 출력:
+{"title":"짧은 루틴 이름(한국어, 20자 이내)","part":"back|chest|shoulder|arms|legs|full 중 하나","exercises":[{"exId":"아래 목록의 id 중 같은 운동이면 그 id, 없으면 null","name":"운동 이름(한국어)","sets":정수|null,"reps":[최소,최대]|null,"rest":초|null,"tip":"영상에서 강조한 자세 팁 한 문장(한국어, 60자 이내)|null","t":"그 운동이 처음 나오는 시각 MM:SS|null","conf":"high|med|low"}],"style":["이 사람 운동 방식 특징 3개(한국어 짧게)"],"diet":["식단 관련 조언이 있으면 최대 2개, 없으면 빈 배열"]}
+운동 목록(id=이름): ${cat}`;
+  const models = [DB.settings.gmodel, 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean);
+  let lastErr = '모델을 찾지 못했어요';
+  for (const m of models) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ file_data: { file_uri: url } }, { text: prompt }] }], generationConfig: { response_mime_type: 'application/json', temperature: .2 } }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 404) { lastErr = `${m} 없음`; continue; }
+    if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? (j.error && j.error.message || '키나 링크를 확인해 주세요').slice(0, 120) : r.status === 429 ? '무료 사용량을 넘었어요. 잠시 후 다시' : (j.error && j.error.message) || r.status);
+    const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
+    return JSON.parse(txt.replace(/^```json|```$/g, ''));
+  }
+  throw new Error(lastErr);
+}
+const PART_OK = ['back', 'chest', 'shoulder', 'arms', 'legs', 'full'];
+const PART_MUS = { back: ['lats'], chest: ['chest'], shoulder: ['delt-side'], arms: ['biceps'], legs: ['quads'], full: ['quads'] };
+let CR_DRAFT = null;
+async function crLearn() {
+  const name = ($('#crName').value || '').trim().slice(0, 20), urls = [...new Map(($('#crUrls').value || '').split(/\s+/).filter(ytId).map(u => [ytId(u), u])).values()].slice(0, 5);
+  if (!name) return crAddSheet('유튜버 이름을 넣어 주세요.');
+  if (!urls.length) return crAddSheet('유튜브 링크를 한 개 이상 넣어 주세요.');
+  const today = dayKey(), used = (DB.flags['cradd_' + today] || 0);
+  if (used >= 3) return crAddSheet('오늘은 유튜버를 3명까지 추가했어요. 내일 다시 해 주세요.');
+  sheet(`<h2 class="fq-t-title">${esc(name)} 학습 중…</h2><p class="fq-t-body" id="crProg" style="margin:0">영상 0 / ${urls.length}</p><p class="note" style="margin:0">화면을 켜 둔 채로 기다려 주세요.</p>`);
+  const out = [], errs = [];
+  for (let i = 0; i < urls.length; i++) {
+    try { const d = await geminiVideo(urls[i]); out.push({ url: urls[i], d }); } catch (e) { errs.push(`${i + 1}번 영상: ${e.message}`); }
+    const pg = $('#crProg'); if (pg) pg.textContent = `영상 ${i + 1} / ${urls.length}`;
+  }
+  if (!out.length) return crAddSheet(errs.join(' / ') || '학습하지 못했어요.');
+  CR_DRAFT = { name, out, errs };
+  crReview();
+}
+function crReview() {
+  const { name, out, errs } = CR_DRAFT;
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">${esc(name)} 루틴 확인</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    ${out.map(({ d, url }) => `<section class="fq-card stack" style="gap:6px"><div class="row row--between"><b>${esc(d.title || '루틴')}</b><span class="fq-badge">${PART_NAME[d.part] || '맞춤'}</span></div>
+      <div class="pro-ex">${(d.exercises || []).slice(0, 10).map((e, j) => `<div><span class="fq-hud muted">${j + 1}</span><span><b>${esc(e.name)}</b><small>${e.exId && EX[e.exId] ? '앱 운동과 연결됨' : '새 운동 · 사진 없음'}${e.conf === 'low' ? ' · 확인 필요' : ''}${e.tip ? ' · ' + esc(e.tip) : ''}</small></span><span class="fq-t-label">${e.sets ? e.sets + '세트' : '기본값'}${e.reps ? ' · ' + e.reps.join('–') + '회' : ''}</span></div>`).join('')}</div>
+      <a class="src" href="${esc(url)}" target="_blank" rel="noopener">${ico('ext', 'ico--16')}<span>원본 영상</span></a></section>`).join('')}
+    ${errs.length ? `<p class="note" style="margin:0">못 읽은 영상: ${esc(errs.join(' / '))}</p>` : ''}
+    <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="crSave">내 로테이션에 추가</button>
+    <p class="note" style="margin:0">"새 운동"은 사진 대신 원본 영상으로 동작을 보여 줘요.</p>`);
+}
+function crSave() {
+  const { name, out } = CR_DRAFT, c = DB.custom = DB.custom || { ex: {}, tpls: {}, creators: [] };
+  const cid = 'u_' + uid(), tpls = [], styles = [], diets = [];
+  out.forEach(({ d, url }) => {
+    const part = PART_OK.includes(d.part) ? d.part : 'full', vid = ytId(url), key = 'U' + uid();
+    const ex = (d.exercises || []).slice(0, 10).map(e => {
+      let id = e.exId && EX[e.exId] && !String(e.exId).startsWith('X') ? e.exId : null;
+      const reps = Array.isArray(e.reps) && e.reps.length === 2 && e.reps[0] > 0 && e.reps[1] >= e.reps[0] && e.reps[1] <= 50 ? e.reps.map(Math.round) : null;
+      if (!id) { id = 'X' + uid(); c.ex[id] = { n: String(e.name || '운동').slice(0, 24), img: null, eq: '영상 참고', kind: 'mc', inc: 2.5, rest: Math.min(180, Math.max(45, +e.rest || 90)), range: reps || [8, 12], mus: PART_MUS[part], def: 10, v: null }; EX[id] = c.ex[id]; }
+      const t = /^\d{1,2}:\d{2}$/.test(e.t || '') ? e.t.padStart(5, '0') : null, sec = t ? +t.slice(0, 2) * 60 + +t.slice(3) : 0;
+      const o = { t: { u: `https://youtu.be/${vid}${sec ? '?t=' + sec : ''}`, t: t || '00:00', who: name, label: d.title || '' } };
+      if (e.tip) o.tip = String(e.tip).slice(0, 80); if (reps) o.r = reps; if (!e.sets || !reps) o.d = 1;
+      return [id, Math.min(6, Math.max(1, Math.round(+e.sets || 3))), o];
+    }).filter(Boolean);
+    if (!ex.length) return;
+    c.tpls[key] = { code: PART_NAME[part] || '맞춤', ko: `${name} · ${String(d.title || '루틴').slice(0, 20)}`, by: name, video: url, pro: 1, user: 1, parts: [part === 'full' ? 'legs' : part], ex };
+    tpls.push(key); (d.style || []).slice(0, 3).forEach(x => styles.push(String(x).slice(0, 60))); (d.diet || []).slice(0, 2).forEach(x => diets.push(String(x).slice(0, 60)));
+  });
+  if (!tpls.length) return crAddSheet('영상에서 운동을 찾지 못했어요. 루틴 영상 링크인지 확인해 주세요.');
+  c.creators.push({ id: cid, name, ch: '', tag: '내가 추가', body: `영상 ${out.length}개로 학습한 ${name} 스타일`, mark: name, style: [...new Set(styles)].slice(0, 4), diet: [...new Set(diets)].slice(0, 3), tpls, videos: out.length, user: 1 });
+  DB.profile.creators = (DB.profile.creators || []).concat(cid);
+  DB.flags['cradd_' + dayKey()] = (DB.flags['cradd_' + dayKey()] || 0) + 1;
+  mergeCustom(); save(); CR_DRAFT = null; closeSheet(); SFX.pr(); R[TAB] && R[TAB]();
+  toast(`<span>${esc(name)} 루틴 ${tpls.length}개를 로테이션에 넣었어요</span>`, 4000);
 }
 function proSection(tpl) {
   const want = tpl ? TPL_PARTS[tpl] : null, card = (r, i) => `<button class="pro-card" data-act="pro" data-i="${i}"><div class="who"><span class="fq-badge">${esc(r.creator)}</span><span class="fq-t-caption">${esc(r.meta || '')}</span></div><h4>${esc(r.title)}</h4><span class="fq-t-caption">${esc(r.sub || '')}</span></button>`;
@@ -698,7 +794,7 @@ function lastStr(id) {
   for (let i = DB.sessions.length - 1; i >= 0; i--) { const e = DB.sessions[i].ex.find(x => x.id === id); if (e && e.sets.length) return `${wLabel(id, e.sets[0].w)} × ${e.sets.map(s => s.r).join('/')}`; }
   return '—';
 }
-const howto = id => `<div class="howto" role="img" aria-label="${esc(EX[id].n)} 시작 자세와 끝 자세"><img src="media/${EX[id].img}_0.jpg" alt="" loading="lazy"><img src="media/${EX[id].img}_1.jpg" alt="" loading="lazy"><span class="lbl"></span></div>`;
+const howto = id => EX[id].img ? `<div class="howto" role="img" aria-label="${esc(EX[id].n)} 시작 자세와 끝 자세"><img src="media/${EX[id].img}_0.jpg" alt="" loading="lazy"><img src="media/${EX[id].img}_1.jpg" alt="" loading="lazy"><span class="lbl"></span></div>` : `<div class="howto howto--none"><span>사진 없음<br>영상에서 보기</span></div>`;
 function howSheet(id, o = {}) {
   const E = { ...EX[id], v: o.v || EX[id].v, range: o.range || EX[id].range }, tip = o.tip || TIPS[id];
   sheet(`<div class="row row--between"><h2 class="fq-t-title">${E.n}</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
@@ -1033,6 +1129,8 @@ document.addEventListener('click', ev => {
     lunchRice: () => lunchPrev(a.dataset.n, +a.dataset.r),
     lunchSave: () => { const x = LUNCH.find(l => l.n === a.dataset.n), r = RICE[+a.dataset.r]; closeSheet(); addFood({ n: `${x.n}${+a.dataset.r === 1 ? '' : ' (' + r[0] + ')'}`, p: x.p + r[3], k: x.k + r[1], c: x.c + r[2], f: x.f }); },
     crPick: () => crPickSheet(), crCard: () => crCard(a.dataset.v),
+    crAdd: () => crAddSheet(), crLearn: () => crLearn(), crSave: () => crSave(),
+    crDel: () => { const id = a.dataset.v, c = DB.custom, cr = c.creators.find(x => x.id === id); (cr.tpls || []).forEach(k => { delete c.tpls[k]; delete TPL[k]; delete TPL_PARTS[k]; Object.keys(DB.pins || {}).forEach(d => { if (DB.pins[d] === k) delete DB.pins[d]; }); }); c.creators = c.creators.filter(x => x.id !== id); const i = CREATORS.findIndex(x => x.id === id); if (i >= 0) CREATORS.splice(i, 1); DB.profile.creators = (DB.profile.creators || []).filter(x => x !== id); save(); closeSheet(); R[TAB] && R[TAB](); toast('<span>지웠어요.</span>'); },
     crToggle: () => { const v = a.dataset.v, cur = DB.profile.creators || []; DB.profile.creators = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v); save(); crPickSheet(); R[TAB] && R[TAB](); },
     proGo: () => condSheet(a.dataset.t),
     proDay: () => sheet(`<h2 class="fq-t-title">어느 요일에 고정할까요?</h2><p class="fq-t-caption" style="margin:-6px 0 0">${esc(TPL[a.dataset.t].ko)} · 로테이션과 상관없이 매주 이 요일은 이 루틴</p><div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" style="min-width:52px;justify-content:center" data-act="proDaySet" data-d="${d}" data-t="${a.dataset.t}">${DOW[d]}</button>`).join('')}</div>`),

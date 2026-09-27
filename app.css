@@ -304,3 +304,4 @@ body { padding-top: env(safe-area-inset-top, 0px); }
 .ph-mini { min-height: 36px !important; font-size: 12.5px !important; padding: 0 10px !important; }
 
 .shoot-tools { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.howto--none { display: grid; place-items: center; background: var(--fq-surface-2); color: var(--fq-text-2); font-size: 12px; text-align: center; line-height: 1.3; }
