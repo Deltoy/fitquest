@@ -1017,8 +1017,8 @@ function downscale(file, max = 1024) {
     }; img.onerror = () => rej(new Error('사진을 열 수 없어요')); img.src = URL.createObjectURL(file);
   });
 }
-/* 0927 제미나이 모델: 기본 gemini-3.5-flash → 안 되면 내 키로 쓸 수 있는 더 낮은 flash 로 차례로 (모델 목록을 물어봐 7일 기억, 되는 모델은 다음에 먼저) */
-const GEM_PREF = 'gemini-3.5-flash';
+/* 0928 제미나이 모델: 기본 gemini-3.8-flash (0927 까지 3.5) → 안 되면 내 키로 쓸 수 있는 더 낮은 flash 로 차례로 (모델 목록을 물어봐 7일 기억, 되는 모델은 다음에 먼저) */
+const GEM_PREF = 'gemini-3.8-flash';
 async function gemModels(key) {
   let found = [];
   try {
@@ -1033,7 +1033,7 @@ async function gemModels(key) {
     }
   } catch (e) {}
   const ok = localStorage.getItem('fq.gmodelOK');
-  return [...new Set([DB.settings.gmodel, ok, GEM_PREF, ...found, 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean))];
+  return [...new Set([DB.settings.gmodel, GEM_PREF, ok, ...found, 'gemini-3.5-flash', 'gemini-3-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'].filter(Boolean))];
 }
 async function gemCall(key, parts, errMsg) {
   let lastErr = '쓸 수 있는 제미나이 모델을 찾지 못했어요';
@@ -1764,7 +1764,7 @@ R.set = () => {
     <section class="fq-card stack" style="gap:10px" aria-labelledby="aiH"><span class="fq-t-heading" id="aiH">사진·영상 AI (제미나이)</span>
       <p class="note" style="margin:0">무료 키로 음식 사진과 루틴 영상을 읽어요. 이 폰에만 저장돼요.</p>
       <div class="key-row"><input id="gkey" class="inp" type="password" autocomplete="off" placeholder="AIza…" value="${esc(S.gkey)}" aria-label="제미나이 API 키"><button class="fq-btn fq-btn--secondary" data-act="saveKey">저장</button></div>
-      <details class="bk-more"><summary class="fq-t-caption">모델 직접 고르기</summary><input id="gmodel" class="inp" placeholder="비우면 gemini-3.5-flash부터" value="${esc(S.gmodel)}" aria-label="제미나이 모델" style="margin-top:8px"></details></section>
+      <details class="bk-more"><summary class="fq-t-caption">모델 직접 고르기</summary><input id="gmodel" class="inp" placeholder="비우면 gemini-3.8-flash부터" value="${esc(S.gmodel)}" aria-label="제미나이 모델" style="margin-top:8px"></details></section>
     </div><div class="col">
     ${fwSection()}
     <section class="fq-card stack" style="gap:10px" aria-labelledby="sfH"><span class="fq-t-heading" id="sfH">효과음과 화면</span>
