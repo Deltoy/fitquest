@@ -110,7 +110,7 @@ function mergeCustom() {
   (c.creators || []).forEach(cr => { if (!CREATORS.some(x => x.id === cr.id)) CREATORS.push(cr); else Object.assign(CREATORS.find(x => x.id === cr.id), cr); });
   Object.entries(c.tpls || {}).forEach(([k, t]) => { const cr = t.cr && CREATORS.find(x => x.id === t.cr); if (cr && !cr.tpls.includes(k)) cr.tpls.push(k); });   // 기존 유튜버에 붙는 새 루틴 (follow.js)
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { toast('<span>저장 공간이 부족해요. 설정에서 백업을 내보내 주세요.</span>', 5000); } }
+function save() { try { try { if (W && W.q && !W.end) DB.live = W; } catch (e0) {} localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { toast('<span>저장 공간이 부족해요. 설정에서 백업을 내보내 주세요.</span>', 5000); } }
 
 /* ================= sound (8-bit style, Web Audio 합성 — 외부 음원 없음) ================= */
 let AC = null;
@@ -340,6 +340,7 @@ function plannedFor(id, sets, range) {
 }
 function badgeFor(id) {
   const st = prog(id), inc = incOf(id);
+  if (st.q) return st.last === 'up' ? [EX[id].kind === 'as' ? `지난번 보조 −${st.dW}kg` : `지난번 +${st.dW}kg`, '지난번에 올린 무게 그대로', 1] : ['유지', ''];   // 0928 빠른 기록: 올린 건 내가
   return { first: ['첫 기록', '10회 할 수 있는 무게로 가볍게 시작해요'], up: [EX[id].kind === 'as' ? `보조 −${inc}kg` : `+${inc}kg`, '지난번 모든 세트 윗끝 달성 → 증량', 1], prog: ['+1회', '총반복 기준 통과 → 세트마다 +1회', 1],
     hold: ['유지', '"한계"였어서 같은 무게로 한 번 더'], fail: ['유지', '같은 무게로 다시 도전'], deload: ['무게 −10%', '잠깐 물러서서 더 멀리 — 반복은 끝까지'] }[st.last] || ['유지', ''];
 }
@@ -347,6 +348,7 @@ function applyProgress(id, done, planned, feel, range) {
   const E = EX[id], st = prog(id), [lo, hi] = range || E.range, inc = incOf(id);
   if (!done.length) return;
   const reps = done.map(s => s.r), w = done[0].w, total = reps.reduce((a, b) => a + b, 0), N = planned;
+  delete st.q;
   const first = st.n === 0, up = x => E.kind === 'as' ? Math.max(0, x - inc) : x + inc;
   st.w = w;
   if (done.length < N) st.reps = reps.concat(Array(N - done.length).fill(lo));
@@ -674,7 +676,7 @@ function consistency(k = dayKey()) {
 function liftTrend(k = dayKey()) {
   const from = addDays(k, -27), by = {};
   DB.sessions.filter(s => s.day >= from && s.day <= k).forEach(s => s.ex.forEach(e => { const E = EX[e.id]; if (!E || !e.sets.length) return;
-    (by[e.id] = by[e.id] || []).push(E.kind === 'as' ? -Math.min(...e.sets.map(z => z.w)) : Math.max(...e.sets.map(z => e1(z.w, z.r)))); }));
+    (by[e.id] = by[e.id] || []).push(E.kind === 'as' ? -Math.min(...e.sets.map(z => z.w)) : Math.max(...e.sets.map(z => z.w))); }));   // 0928 최고 무게 기준 (빠른 기록과 같은 잣대)
   const pri = id => EX[id].mus.some(m => BP_FOCUS.includes(m)) ? 0 : 1;
   return Object.entries(by).filter(([, v]) => v.length >= 2).sort(([a, va], [b, vb]) => pri(a) - pri(b) || vb.length - va.length)
     .slice(0, 3).map(([id, v]) => ({ id, v, as: EX[id].kind === 'as', d: Math.round((v[v.length - 1] - v[0]) * 2) / 2 }));
@@ -1183,7 +1185,7 @@ function exList(tk, title, foot = '') {
     ${rows.some(r => !r.st.n) ? '<p class="fq-t-caption">첫 기록은 10회 할 수 있는 무게로 가볍게</p>' : ''}${gap > 10 ? `<p class="fq-t-caption">${gap}일 쉬어서 무게를 낮췄어요</p>` : ''}
     <ol class="exl">${rows.map(r => `<li><button class="exrow" data-act="howtoId" data-id="${r.id}" data-t="${esc(tk)}" aria-label="${esc(r.E.n)} 동작·팁 보기">
       <span class="exthumb">${r.E.img ? `<img src="media/${r.E.img}_0.jpg" alt="" loading="lazy">` : ico('cplay')}</span>
-      <span class="exrow-t"><span class="exrow-n"><b>${esc(r.E.n)}</b>${r.up ? `<span class="chip gd">${r.bt}</span>` : ''}</span><span class="exrow-l"><span class="exrow-w num">${wLabel(r.id, r.pl.w)}<small>kg × ${r.pl.reps.join('/')}</small></span><span class="fq-t-caption">${r.n}세트 ${r.rg[0]}–${r.rg[1]}회${r.o.d ? ' · 앱 기본값' : ''}</span></span></span></button></li>`).join('')}</ol>${foot}</section>`;
+      <span class="exrow-t"><span class="exrow-n"><b>${esc(r.E.n)}</b>${r.up ? `<span class="chip gd">${r.bt}</span>` : ''}</span><span class="exrow-l"><span class="exrow-w num">${wLabel(r.id, r.pl.w)}<small>kg</small></span><span class="fq-t-caption">${r.n}세트 ${r.rg[0]}–${r.rg[1]}회${r.o.d ? ' · 처음 무게' : ''}</span></span></span></button></li>`).join('')}</ol>${foot}</section>`;
 }
 /* 루틴 도감: 부위별 공략서(proSheet) · 내가 배운 루틴 · 롤모델 · 내 유튜버 추가 */
 function libSheet() {
@@ -1243,7 +1245,7 @@ function calSess(s, i) {
     <div class="card-h">${calChip(partOf(s.tpl, s.ex), 'cal-big')}${s.cond === 'short' ? '<span class="chip">15분 퀘스트</span>' : ''}${s.complete === false ? '<span class="chip">일부만</span>' : ''}<span class="chip gd num">+${fmt(s.xp || 0)} XP</span></div>
     <h3 class="fq-t-heading">${esc(name)}</h3>
     <p class="fq-t-caption">${s.ex.length}가지 <span class="num">${setsOf(s)}</span>세트${mins ? ` · <span class="num">${mins}</span>분` : ''} · 총 볼륨 <span class="num">${fmt(vol)}</span>kg${(s.prs || []).length ? ` · 새 기록 <span class="num">${s.prs.length}</span>개` : ''}</p>
-    <div class="cal-ex">${s.ex.map(e => `<div><b>${esc(EX[e.id] ? EX[e.id].n : e.id)}</b><span class="cal-sets">${e.sets.map(z => `<span class="num${z.pr ? ' pr' : ''}">${z.pr ? `${ico('trophy', 'ico--14')}<span class="fq-sr">새 기록</span>` : ''}${EX[e.id] ? wLabel(e.id, z.w) : z.w}×${z.r}</span>`).join('')}</span></div>`).join('')}</div>
+    <div class="cal-ex">${s.ex.map(e => `<div><b>${esc(EX[e.id] ? EX[e.id].n : e.id)}</b><span class="cal-sets">${e.q ? `<span class="num${e.sets.some(z => z.pr) ? ' pr' : ''}">${e.sets.some(z => z.pr) ? `${ico('trophy', 'ico--14')}<span class="fq-sr">새 기록</span>` : ''}${EX[e.id] ? qW(e.id, EX[e.id].kind === 'as' ? Math.min(...e.sets.map(z => z.w)) : Math.max(...e.sets.map(z => z.w))) : ''} · ${e.sets.length}세트</span>` : e.sets.map(z => `<span class="num${z.pr ? ' pr' : ''}">${z.pr ? `${ico('trophy', 'ico--14')}<span class="fq-sr">새 기록</span>` : ''}${EX[e.id] ? wLabel(e.id, z.w) : z.w}×${z.r}</span>`).join('')}</span></div>`).join('')}</div>
     ${t ? `<button class="fq-btn ${i ? 'fq-btn--secondary ' : ''}fq-btn--block" data-act="pickGo" data-t="${esc(s.tpl)}">${ico('repeat')}이 루틴 다시 하기</button>` : ''}</section>`;
 }
 function calDaySheet(k) {
@@ -1370,6 +1372,7 @@ function howSheet(id, o = {}) {
 }
 
 /* ================= LOGGER ================= */
+function qStart(t) { buildSession('normal', t || null); SFX.start(); go('logger'); }   // 0928 빠른 기록: 컨디션 묻지 않고 바로 (세트 수를 신경 쓰지 않으니)
 let W = null;
 function condSheet(tplKey) {
   sheet(`<div class="l-head">${coach('think', 44)}<div><h2 class="fq-t-title">오늘 컨디션은요?</h2><p class="fq-t-caption">고르면 바로 첫 세트예요. 줄여도 끝까지 하면 똑같이 완료예요.</p></div></div>
@@ -1388,11 +1391,16 @@ function buildSession(c, tplKey) {
   if (c === 'short') { const side = ex.find(e => EX[e.id].mus.includes('delt-side')) || (() => { const pl = plannedFor('slr', 3); return { id: 'slr', n: 3, rest: 75, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; })(); ex = [ex[0], side].filter((e, i, a) => a.indexOf(e) === i).map(e => ({ ...e, rest: 75, sets: e.sets.slice(0, 3) })); }
   if (c === 'good') { const s = ex.find(e => EX[e.id].mus.includes('delt-side')); if (s) { const l = s.sets[s.sets.length - 1]; s.sets.push({ w: l.w, r: l.r, done: false, bonus: true }); } }
   const best = {}; ex.forEach(e => best[e.id] = prog(e.id).best || 0);
-  W = { c, tpl: t, ex, i: 0, combo: 0, xp: 0, prs: 0, prList: [], t0: Date.now(), rest: null, feel: false, best, log: [], feels: {}, comeback: comebackGap() >= 7 };
+  ex.forEach(e => { const w0 = (e.sets.find(x => !x.bonus) || e.sets[0]).w; e.q = { w: w0, w0, n: e.sets.length, done: false, pr: false, ed: false }; });   // 0928 빠른 기록: 운동마다 '오늘 최고 무게' 하나 + 세트 수
+  W = { q: true, day: k, c, tpl: t, ex, i: 0, combo: 0, xp: 0, prs: 0, prList: [], t0: Date.now(), rest: null, feel: false, best, log: [], feels: {}, comeback: comebackGap() >= 7 };
   addXP('cond', 5); save();
 }
 function curSet() { const e = W.ex[W.i]; return { e, k: e.sets.findIndex(s => !s.done) }; }
+document.addEventListener('focusin', ev => { if (ev.target.matches && ev.target.matches('.qwi')) ev.target.select(); });
+document.addEventListener('change', ev => { const t = ev.target; if (!t.matches || !t.matches('.qwi') || !W || !W.q) return; const e = W.ex[+t.dataset.i]; qSetW(e, t.value); t.value = e.q.w; save(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.matches && ev.target.matches('.qwi')) ev.target.blur(); });
 R.logger = () => {
+  if (W.q) return qView();
   if (W.rest) return restView();
   const { e, k } = curSet(), E = EX[e.id], inc = incOf(e.id);
   const s = k >= 0 ? e.sets[k] : null, tip = e.tip || TIPS[e.id], st = prog(e.id), last = st.n ? lastStr(e.id) : null, rg = e.range || E.range, vv = e.v || E.v;
@@ -1423,12 +1431,88 @@ R.logger = () => {
     </div></div></div>`;
   tickClock();
 };
+/* ================= 빠른 기록 (0928) — 세트마다 누르지 않고, 운동이 끝나면 최고 무게만 ================= */
+function bestMax(id) {   // 지금까지 이 운동의 최고 무게 (어시스트는 쓰지 않음)
+  const st = prog(id);
+  if (st.bestW == null) st.bestW = DB.sessions.reduce((m, s) => Math.max(m, ...s.ex.filter(e => e.id === id).map(e => Math.max(0, ...e.sets.map(z => z.w)))), 0);
+  return st.bestW;
+}
+function lastMax(id) { const ss = lastSets(id); return ss ? (EX[id].kind === 'as' ? Math.min(...ss.map(z => z.w)) : Math.max(...ss.map(z => z.w))) : null; }
+const qW = (id, w) => EX[id].kind === 'as' ? `보조 ${w}kg` : `최고 ${w}kg`;
+function qRow(e, i, cur) {
+  const E = EX[e.id], rg = e.range || E.range, lm = lastMax(e.id), as = E.kind === 'as';
+  const thumb = `<button class="qr-th" data-act="howtoEx" data-i="${i}" aria-label="${esc(E.n)} 동작 보기">${E.img ? `<img src="media/${E.img}_0.jpg" alt="" loading="lazy">` : ''}<span class="pl">${ico('cplay', 'ico--16')}</span></button>`;
+  if (e.q.done) return `<li class="qr done${e.q.pr ? ' pr' : ''}" data-i="${i}">${thumb}<div class="qr-t"><b>${esc(E.n)}</b><span class="qr-m">${e.q.pr ? `<span class="chip gd">${ico('trophy', 'ico--14')}새 기록</span>` : `<span class="ck">${ico('check', 'ico--16')}</span>`}<span><b class="num">${qW(e.id, e.q.w)}</b> · ${e.q.n}세트</span></span></div>
+    <button class="qr-fix" data-act="qUndo" data-i="${i}" aria-label="${esc(E.n)} 기록 고치기">고치기</button></li>`;
+  const inc = incOf(e.id), up = lm != null && (as ? e.q.w0 < lm : e.q.w0 > lm) ? +Math.abs(e.q.w0 - lm).toFixed(2) : 0;
+  return `<li class="qr${cur ? ' cur' : ''}" data-i="${i}" ${cur ? 'aria-current="step"' : ''}>${thumb}<div class="qr-t"><b>${esc(E.n)}</b>
+      <span class="qr-m">${e.q.ed ? `<span class="qs" role="group" aria-label="세트 수"><button data-act="qs-" data-i="${i}" aria-label="세트 1개 줄이기">${ico('minus', 'ico--16')}</button><b class="num">${e.q.n}세트</b><button data-act="qs+" data-i="${i}" aria-label="세트 1개 늘리기">${ico('plus', 'ico--16')}</button></span>`
+        : `<button class="qs-chip" data-act="qsEd" data-i="${i}" aria-label="세트 수 ${e.q.n}개 · 바꾸기">${e.q.n}세트</button>`}<span>${rg[0]}–${rg[1]}회</span>${lm != null ? `<span>지난번 <b class="num">${wLabel(e.id, lm)}kg</b></span>` : '<span>첫 기록</span>'}${up ? `<span class="chip gd">${as ? '보조 −' : '+'}${up}kg 도전</span>` : ''}</span></div>
+    <div class="qr-in"><div class="qw" role="group" aria-label="${as ? '보조 무게' : '오늘 최고 무게'}"><button data-act="qw-" data-i="${i}" aria-label="${inc}kg 줄이기">${ico('minus')}</button>
+      <label class="v"><small>${as ? '보조' : '최고'}</small><input class="num qwi" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${e.q.w}" data-i="${i}" aria-label="${esc(E.n)} ${as ? '보조 무게' : '오늘 최고 무게'} kg"><small>kg</small></label>
+      <button data-act="qw+" data-i="${i}" aria-label="${inc}kg 늘리기">${ico('plus')}</button></div>
+      <button class="qr-ok" data-act="qDone" data-i="${i}">${ico('check')}<span>완료</span></button></div></li>`;
+}
+function qView() {
+  const cur = W.ex.findIndex(e => !e.q.done), n = W.ex.filter(e => e.q.done).length, all = n === W.ex.length;
+  const first = !DB.sessions.some(s => s.ex.some(e => e.q));
+  const sum = all ? `<div class="tile ql-sum" style="--o:2"><span><b class="num">${W.ex.length}</b>운동</span><span><b class="num">${W.ex.reduce((a, e) => a + e.q.n, 0)}</b>세트</span>${W.prs ? `<span class="gold-t"><b class="num">${W.prs}</b>새 기록</span>` : ''}<span><b class="num">+${fmt(W.xp)}</b>XP</span></div>` : '';
+  clearInterval(qView.cd);
+  $('#scr-logger').innerHTML = `${wkTop(`<b>${esc(TPL[W.tpl].code)}</b>`)}
+    <div class="lg-grid ql-grid${all ? ' all' : ''}"><div class="lg-main">
+      ${first && !all ? `<p class="ql-h">${coach('focus', 32)}<span>무게만 맞추고 <b>완료</b> · 그대로면 바로 완료</span></p>` : ''}
+      ${all ? `<p class="ql-h">${coach('proud', 32)}<span><b>다 했어요!</b> 틀린 게 있으면 고치기 (결과 전에)</span></p>` : ''}
+      <ol class="ql-list">${W.ex.map((e, i) => qRow(e, i, i === cur)).join('')}</ol>
+      ${n && !all ? '<button class="ql-end" data-act="endAsk">여기서 끝내기</button>' : ''}
+    </div><div class="lg-side">
+      ${cur >= 0 ? `<div class="lg-photo ql-photo">${howto(W.ex[cur].id)}<button class="watch" data-act="howtoEx" data-i="${cur}">${ico('cplay')}동작 보기</button></div>` : ''}
+      ${sum}
+      ${all ? `<div class="dock ql-dock" style="--o:3"><div class="dock-toast" id="dockToast"></div><button class="fq-btn fq-btn--xl fq-btn--block btn-done sel" data-act="finish">${ico('check')}<span>운동 완료<small class="ql-cd" id="qlCd"> · 3초 뒤 결과</small></span></button></div>` : '<div class="dock-toast" id="dockToast"></div>'}
+    </div></div>`;
+  tickClock();
+  if (all && W.autoEnd) { let left = 3; qView.cd = setInterval(() => { if (!W || TAB !== 'logger') return clearInterval(qView.cd); left--; const c = $('#qlCd'); if (c) c.textContent = ` · ${left}초 뒤 결과`; if (left <= 0) { clearInterval(qView.cd); finish(); } }, 1000); }
+}
+function qDone(i) {
+  const e = W.ex[i], E = EX[e.id]; if (!e || e.q.done) return;
+  e.q.done = true; e.q.ed = false; W.autoEnd = W.ex.every(x => x.q.done);   // 마지막 완료 → 3초 뒤 결과 (고치기로 멈춤)
+  const inp = document.querySelector(`.qwi[data-i="${i}"]`); if (inp) qSetW(e, inp.value);   // 입력 중이던 숫자 먼저 반영
+  let gain = 0, cnt = 0; for (let j = 0; j < e.q.n; j++) { const g = addXP('set', 3); gain += g; if (g) cnt++; }
+  const bm = E.kind === 'as' ? 0 : bestMax(e.id);
+  if (bm > 0 && e.q.w > bm && W.prs < 3) { e.q.pr = true; W.prs++; W.prList.push(`${E.n} ${e.q.w}kg`); gain += 50; DB.xp += 50; }
+  W.xp += gain; W.log.push({ i, j: 0, gain, pr: e.q.pr, combo: false, n: cnt, prName: e.q.pr ? W.prList[W.prList.length - 1] : '' });
+  e.q.pr ? SFX.pr() : SFX.set(); buzz(e.q.pr ? [20, 40, 20] : 12);
+  save(); qView(); if (gain) floatXP(`+${gain} XP`, document.querySelector(`.qr[data-i="${i}"]`));
+  const nx = document.querySelector('.qr.cur'); if (nx) nx.scrollIntoView({ block: 'center', behavior: RM() ? 'auto' : 'smooth' });
+  say(`${E.n} 완료, 최고 ${e.q.w}킬로그램`);
+}
+function qStep(i, d) {   // 제자리에서 숫자만 바꿈 (목록을 다시 그리지 않음)
+  const e = W.ex[i], inp = document.querySelector(`.qwi[data-i="${i}"]`); if (inp) qSetW(e, inp.value);
+  e.q.w = Math.max(0, +(e.q.w + d * incOf(e.id)).toFixed(2)); if (inp) inp.value = e.q.w; SFX.tap && SFX.tap(); save();
+}
+function qUndo(i) {
+  const e = W.ex[i]; if (!e || !e.q.done) return;
+  const li = W.log.map((l, n) => l.i === i ? n : -1).filter(n => n >= 0).pop(), l = W.log[li];
+  if (l) { W.xp -= l.gain; DB.xp = Math.max(0, DB.xp - l.gain); const dd = DB.xpDay[dayKey()]; if (dd && dd.set) dd.set = Math.max(0, dd.set - (l.n || 0)); if (l.pr) { W.prs--; const k = W.prList.indexOf(l.prName); if (k >= 0) W.prList.splice(k, 1); } W.log.splice(li, 1); }
+  e.q.done = false; e.q.pr = false; W.autoEnd = false; SFX.undo(); save(); qView();
+}
+function qSetW(e, raw) { const v = parseFloat(String(raw).replace(',', '.')); if (isFinite(v) && v >= 0 && v < 1000) e.q.w = Math.round(v * 4) / 4; }
+function qToSets() {   // 끝낼 때: 빠른 기록 → 예전 세트 형식 (달력 · 설계도 · 추세가 그대로 읽게). 반복은 계획값으로 채움
+  W.ex.forEach(e => { if (!e.q) return; const r0 = (e.sets.find(x => !x.bonus) || e.sets[0]).r;
+    e.sets = e.q.done ? Array.from({ length: e.q.n }, (_, j) => ({ w: e.q.w, r: r0, done: true, pr: j === 0 && e.q.pr })) : e.sets.map(x => ({ ...x, done: false })); });
+}
+function qProgress(e) {   // 다음 계획 무게 = 오늘 최고 무게 (올렸으면 'up', 낮췄으면 'fail', 같으면 'hold')
+  const st = prog(e.id), w = e.q.w;
+  st.last = st.n === 0 ? 'first' : (EX[e.id].kind === 'as' ? w < e.q.w0 : w > e.q.w0) ? 'up' : w === e.q.w0 ? 'hold' : 'fail';
+  if (st.n === 0) st.last = 'hold';
+  st.w = w; st.reps = null; st.f = 0; st.n++; st.lastDay = dayKey(); st.q = 1; st.dW = +Math.abs(w - e.q.w0).toFixed(2);
+  if (EX[e.id].kind !== 'as') st.bestW = Math.max(bestMax(e.id), w);
+}
 function wkTop(title) {
   const gym = document.documentElement.classList.contains('gym');
   return `<div class="wk-top">
     <button class="round" data-act="endAsk" aria-label="운동 끝내기">${ico('x')}</button>
-    <div class="prog"><p>${title} · <span class="num">${W.i + 1} / ${W.ex.length}</span> 운동 · <span class="num" id="clock">00:00</span></p>
-      <div class="dots" style="grid-template-columns:repeat(${W.ex.length},1fr)" aria-hidden="true">${W.ex.map((x, i) => `<i class="${x.sets.every(y => y.done) ? 'd' : i === W.i ? 'c' : ''}"></i>`).join('')}</div></div>
+    <div class="prog"><p>${title} · <span class="num">${W.q ? W.ex.filter(x => x.q.done).length : W.i + 1} / ${W.ex.length}</span> ${W.q ? '완료' : '운동'} · <span class="num" id="clock">00:00</span></p>
+      <div class="dots" style="grid-template-columns:repeat(${W.ex.length},1fr)" aria-hidden="true">${W.ex.map((x, i) => `<i class="${(W.q ? x.q.done : x.sets.every(y => y.done)) ? 'd' : (W.q ? i === W.ex.findIndex(y => !y.q.done) : i === W.i) ? 'c' : ''}"></i>`).join('')}</div></div>
     <button class="round" data-act="gym" aria-pressed="${gym}" aria-label="헬스장 모드">${ico(gym ? 'sun' : 'moon')}</button>
   </div>`;
 }
@@ -1489,7 +1573,7 @@ function tickClock() {
   };
   tick(); clockT = setInterval(tick, 250);
 }
-function floatXP(txt) { const d = $('.dock'); if (!d || RM()) return; const x = document.createElement('span'); x.className = 'xpf num'; x.textContent = txt; d.append(x); setTimeout(() => x.remove(), 1200); }
+function floatXP(txt, at) { const d = at || $('.dock'); if (!d) return; const x = document.createElement('span'); x.className = 'xpf num'; x.textContent = txt; d.append(x); setTimeout(() => x.remove(), 1200); }
 function setDone(j) {
   const e = W.ex[W.i], s = e.sets[j]; if (!s || s.done) return;
   s.done = true; W.combo++;
@@ -1517,8 +1601,10 @@ function undoSet(j) {
 }
 function finish() {
   if (!W) return;
+  if (W.q) qToSets();
+  W.end = true; delete DB.live;   // 끝내는 중: 백업 · 저장에 진행 중 운동이 섞이지 않게
   const k = dayKey(), done = W.ex.reduce((s, x) => s + x.sets.filter(y => y.done).length, 0), total = W.ex.reduce((s, x) => s + x.sets.length, 0);
-  const completed = done > 0 && done / total >= .8, L0 = levelOf(DB.xp - W.xp);
+  const completed = W.q ? W.ex.filter(e => e.q.done).length / W.ex.length >= .8 : done > 0 && done / total >= .8, L0 = levelOf(DB.xp - W.xp);
   const short = W.c === 'short', tired = W.c === 'tired', comboN = W.log.filter(l => l.combo).length, prN = W.prList.length, logSum = W.log.reduce((a, l) => a + l.gain, 0);
   let wb = 0, cb = 0;
   if (completed) wb = addXP('workout', short ? 60 : 100);
@@ -1526,13 +1612,13 @@ function finish() {
   const rows = [[`세트 ${done}개`, logSum - comboN * 10 - prN * 50], comboN && [`콤보 보너스 ${comboN}번`, comboN * 10], prN && [`새 기록 ${prN}개`, prN * 50],
     wb && [short ? '15분 퀘스트 클리어' : '퀘스트 클리어', wb], cb && ['복귀 첫 운동 2배', cb], W.xp - logSum > 0 && ['통증 알려 주기', W.xp - logSum]].filter(Boolean);
   W.xp += wb + cb;
-  W.ex.forEach(e => { const d = e.sets.filter(s => s.done); if (d.length) { applyProgress(e.id, d.map(s => ({ w: s.w, r: s.r })), e.sets.filter(s => !s.bonus).length, W.feels[e.id], e.range); const st = prog(e.id); st.best = Math.max(st.best || 0, ...d.map(s => EX[e.id].kind === 'as' ? 0 : e1(s.w, s.r))); } });
-  if (done) DB.sessions.push({ id: uid(), day: k, tpl: W.tpl, cond: W.c, t0: W.t0, t1: Date.now(), xp: W.xp, prs: W.prList, complete: completed, ex: W.ex.map(e => ({ id: e.id, sets: e.sets.filter(s => s.done).map(s => ({ w: s.w, r: s.r, pr: !!s.pr })) })).filter(e => e.sets.length) });
+  W.ex.forEach(e => { const d = e.sets.filter(s => s.done); if (d.length && e.q) { qProgress(e); return; } if (d.length) { applyProgress(e.id, d.map(s => ({ w: s.w, r: s.r })), e.sets.filter(s => !s.bonus).length, W.feels[e.id], e.range); const st = prog(e.id); st.best = Math.max(st.best || 0, ...d.map(s => EX[e.id].kind === 'as' ? 0 : e1(s.w, s.r))); } });
+  if (done) DB.sessions.push({ id: uid(), day: k, tpl: W.tpl, cond: W.c, t0: W.t0, t1: Date.now(), xp: W.xp, prs: W.prList, complete: completed, ex: W.ex.map(e => ({ id: e.id, ...(e.q ? { q: 1 } : {}), sets: e.sets.filter(s => s.done).map(s => ({ w: s.w, r: s.r, pr: !!s.pr })) })).filter(e => e.sets.length) });
   if (completed) DB.done[k] = true;
   checkDaily3(); save(); bkAuto();
   const L1 = levelOf(DB.xp), gain = [...new Set(W.ex.filter(e => e.sets.some(s => s.done)).flatMap(e => EX[e.id].mus))];
   const mins = Math.max(1, Math.round((Date.now() - W.t0) / 60000)), { left, nt, cur } = nextTarget(), prs = W.prList, xp = W.xp, T0 = TPL[W.tpl], nEx = W.ex.filter(e => e.sets.some(s => s.done)).length;
-  clearInterval(clockT); keepAwake(false); W = null;
+  clearInterval(clockT); keepAwake(false); W = null; delete DB.live; save();
   go('sum');
   const next = (() => { for (let i = 1; i <= 7; i++) { const d = addDays(k, i), t = tplFor(d); if (t) return `${DOW[dow(d)]}요일 ${TPL[t].code}: ${TPL[t].ex.map(([id]) => EX[id].n).join(', ')}`; } return '다음 운동 계획 없음'; })();
   const Lb = bpLevels(), meal = nextMealName(), pct = L => Math.round((DB.xp - cum(L)) / (cum(L + 1) - cum(L)) * 100);
@@ -1835,12 +1921,16 @@ document.addEventListener('click', ev => {
     ask: () => { FR.items[+a.dataset.i].q = +a.dataset.q; FR.asked = true; drawResult(); },
     qty: () => { FR.items[+a.dataset.i].q = +a.dataset.q; drawResult(); },
     saveFood: () => { const it = FR.items.filter(x => x.q > 0); const P = it.reduce((s, x) => s + x.p * x.q, 0), K = it.reduce((s, x) => s + x.k * x.q, 0), C = it.reduce((s, x) => s + x.c * x.q, 0), F = it.reduce((s, x) => s + x.f * x.q, 0); FR = null; addFood({ n: it.map(x => x.n).join(' · ').slice(0, 40) || '사진 기록', p: P, k: K, c: C, f: F }); },
-    startQuest: () => condSheet(), pickTpl: () => pickTplSheet(), pickGo: () => condSheet(a.dataset.t),
+    startQuest: () => qStart(), pickTpl: () => pickTplSheet(), pickGo: () => { closeSheet(); qStart(a.dataset.t); },
     cond: () => { buildSession(a.dataset.c, a.dataset.t || null); closeSheet(); SFX.start(); keepAwake(true); go('logger'); },
     postpone: () => { const t = tplFor(k), { ds, seq } = shiftPlan(k, t), N = (d, x) => `${DOW[dow(d)]}요일 ${PART_NAME[partOf(x)]} 운동은`, last = seq[ds.length];
       DB.flags['pp_' + mondayOf(k)] = true; save(); R.work();
       toast(`<span>오늘 ${PART_NAME[partOf(t)]} 운동은 ${DOW[dow(ds[0])]}요일로${ds[1] ? `, ${N(ds[0], seq[1])} ${DOW[dow(ds[1])]}요일로` : ''} 밀렸어요.${last ? ` ${N(ds[ds.length - 1], last)} 이번 주 쉬어요.` : ''}</span>`, 6000); },
     setDone: () => setDone(+a.dataset.j), undoSet: () => undoSet(+a.dataset.j),
+    qDone: () => qDone(+a.dataset.i), qUndo: () => qUndo(+a.dataset.i),
+    'qw+': () => qStep(+a.dataset.i, 1), 'qw-': () => qStep(+a.dataset.i, -1),
+    qsEd: () => { W.ex[+a.dataset.i].q.ed = true; qView(); },
+    'qs+': () => { const q = W.ex[+a.dataset.i].q; q.n = Math.min(8, q.n + 1); qView(); }, 'qs-': () => { const q = W.ex[+a.dataset.i].q; q.n = Math.max(1, q.n - 1); qView(); },
     'w+': () => adj('w', 1), 'w-': () => adj('w', -1), 'r+': () => adj('r', 1), 'r-': () => adj('r', -1),
     'rest+': () => { if (W.rest) { W.rest.len += 15; R.logger(); bump($('#restT')); } }, 'rest-': () => { if (W.rest) { W.rest.len = Math.max(15, W.rest.len - 15); R.logger(); bump($('#restT')); } },
     restSkip: () => { W.rest = null; SFX.tap(); R.logger(); },
@@ -1863,7 +1953,7 @@ document.addEventListener('click', ev => {
     crKey: () => { const v = ($('#gkeyS').value || '').trim(); if (!/^AIza[\w-]{20,}$/.test(v)) return crAddSheet('키는 AIza 로 시작하는 긴 글자예요.'); DB.settings.gkey = v; save(); crAddSheet(); },
     crDel: () => { const id = a.dataset.v, c = DB.custom, cr = c.creators.find(x => x.id === id); (cr.tpls || []).forEach(k => { delete c.tpls[k]; delete TPL[k]; delete TPL_PARTS[k]; Object.keys(DB.pins || {}).forEach(d => { if (DB.pins[d] === k) delete DB.pins[d]; }); }); c.creators = c.creators.filter(x => x.id !== id); const i = CREATORS.findIndex(x => x.id === id); if (i >= 0) CREATORS.splice(i, 1); DB.profile.creators = (DB.profile.creators || []).filter(x => x !== id); save(); closeSheet(); R[TAB] && R[TAB](); toast('<span>지웠어요.</span>'); },
     crToggle: () => { const v = a.dataset.v, cur = DB.profile.creators || []; DB.profile.creators = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v); save(); crPickSheet(); R[TAB] && R[TAB](); },
-    proGo: () => condSheet(a.dataset.t),
+    proGo: () => { closeSheet(); qStart(a.dataset.t); },
     proDay: () => sheet(`<h2 class="fq-t-title">어느 요일에 고정할까요?</h2><p class="fq-t-caption" style="margin:-6px 0 0">${esc(TPL[a.dataset.t].ko)} · 로테이션과 상관없이 매주 이 요일은 이 루틴</p><div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="fq-chip" style="min-width:52px;justify-content:center" data-act="proDaySet" data-d="${d}" data-t="${a.dataset.t}">${DOW[d]}</button>`).join('')}</div>`),
     proDaySet: () => { DB.pins = DB.pins || {}; DB.pins[+a.dataset.d] = a.dataset.t; save(); closeSheet(); R[TAB] && R[TAB](); toast(`<span>${DOW[+a.dataset.d]}요일은 ${esc(TPL[a.dataset.t].ko)}로 고정했어요${pinClash(+a.dataset.d) ? '. 옆 요일과 같은 부위라 옆 날은 다른 부위로 바꿔 넣어요' : ''}</span>`, 5000); },
     unpin: () => { DB.pins = {}; save(); scheduleSheet(); R[TAB] && R[TAB](); },
@@ -1913,4 +2003,5 @@ Object.keys(R).forEach(k => { const f = R[k]; R[k] = (...a) => { const r = f(...
 $('#lvl-coach').innerHTML = COACH_SVG;
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
-else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } fixOldPostpone(); settleStreak(); go('home'); loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); fillPending(); }); }
+else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } fixOldPostpone(); settleStreak();
+  if (DB.live && DB.live.q && DB.live.day === dayKey()) { W = DB.live; go('logger'); toast('<span>하던 운동을 이어서 해요</span>'); } else { delete DB.live; go('home'); } loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); fillPending(); }); }
