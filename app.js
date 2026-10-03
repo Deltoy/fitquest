@@ -1858,12 +1858,12 @@ let PLAN = [];
 function planHist() {
   const k = dayKey(), n = mealNames().length, days = Array.from({ length: 14 }, (_, i) => addDays(k, -(i + 1))).filter(d => dayFoods(d).length);
   const avg = Array(n).fill(0), cnt = Array(n).fill(0), usual = Array.from({ length: n }, () => ({})), mine = {};
-  days.forEach(d => { for (let i = 0; i < n; i++) { const fs = dayFoods(d).filter(f => f.slot === i); if (!fs.length) continue; avg[i] += fs.reduce((a, f) => a + f.p, 0); cnt[i]++; fs.forEach(f => { const u = usual[i][f.n] = usual[i][f.n] || { n: f.n, p: 0, k: 0, c: 0 }; u.p += f.p; u.k += f.k; u.c++; }); } });
-  DB.foods.filter(f => f.est !== 'w' && f.p > 0).forEach(f => { const m = mine[f.n] = mine[f.n] || { n: f.n, p: 0, k: 0, c: 0, own: 1 }; m.p += f.p; m.k += f.k; m.c++; });
-  const avgOf = o => ({ n: o.n, p: Math.round(o.p / o.c), k: Math.round(o.k / o.c), c: o.c, own: o.own });
+  days.forEach(d => { for (let i = 0; i < n; i++) { const fs = dayFoods(d).filter(f => f.slot === i); if (!fs.length) continue; avg[i] += fs.reduce((a, f) => a + f.p, 0); cnt[i]++; fs.forEach(f => { const u = usual[i][f.n] = usual[i][f.n] || { n: f.n, p: 0, k: 0, cnt: 0 }; u.p += f.p; u.k += f.k; u.cnt++; }); } });
+  DB.foods.filter(f => f.est !== 'w' && f.p > 0).forEach(f => { const m = mine[f.n] = mine[f.n] || { n: f.n, p: 0, k: 0, cnt: 0, own: 1 }; m.p += f.p; m.k += f.k; m.cnt++; });
+  const avgOf = o => ({ n: o.n, p: Math.round(o.p / o.cnt), k: Math.round(o.k / o.cnt), cnt: o.cnt, own: o.own });
   return { days: days.length, avg: avg.map((v, i) => cnt[i] ? Math.round(v / cnt[i]) : null),
-    usual: usual.map((u, i) => Object.values(u).filter(x => x.c >= 2 && x.c >= cnt[i] * .5).map(avgOf).sort((a, b) => b.c - a.c).slice(0, 3)),   // 그 끼니에 절반 넘는 날 먹은 것 = 습관
-    mine: Object.values(mine).filter(x => x.c >= 1).map(avgOf).filter(x => x.p >= 6) };
+    usual: usual.map((u, i) => Object.values(u).filter(x => x.cnt >= 2 && x.cnt >= cnt[i] * .5).map(avgOf).sort((a, b) => b.cnt - a.cnt).slice(0, 3)),   // 그 끼니에 절반 넘는 날 먹은 것 = 습관
+    mine: Object.values(mine).map(avgOf).filter(x => x.p >= 6) };
 }
 function planAddOns(need, H, used) {   // 모자란 g 에 가장 잘 맞는 음식 1~2개: 내가 먹어 본 것 우선, 단백질 많고 칼로리 적은 것
   const pool = H.mine.concat(BASE_FAVS, WTE.filter(w => w.cat !== '배달')).filter(x => x.p >= 6 && !used.has(x.n));
@@ -1955,7 +1955,7 @@ document.addEventListener('click', ev => {
     obStart: () => { DB.profile.chapter = +a.dataset.c; DB.profile.chapterStart = dayKey(); delete DB.flags.obDraft; DB.streak.last = addDays(dayKey(), -1); DB.weights[dayKey()] = DB.inbody[0].w; save(); SFX.start(); go('home'); toast('<span>시작했어요! 첫 할 일은 단백질이에요.</span>'); },
     wte: () => wteSheet(), wteCat: () => wteSheet(a.dataset.c === '전체' ? null : a.dataset.c),
     logWte: () => { closeSheet(); addFood(WTE.find(w => w.n === a.dataset.n)); },
-    planAdd: () => { const x = PLAN[+a.dataset.i]; if (x) addFood({ n: x.n, p: x.p, k: x.k, c: x.c || 0, f: x.f || 0 }, null, x.slot); },
+    planAdd: () => { const x = PLAN[+a.dataset.i]; if (x) addFood({ n: x.n, p: x.p, k: x.k, c: x.own ? 0 : x.c || 0, f: x.own ? 0 : x.f || 0 }, null, x.slot); },
     rescue: () => { const { nt } = nextTarget(), r = RESCUE.find(q => nt <= q[0]); addFood({ n: r[1], p: r[2], k: r[3], c: 12, f: 4 }, 'rescue'); },
     fav: () => { closeSheet(); addFood(favList()[+a.dataset.i]); },
     snap: () => { pickSlot(); closeSheet(); FR = null; go('cam'); $('#foodPhoto').click(); },   // 식단 "사진" → 카메라 탭 + 카메라 바로 열기
