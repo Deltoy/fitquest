@@ -898,3 +898,24 @@ html.gym .tabbar button[aria-current="page"] { color: #FF6B75; }
   .ql-grid.all { display: flex; flex-direction: column; gap: 12px; width: min(100%, 640px); margin: 0 auto; overflow: auto; }
   .ql-grid.all .lg-main, .ql-grid.all .lg-side { display: contents; }
 }
+
+/* 1004 끼니별 채우기 */
+.plan .mp-ana { display: grid; gap: 8px; margin-top: 4px; }
+.plan .mp-a { display: grid; grid-template-columns: 44px minmax(0,1fr) 72px; align-items: center; gap: 8px; font-size: 13px; }
+.plan .mp-a b { font-weight: 700; color: var(--ink-2); } .plan .mp-a small { text-align: right; color: var(--ink-2); font-weight: 600; }
+.plan .mp-a i { display: block; height: 8px; border-radius: 99px; background: var(--canvas); position: relative; overflow: hidden; }
+.plan .mp-a i::after { content: ""; position: absolute; inset: 0; width: calc(var(--w) * 1%); background: var(--amber); border-radius: 99px; }
+.plan .mp-a.ok i::after { background: var(--cyan); }
+.plan .mp-sum { margin: 6px 0 0; } .plan .mp-sum b { color: var(--amber-ink); }
+.plan .mp-rows { display: grid; gap: 0; margin-top: 10px; }
+.plan .mp-row { padding: 12px 0; border-top: 1px solid var(--canvas); display: grid; gap: 6px; }
+.plan .mp-row.now { }
+.plan .mp-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; } .plan .mp-h b { font-size: 16px; font-weight: 800; } .plan .mp-h small { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.plan .mp-t { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); word-break: keep-all; } .plan .mp-t b { color: var(--ink); }
+.plan .mp-row.ok .mp-t { color: var(--cyan-ink); font-weight: 700; display: flex; align-items: center; gap: 4px; } .plan .mp-row.past .mp-t { font-size: 13px; }
+.plan .mp-c { display: flex; flex-wrap: wrap; gap: 6px; }
+.plan .mp-f { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 0; background: var(--canvas); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; max-width: 100%; }
+.plan .mp-f span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .plan .mp-f b { font-weight: 800; color: var(--ink-2); }
+.plan .mp-f.more { background: var(--cyan-tint, #E3F6FC); color: var(--cyan-ink); } .plan .mp-f.more b { color: var(--cyan-ink); }
+.plan .mp-t b { display: inline; font-size: inherit; }
+.plan .mp-c .mp-f { width: auto; flex: 0 1 auto; }

@@ -880,6 +880,7 @@ R.diet = () => {
       ${left > 0 ? `<p class="next-l" data-v="next">${nextLab(nx)}<b class="num">${nx.nt}g</b></p>` : '<p class="next-l">오늘 단백질 목표를 채웠어요</p>'}
       ${dayN >= 2 ? `<div class="wk-hit"><span class="fq-t-label">이번 주 단백질 <b class="num" data-v="hit">${hits}/${dayN}</b>일</span><span class="wk-dots" role="img" aria-label="이번 주 단백질 목표 ${dayN}일 중 ${hits}일 달성">${wk.map(d => `<i${hitDay(d) ? ' data-on' : ''}${d === k ? ' data-today' : ''}></i>`).join('')}</span></div>` : ''}
     </section>
+    ${planCard('style="--o:3"')}
     <section class="tile card-pad wte-in" style="--o:4" aria-labelledby="wteH"><div class="card-h"><h2 class="fq-t-heading" id="wteH">뭐 먹지?</h2><span class="fq-t-caption">남은 ${left}g에 맞춰서</span></div>
       ${left > 0 ? wtePicks().map(x => `<div class="wte-row"><span class="wte-n"><b>${esc(x.n)}</b><small>${x.cat}</small></span><i class="lead"></i><span class="fi-v num">${x.p}g<small>${x.k}kcal</small></span><button class="addb" data-act="${x.cat === '회사 점심' ? 'lunch' : 'logWte'}" data-n="${esc(x.n)}" aria-label="${esc(x.n)} 기록">${ico('plus', 'ico--20')}</button></div>`).join('')
         + `<button class="linkbtn ink" data-act="wte">${ico('utensils', 'ico--16')}편의점, 배달, 집밥 더 보기</button>` : `<p class="fq-t-label">오늘 단백질은 다 채웠어요<small class="fq-t-caption"> 더 먹는다면 채소나 과일로</small></p>`}
@@ -1851,6 +1852,50 @@ function wtePicks(cat) {
   return (cat ? [cat] : WTE_CATS).flatMap(c => pool.filter(x => x.cat === c).sort((a, b) => score(b) - score(a)).slice(0, cat ? 3 : 1));
 }
 const WTE_CATS = ['편의점', '배달', '집밥'];
+/* 1004 사용자: 아침·점심·저녁을 어떻게 먹어야 다 채우는지 — 최근 2주 내 기록을 끼니별로 분석해서
+   ① 끼니별 평소 단백질 vs 목표(어디가 모자란지) ② 오늘 끼니마다: 평소 먹는 것 + 모자란 만큼 더할 음식(내가 먹어 본 것 먼저) */
+let PLAN = [];
+function planHist() {
+  const k = dayKey(), n = mealNames().length, days = Array.from({ length: 14 }, (_, i) => addDays(k, -(i + 1))).filter(d => dayFoods(d).length);
+  const avg = Array(n).fill(0), cnt = Array(n).fill(0), usual = Array.from({ length: n }, () => ({})), mine = {};
+  days.forEach(d => { for (let i = 0; i < n; i++) { const fs = dayFoods(d).filter(f => f.slot === i); if (!fs.length) continue; avg[i] += fs.reduce((a, f) => a + f.p, 0); cnt[i]++; fs.forEach(f => { const u = usual[i][f.n] = usual[i][f.n] || { n: f.n, p: 0, k: 0, c: 0 }; u.p += f.p; u.k += f.k; u.c++; }); } });
+  DB.foods.filter(f => f.est !== 'w' && f.p > 0).forEach(f => { const m = mine[f.n] = mine[f.n] || { n: f.n, p: 0, k: 0, c: 0, own: 1 }; m.p += f.p; m.k += f.k; m.c++; });
+  const avgOf = o => ({ n: o.n, p: Math.round(o.p / o.c), k: Math.round(o.k / o.c), c: o.c, own: o.own });
+  return { days: days.length, avg: avg.map((v, i) => cnt[i] ? Math.round(v / cnt[i]) : null),
+    usual: usual.map((u, i) => Object.values(u).filter(x => x.c >= 2 && x.c >= cnt[i] * .5).map(avgOf).sort((a, b) => b.c - a.c).slice(0, 3)),   // 그 끼니에 절반 넘는 날 먹은 것 = 습관
+    mine: Object.values(mine).filter(x => x.c >= 1).map(avgOf).filter(x => x.p >= 6) };
+}
+function planAddOns(need, H, used) {   // 모자란 g 에 가장 잘 맞는 음식 1~2개: 내가 먹어 본 것 우선, 단백질 많고 칼로리 적은 것
+  const pool = H.mine.concat(BASE_FAVS, WTE.filter(w => w.cat !== '배달')).filter(x => x.p >= 6 && !used.has(x.n));
+  const seen = new Set(), uniq = pool.filter(x => !seen.has(x.n) && seen.add(x.n));
+  const score = (x, r) => -Math.abs(r - x.p) / Math.max(10, r) + (x.own ? .35 : 0) + Math.min(.4, x.p / Math.max(60, x.k) * 1.5) - (x.p > r + 15 ? .4 : 0);
+  const out = []; let r = need;
+  for (let t = 0; t < 2 && r >= 6; t++) { const best = uniq.filter(x => !out.includes(x)).sort((a, b) => score(b, r) - score(a, r))[0]; if (!best) break; out.push(best); r -= best.p; }
+  return out;
+}
+function planCard(attrs = '') {
+  const T = targets(), tgs = mealTargets(T), names = mealNames(), H = planHist(), now = slotAt(), li = lunchOut() ? lunchIdx() : -1;
+  PLAN = [];
+  const gapI = H.avg.map((v, i) => v == null ? null : tgs[i] - v), worst = gapI.reduce((m, g, i) => g != null && g > 8 && (m < 0 || g > gapI[m]) ? i : m, -1);
+  const ana = H.days >= 3 ? `<div class="mp-ana" role="img" aria-label="최근 2주 끼니별 평균 단백질">${names.map((nm, i) => { const v = H.avg[i], tg = tgs[i], w = v == null ? 0 : Math.min(100, v / Math.max(1, tg) * 100);
+      return `<span class="mp-a${v != null && v >= tg - 8 ? ' ok' : ''}"><b>${nm}</b><i style="--w:${w.toFixed(0)}"></i><small class="num">${v == null ? '기록 없음' : `${v}/${tg}g`}</small></span>`; }).join('')}</div>
+      <p class="fq-t-caption mp-sum">최근 ${H.days}일 평균${worst >= 0 ? ` · <b>${names[worst]}</b>이 평소 ${gapI[worst]}g 모자라요` : ' · 끼니별로 잘 채우고 있어요'}</p>`
+    : `<p class="fq-t-caption">3일 이상 기록하면 끼니별로 어디가 모자란지 분석해 드려요.</p>`;
+  const rows = names.map((nm, i) => {
+    const got = Math.round(slotSum(i)), tg = tgs[i], need = tg - got, past = i < now;
+    if (need <= 5) return `<div class="mp-row ok"><span class="mp-h"><b>${nm}</b><small class="num">${got}/${tg}g</small></span><p class="mp-t">${ico('check', 'ico--14')}채웠어요</p></div>`;
+    if (past && got > 0) return `<div class="mp-row past"><span class="mp-h"><b>${nm}</b><small class="num">${got}/${tg}g</small></span><p class="mp-t">지나간 끼니 · 모자란 ${need}g은 다음 끼니로 넘겼어요</p></div>`;
+    const used = new Set(), base = [];
+    if (i === li) { const l = LUNCH[0]; return `<div class="mp-row"><span class="mp-h"><b>${nm}</b><small class="num">${got}/${tg}g</small></span><p class="mp-t">회사 점심 · ${riceTip()}</p><div class="mp-c"><button class="mp-f" data-act="lunch" data-n="${esc(l.n)}"><span>${esc(l.n)}</span><b class="num">${l.p}g</b></button></div></div>`; }
+    let sum = got; H.usual[i].forEach(u => { if (sum + u.p <= tg + 10 && !dayFoods().some(f => f.slot === i && f.n === u.n)) { base.push(u); used.add(u.n); sum += u.p; } });
+    const adds = planAddOns(tg - sum, H, used), item = (x, tag) => { PLAN.push({ ...x, slot: i }); return `<button class="mp-f${tag ? ' more' : ''}" data-act="planAdd" data-i="${PLAN.length - 1}" aria-label="${esc(x.n)} ${x.p}g ${nm}에 기록"><span>${tag ? '+ ' : ''}${esc(x.n)}</span><b class="num">${x.p}g</b></button>`; };
+    const tot = sum + adds.reduce((a, x) => a + x.p, 0);
+    return `<div class="mp-row${i === now ? ' now' : ''}"><span class="mp-h"><b>${nm}</b><small class="num">${got ? `${got}g 먹음 · ` : ''}목표 ${tg}g</small></span>
+      <p class="mp-t">${[got ? `지금 ${got}g` : '', base.length ? '평소 메뉴' : ''].filter(Boolean).join(' + ')}${adds.length ? `${got || base.length ? ' + ' : ''}<b>${adds.map(x => x.n).join(' + ')}</b>` : ''} → <b class="num">${Math.round(tot)}g</b>${tot >= tg - 5 ? ' 채워요' : ` (${Math.round(tg - tot)}g 모자람)`}</p>
+      <div class="mp-c">${base.map(x => item(x, 0)).join('')}${adds.map(x => item(x, 1)).join('')}</div></div>`;
+  }).join('');
+  return `<section class="tile card-pad plan" ${attrs} aria-labelledby="plH"><div class="card-h"><h2 class="fq-t-heading" id="plH">끼니별로 이렇게 채워요</h2><span class="fq-t-caption">내 기록 분석</span></div>${ana}<div class="mp-rows">${rows}</div><p class="fq-t-caption">누르면 그 끼니에 바로 기록돼요 · 파란 칸 = 더 먹으면 좋은 것</p></section>`;
+}
 function wteSheet(cat) {
   const T = targets(), S = daySum(), { left, nt } = nextTarget(), remK = T.kcal - S.k, picks = wtePicks(cat), cats = WTE_CATS;
   sheet(`<div class="row row--between"><h2 class="fq-t-title">뭐 먹지?</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
@@ -1910,6 +1955,7 @@ document.addEventListener('click', ev => {
     obStart: () => { DB.profile.chapter = +a.dataset.c; DB.profile.chapterStart = dayKey(); delete DB.flags.obDraft; DB.streak.last = addDays(dayKey(), -1); DB.weights[dayKey()] = DB.inbody[0].w; save(); SFX.start(); go('home'); toast('<span>시작했어요! 첫 할 일은 단백질이에요.</span>'); },
     wte: () => wteSheet(), wteCat: () => wteSheet(a.dataset.c === '전체' ? null : a.dataset.c),
     logWte: () => { closeSheet(); addFood(WTE.find(w => w.n === a.dataset.n)); },
+    planAdd: () => { const x = PLAN[+a.dataset.i]; if (x) addFood({ n: x.n, p: x.p, k: x.k, c: x.c || 0, f: x.f || 0 }, null, x.slot); },
     rescue: () => { const { nt } = nextTarget(), r = RESCUE.find(q => nt <= q[0]); addFood({ n: r[1], p: r[2], k: r[3], c: 12, f: 4 }, 'rescue'); },
     fav: () => { closeSheet(); addFood(favList()[+a.dataset.i]); },
     snap: () => { pickSlot(); closeSheet(); FR = null; go('cam'); $('#foodPhoto').click(); },   // 식단 "사진" → 카메라 탭 + 카메라 바로 열기
