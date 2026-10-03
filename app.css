@@ -117,7 +117,13 @@ body { overscroll-behavior-y: none; padding-top: env(safe-area-inset-top, 0px); 
 .big .what.done { margin-left: 0; font-size: 34px; font-weight: 800; color: var(--ink); }
 .big .chip { margin-left: 8px; align-self: center; }
 /* 끼니 막대: 칸 너비 = 끼니 목표 */
+.meter-w { position: relative; padding-top: 20px; }
 .meter { display: grid; gap: 6px; }
+.min-mk { position: absolute; top: 0; height: 36px; width: 2px; margin-left: -1px; background: var(--amber); border-radius: 1px; pointer-events: none; }
+.min-mk em { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: -18px; padding: 0 6px; border-radius: 6px; background: var(--amber-tint); color: var(--amber-ink); font-style: normal; font-size: 11px; font-weight: 800; white-space: nowrap; line-height: 16px; }
+.min-mk.ok { background: var(--cyan); } .min-mk.ok em { background: var(--surface, #fff); box-shadow: 0 0 0 1px var(--cyan); color: var(--cyan-ink); }
+.min-l { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 2px 0 0; font-size: 13px; font-weight: 700; color: var(--amber-ink); }
+.min-l.ok { color: var(--cyan-ink); } .min-l small { font-weight: 500; color: var(--ink-3, var(--ink-2)); }
 .meter > span { display: grid; gap: 6px; min-width: 0; }
 .meter i { display: block; height: 12px; border-radius: 99px; background: var(--canvas); overflow: hidden; position: relative; }
 .meter i::after { content: ""; position: absolute; inset: 0; width: calc(var(--w) * 1%); background: var(--ink); border-radius: 99px; transition: width .7s var(--spring); }

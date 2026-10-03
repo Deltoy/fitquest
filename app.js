@@ -491,6 +491,15 @@ function showLevelUp() {
 function lvInfo() { const L = levelOf(DB.xp), a = cum(L), b = cum(L + 1); return { L, a, b, p: Math.round((DB.xp - a) / (b - a) * 100) }; }
 function chapterWeek() { const d = daysBetween(DB.profile.chapterStart, dayKey()); return DB.profile.chapter === 0 ? `D+${d + 1}/14` : `${Math.floor(d / 7) + 1}주차`; }
 /* 끼니 막대: 칸 너비 = 끼니 목표(mealSplit), 채운 만큼 빨강, 지금 끼니는 하늘색 테두리 */
+/* 1004 사용자: 목표는 2g/kg 넘게지만, 최소 1.6g/kg 은 꼭 — 그래프에 최소선 */
+const minP = () => r5(curWeight() * 1.6);
+function minMark(T, split) {   // 끼니 칸들 위에 '최소' 세로선: 누적 단백질이 최소에 닿는 곳
+  const mn = minP(); if (!(mn > 0) || mn >= T.p) return '';
+  const tot = split.reduce((a, b) => a + b, 0), n = split.length, got = daySum().p >= mn;
+  let acc = 0, i = 0; while (i < n - 1 && acc + split[i] < mn) acc += split[i++];
+  const frac = Math.min(1, mn / tot);
+  return `<span class="min-mk${got ? ' ok' : ''}" style="left:calc(${(frac * 100).toFixed(2)}% - ${((frac * (n - 1) - i) * 6).toFixed(1)}px)" aria-hidden="true"><em>최소 ${mn}g</em></span>`;
+}
 function mealMeter(T) {
   const names = mealNames(), split = mealSplit(T.p), tgs = mealTargets(T), { cur } = nextTarget(), aria = [];
   const cells = names.map((n, i) => {
@@ -498,7 +507,7 @@ function mealMeter(T) {
     const hit = got >= tg - 10 && got > 0; aria.push(`${n} ${got} / ${tg}g`);
     return `<span class="${hit ? 'hit' : i === cur ? 'next' : ''}"><i style="--w:${Math.min(100, got / Math.max(1, tg) * 100).toFixed(0)}"></i><b>${hit ? ico('check', 'ico--12') : ''}${n}</b></span>`;
   }).join('');
-  return `<div class="meter" style="grid-template-columns:${split.map(v => `minmax(40px,${v}fr)`).join(' ')}" role="img" aria-label="끼니별 단백질: ${aria.join(', ')}">${cells}</div>`;
+  return `<div class="meter-w"><div class="meter" style="grid-template-columns:${split.map(v => `minmax(40px,${v}fr)`).join(' ')}" role="img" aria-label="끼니별 단백질: ${aria.join(', ')} · 최소 ${minP()}g(몸무게 1kg당 1.6g)">${cells}</div>${minMark(T, split)}</div>`;
 }
 
 /* ================= ONBOARDING ================= */
@@ -562,7 +571,7 @@ function daily3(k = dayKey()) {
   const T = targets(), S = daySum(), train = isTrainDay(k), all = !!DB.flags['all_' + k];
   return [
     train ? { n: '운동', ic: 'dumbbell', p: DB.done[k] ? 1 : 0, v: DB.done[k] ? '완료' : '오늘 할 일' } : { n: '체중', ic: 'scale', p: DB.weights[k] ? 1 : 0, v: DB.weights[k] ? `${DB.weights[k]}kg` : '아직' },
-    { n: '단백질', ic: 'utensils', p: Math.min(1, S.p / (T.p * .9)), v: `${Math.round(S.p)}/${T.p}g` },
+    { n: '단백질', ic: 'utensils', p: Math.min(1, S.p / (T.p * .9)), v: `${Math.round(S.p)}/${T.p}g${S.p < minP() ? ` · 최소 ${minP()}` : ''}` },
     { n: '기록', ic: 'check', p: all ? 1 : 0, v: all ? '다 적음' : '아직' }
   ];
 }
@@ -898,6 +907,7 @@ function quickCard(T, S) {
   const qs = quickActs();
   return `<section class="tile card-pad quick hero" aria-labelledby="qH">
     <div class="q-top"><h2 class="fq-sr" id="qH">기록하기</h2><p class="q-p"><span class="fq-eyebrow">단백질</span><b class="num" data-count="p">${Math.round(S.p)}</b><span class="of num">/ ${T.p}g</span></p>${slotChip()}</div>
+    <p class="min-l${S.p >= minP() ? ' ok' : ''}">${S.p >= minP() ? `${ico('check', 'ico--12')}최소 ${minP()}g 채움 · 목표까지 ${Math.max(0, T.p - Math.round(S.p))}g` : `최소 <b class="num">${minP()}g</b>까지 ${minP() - Math.round(S.p)}g 남음`}<small>(몸무게 1kg당 최소 1.6g · 목표 ${(T.p / curWeight()).toFixed(1)}g)</small></p>
     ${mealMeter(T)}
     ${DB.foods.length < 5 ? `<p class="fq-t-caption">사진, 글, 단골 중 편한 걸로 기록해요</p>` : ''}
     <div class="qbar" style="grid-template-columns:repeat(${qs.length},minmax(0,1fr))">${qs.map(([act, ic, l], i) => `<button class="qb${i ? '' : ' qb--main'}" data-act="${act}">${ico(ic, '')}<span>${l}</span></button>`).join('')}</div></section>`;
