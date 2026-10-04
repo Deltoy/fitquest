@@ -919,3 +919,18 @@ html.gym .tabbar button[aria-current="page"] { color: #FF6B75; }
 .plan .mp-f.more { background: var(--cyan-tint, #E3F6FC); color: var(--cyan-ink); } .plan .mp-f.more b { color: var(--cyan-ink); }
 .plan .mp-t b { display: inline; font-size: inherit; }
 .plan .mp-c .mp-f { width: auto; flex: 0 1 auto; }
+
+/* 1004 라이즈에서 가져온 것 */
+.rc-lf { margin-left: auto; }
+.lf-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; } .lf-chips .fq-chip { flex: none; }
+.lf-box { margin-top: 8px; }
+.lf-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: 18px; } .lf-sum small { font-size: 13px; color: var(--ink-2); }
+.lf-d { font-weight: 800; font-size: 15px; color: var(--ink-2); } .lf-d.up { color: var(--cyan-ink); } .lf-d.dn { color: var(--amber-ink); }
+.lf-svg { width: 100%; height: auto; display: block; }
+.lf-g { stroke: var(--canvas); stroke-width: 1; } .lf-ax { font-size: 11px; fill: var(--ink-2); font-weight: 600; }
+.lf-ln { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.lf-pt { fill: var(--surface); stroke: var(--ink); stroke-width: 2; } .lf-pt.pr { fill: var(--gold, #F5C542); stroke: var(--surface); stroke-width: 2; }
+.lf-key { display: inline-block; width: 10px; height: 10px; border-radius: 5px; background: var(--gold, #F5C542); margin-right: 6px; vertical-align: -1px; }
+.qr-pl { margin: 6px 0 0; font-size: 13px; font-weight: 700; color: var(--ink-2); grid-column: 1 / -1; }
+.qr-wu { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font-size: 13px; font-weight: 600; color: var(--amber-ink); grid-column: 1 / -1; }
+.sh-btn { margin: 4px 0 0; }

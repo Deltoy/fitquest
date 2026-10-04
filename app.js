@@ -690,6 +690,54 @@ function liftTrend(k = dayKey()) {
   return Object.entries(by).filter(([, v]) => v.length >= 2).sort(([a, va], [b, vb]) => pri(a) - pri(b) || vb.length - va.length)
     .slice(0, 3).map(([id, v]) => ({ id, v, as: EX[id].kind === 'as', d: Math.round((v[v.length - 1] - v[0]) * 2) / 2 }));
 }
+/* ===== 1004 라이즈에서 가져온 것 (사용자: 좋은 점은 다 적용) =====
+   ① 운동별 성장 그래프 ② 원판 계산·웜업 ③ 운동 끝 공유 카드 ④ 내 헬스장 기구 → 없는 기구 운동은 같은 부위 대체 */
+const MUS_KO = { 'delt-side': '측면 어깨', lats: '광배근', 'chest-upper': '윗가슴', chest: '가슴', 'delt-front': '앞 어깨', traps: '승모근', biceps: '이두', triceps: '삼두', forearm: '전완', abs: '복근', obliques: '옆구리', quads: '허벅지', hams: '햄스트링', glutes: '엉덩이', calves: '종아리' };
+function liftHist(id) {   // 그 운동을 한 날마다 최고 무게(보조 머신은 가장 가벼운 보조) — 최근 12번
+  const as = EX[id] && EX[id].kind === 'as';
+  return DB.sessions.filter(s => s.ex.some(e => e.id === id && e.sets.length)).map(s => { const e = s.ex.find(x => x.id === id && x.sets.length), ws = e.sets.map(z => z.w); return { day: s.day, w: as ? Math.min(...ws) : Math.max(...ws) }; }).slice(-12);
+}
+function liftIds() { const c = {}; DB.sessions.forEach(s => s.ex.forEach(e => { if (EX[e.id] && e.sets.length) c[e.id] = (c[e.id] || 0) + 1; })); return Object.keys(c).filter(id => c[id] >= 2).sort((a, b) => c[b] - c[a]); }
+function liftChart(id) {
+  const h = liftHist(id), as = EX[id].kind === 'as'; if (h.length < 2) return '<p class="fq-t-caption">2번 이상 하면 그래프가 그려져요.</p>';
+  const W0 = 320, H0 = 150, pl = 34, pr = 10, pt = 16, pb = 24, ws = h.map(x => x.w), lo = Math.min(...ws), hi = Math.max(...ws), sp = hi - lo || 1;
+  const X = i => pl + i * (W0 - pl - pr) / (h.length - 1), Y = w => pt + (H0 - pt - pb) * (as ? (w - lo) / sp : 1 - (w - lo) / sp);
+  let best = null; const pts = h.map((x, i) => { const pr0 = best == null || (as ? x.w < best : x.w > best); if (pr0) best = x.w; return { ...x, i, pr: pr0 && i > 0 }; });
+  const md = d => `${+d.slice(5, 7)}/${+d.slice(8)}`, d0 = h[0].w, d1 = h[h.length - 1].w, dv = Math.round((as ? d0 - d1 : d1 - d0) * 10) / 10;
+  return `<p class="lf-sum"><b class="num">${wLabel(id, d0)}kg → ${wLabel(id, d1)}kg</b> <span class="lf-d${dv > 0 ? ' up' : dv < 0 ? ' dn' : ''}">${dv > 0 ? '+' : dv < 0 ? '−' : '±'}${Math.abs(dv)}kg</span><small>${h.length}번 · ${md(h[0].day)}부터</small></p>
+    <svg class="lf-svg" viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${esc(EX[id].n)} 최고 무게 ${h.map(x => md(x.day) + ' ' + x.w + 'kg').join(', ')}">
+      ${[hi, lo].map(w => `<line x1="${pl}" x2="${W0 - pr}" y1="${Y(w)}" y2="${Y(w)}" class="lf-g"/><text x="${pl - 6}" y="${Y(w) + 4}" class="lf-ax" text-anchor="end">${w}</text>`).join('')}
+      <polyline class="lf-ln" points="${pts.map(p => `${X(p.i).toFixed(1)},${Y(p.w).toFixed(1)}`).join(' ')}"/>
+      ${pts.map(p => `<circle class="lf-pt${p.pr ? ' pr' : ''}" cx="${X(p.i).toFixed(1)}" cy="${Y(p.w).toFixed(1)}" r="${p.pr ? 5 : 3.5}"/>`).join('')}
+      <text x="${pl}" y="${H0 - 6}" class="lf-ax">${md(h[0].day)}</text><text x="${W0 - pr}" y="${H0 - 6}" class="lf-ax" text-anchor="end">${md(h[h.length - 1].day)}</text>
+    </svg><p class="fq-t-caption"><span class="lf-key"></span>금색 점 = 새 기록${as ? ' · 보조 머신은 아래로 갈수록 좋아요' : ''}</p>`;
+}
+function liftSheet(id) {
+  const ids = liftIds(); if (!ids.length) return toast('<span>같은 운동을 2번 하면 그래프가 생겨요.</span>');
+  id = ids.includes(id) ? id : ids[0];
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">운동별 성장</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <div class="lf-chips" role="group" aria-label="운동 고르기">${ids.map(x => `<button class="fq-chip" aria-pressed="${x === id}" data-act="liftOpen" data-id="${x}">${esc(EX[x].n)}</button>`).join('')}</div>
+    <div class="lf-box">${liftChart(id)}</div>`);
+}
+/* ② 원판: 봉 20kg, 한쪽에 25·20·15·10·5·2.5·1.25 큰 것부터 */
+const PLATES = [25, 20, 15, 10, 5, 2.5, 1.25], isBar = id => EX[id] && (EX[id].kind === 'bb' || EX[id].kind === 'bbl') && !/스미스/.test(EX[id].n);   // 스미스 머신은 봉 무게가 달라 뺌
+function plateText(w) {
+  w = +w; if (!(w > 0)) return ''; if (w < 20) return '봉 20kg보다 가벼워요';
+  let side = (w - 20) / 2; if (side < .01) return '봉만 (20kg)';
+  const out = []; PLATES.forEach(p => { while (side >= p - 1e-9) { out.push(p); side = Math.round((side - p) * 100) / 100; } });
+  const grp = []; out.forEach(p => { const g = grp.find(x => x[0] === p); g ? g[1]++ : grp.push([p, 1]); });
+  return `한쪽 ${grp.map(([p, n]) => n > 1 ? `${p}×${n}` : p).join(' + ')}${side > .01 ? ` (+${side} 안 맞음)` : ''} · 봉 20`;
+}
+function warmText(w) { w = +w; if (!(w >= 50)) return ''; const r = x => Math.max(20, Math.round(x / 2.5) * 2.5), st = [[20, 10], [r(w * .5), 8], [r(w * .7), 4]].filter((x, i, A) => !i || x[0] > A[i - 1][0]); return `웜업 먼저: ${st.map(([v, n], i) => (i ? v : '봉 20') + '×' + n).join(' → ')} → 본 세트`; }
+/* ④ 내 헬스장 기구: 꺼 둔 기구를 쓰는 운동은 같은 주 근육을 쓰는 다른 기구 운동으로 */
+const GYM = [['bb', '바벨'], ['db', '덤벨'], ['cb', '케이블'], ['mc', '머신'], ['as', '어시스트 머신']], kGrp = k => k === 'bbl' ? 'bb' : k;
+const gymOff = () => (DB.settings.gymOff || []);
+function exSub(id) {
+  const E = EX[id], off = gymOff(); if (!E || !off.length || !off.includes(kGrp(E.kind))) return id;
+  const ok = Object.keys(EX).filter(x => x !== id && EX[x].mus && EX[x].range && !off.includes(kGrp(EX[x].kind)) && EX[x].mus[0] === E.mus[0]);
+  const sc = x => EX[x].mus.filter(m => E.mus.includes(m)).length; ok.sort((a, b) => sc(b) - sc(a));
+  return ok[0] || id;
+}
 /* 몸 추세: 최근 7일 평균 vs 14–20일 전 평균(각 3번 이상 잰 날) + 인바디 체지방 변화. 좋은 방향은 챕터마다 다름 */
 function bodyTrend(k = dayKey()) {
   const avg = (a, b) => { const v = []; for (let i = a; i <= b; i++) { const x = DB.weights[addDays(k, -i)]; if (x) v.push(x); } return v.length >= 3 ? v.reduce((s, x) => s + x, 0) / v.length : null; };
@@ -747,7 +795,7 @@ function reportCard(part) {
     <div class="grid2 rc-stats"><div class="rc-trend"><span class="fq-eyebrow">꾸준함 4주</span><span class="fq-t-num-md" data-v="pct">${c.pct == null ? '—' : c.pct}<small>%</small></span><span class="fq-t-caption">운동 ${c.done}일 / 계획 ${c.plan}일</span></div>
       <div class="rc-trend"><span class="fq-eyebrow">연속 기록</span><span class="fq-t-num-md" data-v="streak">${streakNow()}<small>일</small></span><span class="fq-t-caption">최고 ${best}일</span></div></div>
     ${empty ? '' : `<div class="grid2 rc-trends">
-      <div class="rc-trend" data-v="lift"><span class="fq-eyebrow">근력 추세</span>${lt ? `<span class="fq-t-num-md rc-d" data-s="${sign(lt.d)}">${kg(lt.d)}<small>kg</small></span><span class="fq-t-caption rc-n">${esc(EX[lt.id].n)}${lt.as ? ' 보조' : ''}</span>${spark(lt.v)}
+      <div class="rc-trend" data-v="lift"><span class="fq-eyebrow">근력 추세</span>${lt ? `<button class="linkbtn ink rc-lf" data-act="liftOpen" data-id="${lt.id}">운동별 그래프${ico('chev', 'ico--16')}</button>` : ''}${lt ? `<span class="fq-t-num-md rc-d" data-s="${sign(lt.d)}">${kg(lt.d)}<small>kg</small></span><span class="fq-t-caption rc-n">${esc(EX[lt.id].n)}${lt.as ? ' 보조' : ''}</span>${spark(lt.v)}
         ${lifts.slice(1).map(x => `<span class="fq-t-caption rc-li"><span>${esc(EX[x.id].n)}</span><b class="num rc-d" data-s="${sign(x.d)}">${kg(x.d)}</b></span>`).join('')}` : '<span class="fq-t-caption">같은 운동을 2번 하면 보여요</span>'}</div>
       <div class="rc-trend" data-v="body"><span class="fq-eyebrow">몸 추세 2주</span>${body.w != null ? `<span class="fq-t-num-md rc-d" data-s="${body.good ? 'good' : body.wrong ? 'warn' : ''}">${body.w > 0 ? '+' : body.w < 0 ? '−' : '±'}${Math.abs(body.w)}<small>kg</small></span><span class="fq-t-caption">7일 평균 ${body.now.toFixed(1)}kg</span>${spark(wTrend(k))}` : '<span class="fq-t-caption">체중을 3번씩 재면 보여요</span>'}
         ${body.pbf != null ? `<span class="fq-t-caption rc-li"><span>체지방률</span><b class="num rc-d" data-s="${body.pbf < 0 ? 'good' : body.pbf > 0 ? 'warn' : ''}">${body.pbf > 0 ? '+' : body.pbf < 0 ? '−' : '±'}${Math.abs(body.pbf)}%p</b></span>` : ''}</div></div>`}
@@ -1190,13 +1238,13 @@ R.work = () => {
 };
 /* 오늘(또는 다음) 루틴의 운동 목록 — 한 줄에 사진 · 이름 · 오늘 무게. 누르면 동작·팁. foot = 바꾸기 · 도감 한 줄 */
 function exList(tk, title, foot = '') {
-  const T = TPL[tk], rows = T.ex.map(([id, n, o = {}]) => { const E = EX[id], rg = o.r || E.range, pl = plannedFor(id, n, rg), st = prog(id), [bt, , up] = badgeFor(id); return { id, n, o, E, rg, pl, st, bt, up }; });
+  const T = TPL[tk], rows = T.ex.map(([id0, n, o = {}]) => { const id = exSub(id0), sub = id !== id0; const E = EX[id], rg = o.r || E.range, pl = plannedFor(id, n, rg), st = prog(id), [bt, , up] = badgeFor(id); return { id, id0, sub, n, o, E, rg, pl, st, bt, up }; });
   const gap = Math.max(0, ...rows.map(r => r.pl.gap));
   return `<section class="tile card-pad exlist" aria-labelledby="exH"><div class="card-h"><h2 class="fq-t-heading" id="exH">${title ? esc(title) : `운동 ${T.ex.length}가지`}</h2><span class="fq-t-caption">누르면 동작과 팁</span></div>
     ${rows.some(r => !r.st.n) ? '<p class="fq-t-caption">첫 기록은 10회 할 수 있는 무게로 가볍게</p>' : ''}${gap > 10 ? `<p class="fq-t-caption">${gap}일 쉬어서 무게를 낮췄어요</p>` : ''}
     <ol class="exl">${rows.map(r => `<li><button class="exrow" data-act="howtoId" data-id="${r.id}" data-t="${esc(tk)}" aria-label="${esc(r.E.n)} 동작·팁 보기">
       <span class="exthumb">${r.E.img ? `<img src="media/${r.E.img}_0.jpg" alt="" loading="lazy">` : ico('cplay')}</span>
-      <span class="exrow-t"><span class="exrow-n"><b>${esc(r.E.n)}</b>${r.up ? `<span class="chip gd">${r.bt}</span>` : ''}</span><span class="exrow-l"><span class="exrow-w num">${wLabel(r.id, r.pl.w)}<small>kg</small></span><span class="fq-t-caption">${r.n}세트 ${r.rg[0]}–${r.rg[1]}회${r.o.d ? ' · 처음 무게' : ''}</span></span></span></button></li>`).join('')}</ol>${foot}</section>`;
+      <span class="exrow-t"><span class="exrow-n"><b>${esc(r.E.n)}</b>${r.sub ? `<span class="chip">${esc(EX[r.id0].n)} 대신</span>` : ''}${r.up ? `<span class="chip gd">${r.bt}</span>` : ''}</span><span class="exrow-l"><span class="exrow-w num">${wLabel(r.id, r.pl.w)}<small>kg</small></span><span class="fq-t-caption">${r.n}세트 ${r.rg[0]}–${r.rg[1]}회${r.o.d ? ' · 처음 무게' : ''}</span></span></span></button></li>`).join('')}</ol>${foot}</section>`;
 }
 /* 루틴 도감: 부위별 공략서(proSheet) · 내가 배운 루틴 · 롤모델 · 내 유튜버 추가 */
 function libSheet() {
@@ -1397,7 +1445,7 @@ function condSheet(tplKey) {
 function buildSession(c, tplKey) {
   const k = dayKey(), t = tplKey || tplFor(k) || 'A';
   const by = TPL[t].by;
-  let ex = TPL[t].ex.map(([id, n, o = {}]) => { const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
+  let ex = TPL[t].ex.map(([id0, n, o = {}]) => { const id = exSub(id0); const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
   if (c === 'tired') ex = ex.slice(0, Math.max(2, ex.length - 1)).map(e => ({ ...e, sets: e.sets.slice(0, Math.max(2, e.sets.length - 1)) }));
   if (c === 'short') { const side = ex.find(e => EX[e.id].mus.includes('delt-side')) || (() => { const pl = plannedFor('slr', 3); return { id: 'slr', n: 3, rest: 75, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; })(); ex = [ex[0], side].filter((e, i, a) => a.indexOf(e) === i).map(e => ({ ...e, rest: 75, sets: e.sets.slice(0, 3) })); }
   if (c === 'good') { const s = ex.find(e => EX[e.id].mus.includes('delt-side')); if (s) { const l = s.sets[s.sets.length - 1]; s.sets.push({ w: l.w, r: l.r, done: false, bonus: true }); } }
@@ -1409,6 +1457,7 @@ function buildSession(c, tplKey) {
 function curSet() { const e = W.ex[W.i]; return { e, k: e.sets.findIndex(s => !s.done) }; }
 document.addEventListener('focusin', ev => { if (ev.target.matches && ev.target.matches('.qwi')) ev.target.select(); });
 document.addEventListener('change', ev => { const t = ev.target; if (!t.matches || !t.matches('.qwi') || !W || !W.q) return; const e = W.ex[+t.dataset.i]; qSetW(e, t.value); t.value = e.q.w; save(); });
+document.addEventListener('input', ev => { const t = ev.target; if (!t.matches || !t.matches('.qwi') || !W || !W.q) return; const e = W.ex[+t.dataset.i], p = document.querySelector(`.qr-pl[data-pl="${t.dataset.i}"]`); if (e && p && isBar(e.id)) p.textContent = plateText(parseFloat(String(t.value).replace(',', '.')));   /* 1004 치는 대로 원판 */ });
 document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.matches && ev.target.matches('.qwi')) ev.target.blur(); });
 R.logger = () => {
   if (W.q) return qView();
@@ -1462,7 +1511,8 @@ function qRow(e, i, cur) {
     <div class="qr-in"><div class="qw" role="group" aria-label="${as ? '보조 무게' : '오늘 최고 무게'}"><button data-act="qw-" data-i="${i}" aria-label="${inc}kg 줄이기">${ico('minus')}</button>
       <label class="v"><small>${as ? '보조' : '최고'}</small><input class="num qwi" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${e.q.w}" data-i="${i}" aria-label="${esc(E.n)} ${as ? '보조 무게' : '오늘 최고 무게'} kg"><small>kg</small></label>
       <button data-act="qw+" data-i="${i}" aria-label="${inc}kg 늘리기">${ico('plus')}</button></div>
-      <button class="qr-ok" data-act="qDone" data-i="${i}">${ico('check')}<span>완료</span></button></div></li>`;
+      <button class="qr-ok" data-act="qDone" data-i="${i}">${ico('check')}<span>완료</span></button></div>
+    ${isBar(e.id) ? `<p class="qr-pl num" data-pl="${i}">${plateText(e.q.w)}</p>${cur && warmText(e.q.w) ? `<p class="qr-wu">${ico('flame', 'ico--14')}${warmText(e.q.w)}</p>` : ''}` : ''}</li>`;
 }
 function qView() {
   const cur = W.ex.findIndex(e => !e.q.done), n = W.ex.filter(e => e.q.done).length, all = n === W.ex.length;
@@ -1499,6 +1549,7 @@ function qDone(i) {
 function qStep(i, d) {   // 제자리에서 숫자만 바꿈 (목록을 다시 그리지 않음)
   const e = W.ex[i], inp = document.querySelector(`.qwi[data-i="${i}"]`); if (inp) qSetW(e, inp.value);
   e.q.w = Math.max(0, +(e.q.w + d * incOf(e.id)).toFixed(2)); if (inp) inp.value = e.q.w; SFX.tap && SFX.tap(); save();
+  const p = document.querySelector(`.qr-pl[data-pl="${i}"]`); if (p) p.textContent = plateText(e.q.w);   /* 1004 */
 }
 function qUndo(i) {
   const e = W.ex[i]; if (!e || !e.q.done) return;
@@ -1610,6 +1661,30 @@ function undoSet(j) {
   if (last) { W.xp -= last.gain; DB.xp = Math.max(0, DB.xp - last.gain); const dd = DB.xpDay[dayKey()]; if (dd && dd.set) dd.set--; if (last.pr) { W.best[e.id] = last.prevBest; W.prs--; W.prList.pop(); } W.log.splice(li, 1); }
   W.rest = null; W.feel = false; SFX.undo(); save(); R.logger();
 }
+let SHARE = null;
+function shareCard() {   // 1080×1350 이미지: 루틴 · 운동 수 · 세트 · 시간 · 새 기록 · 쓴 근육 · 오늘 단백질 (체중은 넣지 않음)
+  const S0 = SHARE; if (!S0) return;
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350; const g = c.getContext('2d'), F = (w, px) => `${w} ${px}px Pretendard, -apple-system, 'Apple SD Gothic Neo', sans-serif`;
+  g.fillStyle = '#0F1115'; g.fillRect(0, 0, 1080, 1350);
+  g.fillStyle = '#E0202C'; g.fillRect(0, 0, 1080, 14);
+  g.fillStyle = '#9AA3B2'; g.font = F(700, 34); g.fillText('FITQUEST · ' + S0.day.replace(/-/g, '.'), 80, 120);
+  g.fillStyle = '#FFFFFF'; g.font = F(900, 84); g.fillText(S0.code, 80, 240);
+  g.font = F(700, 44); g.fillStyle = '#D0D5DD'; g.fillText((S0.by ? S0.by + ' · ' : '') + S0.title, 80, 310, 920);
+  const box = (x, y, n, l) => { g.fillStyle = '#1B1E25'; g.beginPath(); g.roundRect(x, y, 290, 200, 28); g.fill(); g.fillStyle = '#FFFFFF'; g.font = F(900, 88); g.fillText(n, x + 36, y + 120); g.fillStyle = '#9AA3B2'; g.font = F(700, 34); g.fillText(l, x + 36, y + 170); };
+  box(80, 380, String(S0.nEx), '가지 운동'); box(395, 380, String(S0.done), '세트'); box(710, 380, String(S0.mins), '분');
+  let y = 680;
+  if (S0.prs.length) { g.fillStyle = '#F5C542'; g.font = F(900, 40); g.fillText('🏆 새 기록', 80, y); y += 60; g.font = F(700, 36); g.fillStyle = '#FFFFFF'; S0.prs.forEach(p => { g.fillText(String(p).slice(0, 34), 80, y); y += 52; }); y += 20; }
+  if (S0.mus.length) { g.fillStyle = '#9AA3B2'; g.font = F(700, 34); g.fillText('오늘 쓴 근육', 80, y); y += 30; let x = 80; g.font = F(800, 34);
+    S0.mus.forEach(m => { const w = g.measureText(m).width + 56; if (x + w > 1000) { x = 80; y += 80; } g.fillStyle = '#1F3A44'; g.beginPath(); g.roundRect(x, y, w, 64, 32); g.fill(); g.fillStyle = '#5CD5F5'; g.fillText(m, x + 28, y + 44); x += w + 16; }); y += 120; }
+  g.fillStyle = '#9AA3B2'; g.font = F(700, 34); g.fillText('오늘 단백질', 80, 1150); g.fillStyle = '#FFFFFF'; g.font = F(900, 64); g.fillText(`${S0.p} / ${S0.tp}g`, 80, 1225);
+  g.fillStyle = '#E0202C'; g.beginPath(); g.roundRect(80, 1250, 920 * Math.min(1, S0.p / Math.max(1, S0.tp)), 18, 9); g.fill();
+  g.textAlign = 'right'; g.fillStyle = '#F5C542'; g.font = F(900, 48); g.fillText(`Lv.${S0.L}`, 1000, 1150); g.fillStyle = '#9AA3B2'; g.font = F(700, 32); g.fillText(`연속 ${S0.streak}일`, 1000, 1200);
+  c.toBlob(async b => {
+    const f = new File([b], `fitquest-${S0.day}.png`, { type: 'image/png' });
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: '오늘 운동' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); toast('<span>사진을 저장했어요.</span>');
+  }, 'image/png');
+}
 function finish() {
   if (!W) return;
   if (W.q) qToSets();
@@ -1629,6 +1704,7 @@ function finish() {
   checkDaily3(); save(); bkAuto();
   const L1 = levelOf(DB.xp), gain = [...new Set(W.ex.filter(e => e.sets.some(s => s.done)).flatMap(e => EX[e.id].mus))];
   const mins = Math.max(1, Math.round((Date.now() - W.t0) / 60000)), { left, nt, cur } = nextTarget(), prs = W.prList, xp = W.xp, T0 = TPL[W.tpl], nEx = W.ex.filter(e => e.sets.some(s => s.done)).length;
+  SHARE = { code: T0.code, title: T0.by ? T0.ko.replace(T0.by + ' · ', '') : T0.ko, by: T0.by || '', nEx, done, mins, prs: prs.slice(0, 4), mus: gain.map(m => MUS_KO[m] || m).filter((x, i, a) => a.indexOf(x) === i).slice(0, 6), p: Math.round(daySum().p), tp: targets().p, L: L1, streak: streakNow(), day: k };
   clearInterval(clockT); keepAwake(false); W = null; delete DB.live; save();
   go('sum');
   const next = (() => { for (let i = 1; i <= 7; i++) { const d = addDays(k, i), t = tplFor(d); if (t) return `${DOW[dow(d)]}요일 ${TPL[t].code}: ${TPL[t].ex.map(([id]) => EX[id].n).join(', ')}`; } return '다음 운동 계획 없음'; })();
@@ -1651,6 +1727,7 @@ function finish() {
       </section>
       ${prs.map(p => `<p class="rec"><span class="ic">${ico('trophy', 'ico--16')}</span>새 기록 ${esc(p)}</p>`).join('')}
     </div>
+    <button class="fq-btn fq-btn--secondary fq-btn--block sh-btn" data-act="shareCard">${ico('camera')}오늘 운동 카드 저장·공유</button>
     <section class="tile card-pad" style="--o:3"><p class="fq-eyebrow">다음 운동</p><p class="fq-t-body">${next}</p></section>
     </div><div class="col">
     <section class="tile card-pad bp" data-c="r" aria-label="바디 설계도"><div class="card-h"><h2 class="fq-t-heading">바디 설계도</h2><span class="chip num">이번 주 ${bpPct(Lb)}%</span></div>
@@ -1772,6 +1849,9 @@ R.set = () => {
       <span class="fq-t-label">운동 시간</span>${chips('sessionMin', [45, 60, 75, 90].map(n => [n, n + '분']))}
       <span class="fq-t-label">경력</span>${chips('level', [['beginner', '초보, 복귀'], ['intermediate', '중급']])}
       <div class="grid2"><button class="fq-btn fq-btn--secondary" data-act="schedule">${ico('repeat')}요일별 루틴</button><button class="fq-btn fq-btn--secondary" data-act="crPick">${ico('star')}롤모델 바꾸기</button></div></section>
+    <section class="fq-card stack" style="gap:10px" aria-labelledby="gymH"><span class="fq-t-heading" id="gymH">내 헬스장 기구</span>
+      <span class="fq-t-caption">없는 기구를 끄면 루틴 속 그 운동을 같은 부위의 다른 운동으로 바꿔 드려요</span>
+      <div class="chips">${GYM.map(([k, l]) => `<button class="fq-chip" aria-pressed="${!gymOff().includes(k)}" data-act="gymTog" data-k="${k}">${l}</button>`).join('')}</div></section>
     <section class="fq-card stack" style="gap:10px" aria-labelledby="aiH"><span class="fq-t-heading" id="aiH">사진·영상 AI (제미나이)</span>
       <p class="note" style="margin:0">무료 키로 음식 사진과 루틴 영상을 읽어요. 이 폰에만 저장돼요.</p>
       <div class="key-row"><input id="gkey" class="inp" type="password" autocomplete="off" placeholder="AIza…" value="${esc(S.gkey)}" aria-label="제미나이 API 키"><button class="fq-btn fq-btn--secondary" data-act="saveKey">저장</button></div>
@@ -2035,6 +2115,9 @@ document.addEventListener('click', ev => {
     sound: () => { DB.settings.sound = a.dataset.v === '1'; save(); R.set(); if (DB.settings.sound) SFX.set(); },
     sfxTest: () => { const seq = ['start', 'set', 'combo', 'ready', 'pr', 'food']; seq.forEach((s, i) => setTimeout(() => SFX[s](), i * 650)); },
     theme: () => { DB.settings.theme = a.dataset.v; applyTheme(); save(); R.set(); },
+    liftOpen: () => liftSheet(a.dataset.id),
+    shareCard: () => shareCard(),
+    gymTog: () => { const k = a.dataset.k, off = gymOff().slice(), i = off.indexOf(k); if (i >= 0) off.splice(i, 1); else if (off.length < GYM.length - 1) off.push(k); else return toast('<span>기구를 하나는 남겨 주세요.</span>'); DB.settings.gymOff = off; save(); R.set(); },
     prof: () => { const kk = a.dataset.k, v = a.dataset.v; DB.profile[kk] = v === 'true' ? true : v === 'false' ? false : isNaN(+v) ? v : +v; save(); R.set(); },
     saveKey: () => { DB.settings.gkey = $('#gkey').value.trim(); DB.settings.gmodel = $('#gmodel').value.trim(); save(); toast('<span>저장했어요. 음식 기록에서 사진을 올려 보세요.</span>'); fillPending(); },
     export: () => { const blob = new Blob([JSON.stringify(DB)], { type: 'application/json' }), u = URL.createObjectURL(blob), l = document.createElement('a'); l.href = u; l.download = `fitquest-backup-${dayKey()}.json`; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(u), 2000); },
