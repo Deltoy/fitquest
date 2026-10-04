@@ -1512,7 +1512,55 @@ function qRow(e, i, cur) {
       <label class="v"><small>${as ? '보조' : '최고'}</small><input class="num qwi" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${e.q.w}" data-i="${i}" aria-label="${esc(E.n)} ${as ? '보조 무게' : '오늘 최고 무게'} kg"><small>kg</small></label>
       <button data-act="qw+" data-i="${i}" aria-label="${inc}kg 늘리기">${ico('plus')}</button></div>
       <button class="qr-ok" data-act="qDone" data-i="${i}">${ico('check')}<span>완료</span></button></div>
-    ${isBar(e.id) ? `<p class="qr-pl num" data-pl="${i}">${plateText(e.q.w)}</p>${cur && warmText(e.q.w) ? `<p class="qr-wu">${ico('flame', 'ico--14')}${warmText(e.q.w)}</p>` : ''}` : ''}</li>`;
+    ${isBar(e.id) ? `<p class="qr-pl num" data-pl="${i}">${plateText(e.q.w)}</p>${cur && warmText(e.q.w) ? `<p class="qr-wu">${ico('flame', 'ico--14')}${warmText(e.q.w)}</p>` : ''}` : ''}
+    <button class="qr-alt" data-act="qAltOpen" data-i="${i}">${ico('swap', 'ico--14')}${e.alt ? `${esc(EX[e.alt].n)} 대신 하는 중 · 다시 바꾸기` : '기구 사용 중? 대체 운동'}</button></li>`;
+}
+/* 1004 사용자: 기본 루틴 끝나고 더 할 수 있으면 — 이번 주 덜 채운 부위(바디 설계도 목표) + 오늘 부위 위주로 2~3개 추천, [+ 추가]면 오늘 목록 끝에 붙음 */
+function moreEx() {
+  if (!W) return [];
+  const ws = weekSets(), have = new Set(W.ex.map(e => e.id)), off = gymOff(), today = new Set(W.ex.map(e => EX[e.id].mus[0]));
+  W.ex.forEach(e => { if (e.q && e.q.done) [...new Set(EX[e.id].mus)].forEach(m => ws[m] = (ws[m] || 0) + e.q.n); });
+  const need = m => BP_T[m] ? Math.max(0, BP_T[m] - (ws[m] || 0)) / BP_T[m] : 0;
+  const cand = Object.keys(EX).filter(id => !id.startsWith('X') && !have.has(id) && EX[id].range && EX[id].mus && !off.includes(kGrp(EX[id].kind)) && EX[id].kind !== 'as');
+  const sc = id => { const ms = [...new Set(EX[id].mus)]; return ms.reduce((a, m) => a + need(m) * (BP_FOCUS.includes(m) ? 2 : 1), 0) + (today.has(EX[id].mus[0]) ? .6 : 0) + (EX[id].img ? .1 : 0); };
+  const out = [], used = new Set();
+  cand.map(id => [id, sc(id)]).sort((a, b) => b[1] - a[1]).forEach(([id, v]) => { const m = EX[id].mus[0]; if (out.length < 3 && v > .3 && !used.has(m)) { used.add(m); out.push(id); } });
+  return out.map(id => { const m = EX[id].mus.find(x => need(x) > 0) || EX[id].mus[0], tg = BP_T[m];
+    return { id, why: tg ? `${MUS_KO[m] || m} 이번 주 ${ws[m] || 0}/${tg}세트` : `오늘 ${MUS_KO[m] || m} 마무리` }; });
+}
+function qAddEx(id) {
+  if (!W || !EX[id] || W.ex.some(e => e.id === id)) return;
+  const range = EX[id].range, pl = plannedFor(id, 3, range);
+  const e = { id, n: 3, range, rest: EX[id].rest, tip: null, v: null, d: false, add: true, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) };
+  e.q = { w: pl.w, w0: pl.w, n: 3, done: false, pr: false, ed: false }; W.ex.push(e); W.autoEnd = false; save(); qView();
+  toast(`<span>${esc(EX[id].n)} 추가했어요 · 3세트</span>`);
+  setTimeout(() => { const li = document.querySelector(`.qr[data-i="${W.ex.length - 1}"]`); if (li) li.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50);
+}
+/* 1004 사용자: 사람 많아 기구를 못 쓸 때 — 같은 근육을 쓰는 다른 기구 운동 3개, 고르면 그 자리 교체(세트 수 그대로) */
+function altsFor(id) {
+  const E = EX[id], off = gymOff(), have = new Set(W ? W.ex.map(e => e.id) : []);
+  const c = Object.keys(EX).filter(x => x !== id && !x.startsWith('X') && !have.has(x) && EX[x].range && EX[x].mus && !off.includes(kGrp(EX[x].kind)) && EX[x].mus[0] === E.mus[0]);
+  const sc = x => EX[x].mus.filter(m => E.mus.includes(m)).length + (kGrp(EX[x].kind) !== kGrp(E.kind) ? 1 : 0) + (EX[x].img ? .2 : 0);
+  return c.sort((a, b) => sc(b) - sc(a)).slice(0, 3);
+}
+function altSheet(i) {
+  const e = W && W.ex[i]; if (!e) return; const L = altsFor(e.id);
+  if (!L.length) return toast('<span>같은 부위 다른 운동이 없어요. 잠깐 뒤로 미뤄 두세요.</span>');
+  sheet(`<div class="row row--between"><h2 class="fq-t-title">${esc(EX[e.id].n)} 대신</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
+    <p class="fq-t-caption">기구가 사용 중일 때 · 같은 근육(${esc(MUS_KO[EX[e.id].mus[0]] || EX[e.id].mus[0])})을 쓰는 운동이에요. 세트 수는 그대로.</p>
+    <div class="alt-l">${L.map(x => `<button class="alt-r" data-act="qAlt" data-i="${i}" data-id="${x}">${EX[x].img ? `<img src="media/${EX[x].img}_0.jpg" alt="" loading="lazy">` : `<span class="alt-ph">${ico('cplay', 'ico--16')}</span>`}<span class="alt-t"><b>${esc(EX[x].n)}</b><small>${esc(EX[x].eq || '')} · ${EX[x].range[0]}–${EX[x].range[1]}회${lastMax(x) != null ? ` · 지난번 ${wLabel(x, lastMax(x))}kg` : ' · 첫 기록'}</small></span>${ico('chev', 'ico--16')}</button>`).join('')}</div>`);
+}
+function qAlt(i, id) {
+  const e = W && W.ex[i]; if (!e || !EX[id]) return; const from = EX[e.id].n, n = e.q.n, range = EX[id].range, pl = plannedFor(id, n, range);
+  W.ex[i] = { id, n, range, rest: EX[id].rest, tip: null, v: null, d: false, add: e.add, alt: e.id, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })), q: { w: pl.w, w0: pl.w, n, done: false, pr: false, ed: false } };
+  closeSheet(); save(); qView(); toast(`<span>${esc(from)} → ${esc(EX[id].n)}</span>`);
+}
+function moreHtml() {
+  const list = moreEx(); if (!list.length) return '';
+  return `<section class="qm" aria-labelledby="qmH"><p class="qm-h" id="qmH">${ico('plus', 'ico--16')}더 할 수 있으면 <small>이번 주 덜 채운 부위부터</small></p>
+    ${list.map(x => `<div class="qm-r"><button class="qm-th" data-act="howtoId" data-id="${x.id}" aria-label="${esc(EX[x.id].n)} 동작 보기">${EX[x.id].img ? `<img src="media/${EX[x.id].img}_0.jpg" alt="" loading="lazy">` : ico('cplay', 'ico--16')}</button>
+      <span class="qm-t"><b>${esc(EX[x.id].n)}</b><small>${esc(x.why)} · ${EX[x.id].range[0]}–${EX[x.id].range[1]}회</small></span>
+      <button class="qm-add" data-act="qAdd" data-id="${x.id}" aria-label="${esc(EX[x.id].n)} 오늘 목록에 추가">${ico('plus', 'ico--16')}추가</button></div>`).join('')}</section>`;
 }
 function qView() {
   const cur = W.ex.findIndex(e => !e.q.done), n = W.ex.filter(e => e.q.done).length, all = n === W.ex.length;
@@ -1524,6 +1572,7 @@ function qView() {
       ${first && !all ? `<p class="ql-h">${coach('focus', 32)}<span>무게만 맞추고 <b>완료</b> · 그대로면 바로 완료</span></p>` : ''}
       ${all ? `<p class="ql-h">${coach('proud', 32)}<span><b>다 했어요!</b> 틀린 게 있으면 고치기 (결과 전에)</span></p>` : ''}
       <ol class="ql-list">${W.ex.map((e, i) => qRow(e, i, i === cur)).join('')}</ol>
+      ${moreHtml()}
       ${n && !all ? '<button class="ql-end" data-act="endAsk">여기서 끝내기</button>' : ''}
     </div><div class="lg-side">
       ${cur >= 0 ? `<div class="lg-photo ql-photo">${howto(W.ex[cur].id)}<button class="watch" data-act="howtoEx" data-i="${cur}">${ico('cplay')}동작 보기</button></div>` : ''}
@@ -1690,7 +1739,8 @@ function finish() {
   if (W.q) qToSets();
   W.end = true; delete DB.live;   // 끝내는 중: 백업 · 저장에 진행 중 운동이 섞이지 않게
   const k = dayKey(), done = W.ex.reduce((s, x) => s + x.sets.filter(y => y.done).length, 0), total = W.ex.reduce((s, x) => s + x.sets.length, 0);
-  const completed = W.q ? W.ex.filter(e => e.q.done).length / W.ex.length >= .8 : done > 0 && done / total >= .8, L0 = levelOf(DB.xp - W.xp);
+  const base = W.ex.filter(e => !e.add || e.q.done);   // 1004 추가 운동은 안 해도 완료 판정에 안 들어감
+  const completed = W.q ? base.filter(e => e.q.done).length / Math.max(1, base.length) >= .8 : done > 0 && done / total >= .8, L0 = levelOf(DB.xp - W.xp);
   const short = W.c === 'short', tired = W.c === 'tired', comboN = W.log.filter(l => l.combo).length, prN = W.prList.length, logSum = W.log.reduce((a, l) => a + l.gain, 0);
   let wb = 0, cb = 0;
   if (completed) wb = addXP('workout', short ? 60 : 100);
@@ -2116,6 +2166,8 @@ document.addEventListener('click', ev => {
     sfxTest: () => { const seq = ['start', 'set', 'combo', 'ready', 'pr', 'food']; seq.forEach((s, i) => setTimeout(() => SFX[s](), i * 650)); },
     theme: () => { DB.settings.theme = a.dataset.v; applyTheme(); save(); R.set(); },
     liftOpen: () => liftSheet(a.dataset.id),
+    qAdd: () => qAddEx(a.dataset.id),
+    qAltOpen: () => altSheet(+a.dataset.i), qAlt: () => qAlt(+a.dataset.i, a.dataset.id),
     shareCard: () => shareCard(),
     gymTog: () => { const k = a.dataset.k, off = gymOff().slice(), i = off.indexOf(k); if (i >= 0) off.splice(i, 1); else if (off.length < GYM.length - 1) off.push(k); else return toast('<span>기구를 하나는 남겨 주세요.</span>'); DB.settings.gymOff = off; save(); R.set(); },
     prof: () => { const kk = a.dataset.k, v = a.dataset.v; DB.profile[kk] = v === 'true' ? true : v === 'false' ? false : isNaN(+v) ? v : +v; save(); R.set(); },
