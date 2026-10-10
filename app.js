@@ -1113,6 +1113,24 @@ async function geminiFood(file) {
   const prompt = '이 음식 사진을 한국 음식 기준으로 항목별로 추정해 줘. 보이는 양 그대로(1인분이라고 가정하지 말 것). JSON만 출력: {"items":[{"n":"음식 이름(한국어)","g":그램,"k":kcal,"p":단백질g,"c":탄수화물g,"f":지방g,"conf":1~3}]} conf 3=확실 2=보통 1=불확실. 음식이 아니면 {"items":[]}.';
   return gemItems(await gemCall(key, [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }], '키를 확인해 주세요'));
 }
+async function geminiInbody(file) {   // 1010 MJ: 인바디 결과지 사진 → 숫자 자동 입력 (확인 후 저장은 사람이)
+  const b64 = await downscale(file), key = DB.settings.gkey.trim();
+  const prompt = '이 사진은 InBody 체성분 결과지야. 이번 측정값만 읽어서 JSON만 출력: {"date":"YYYY-MM-DD","w":체중kg,"smm":골격근량kg,"pbf":체지방률%,"bfm":체지방량kg,"bmr":기초대사량kcal,"vfl":내장지방레벨,"whr":복부지방률} 과거 기록 그래프의 숫자는 쓰지 말 것. 안 보이는 값은 null.';
+  return gemCall(key, [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }], '키를 확인해 주세요');
+}
+document.addEventListener('change', async ev => {
+  const t = ev.target; if (!t || t.id !== 'ibPhoto' || !t.files || !t.files[0]) return;
+  if (!DB.settings.gkey) return toast('<span>설정에서 제미나이 키를 넣으면 사진으로 채울 수 있어요.</span>');
+  const lab = $('#ibPhotoT'); if (lab) lab.textContent = '사진 읽는 중…';
+  try {
+    const d = await geminiInbody(t.files[0]), ok = (v, a, b) => typeof v === 'number' && v >= a && v <= b;
+    const set = (id, v) => { const el = $('#' + id); if (el && v != null) el.value = v; };
+    if (ok(d.w, 30, 250)) set('ibW', d.w); if (ok(d.smm, 5, 80)) set('ibS', d.smm); if (ok(d.pbf, 2, 70)) set('ibP', d.pbf); if (ok(d.bmr, 800, 4000)) set('ibB', d.bmr);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) set('ibD', d.date);
+    if (lab) lab.textContent = ok(d.w, 30, 250) ? '채웠어요 · 숫자 확인 후 저장' : '숫자를 못 읽었어요 · 직접 넣어 주세요';
+  } catch (e) { if (lab) lab.textContent = '사진 읽기 실패 · 직접 넣어 주세요'; toast(`<span>${esc(String(e.message || e).slice(0, 80))}</span>`); }
+  t.value = '';
+});
 function gemItems(data) {   // 사진·글 공통: 최대 8개, 값 범위 제한
   const num = (v, a, b) => Math.min(b, Math.max(a, +v || 0));
   return (data.items || []).slice(0, 8).map(x => ({ n: String(x.n || '음식').slice(0, 30), g: num(x.g, 0, 2000), k: num(x.k, 0, 3000), p: num(x.p, 0, 250), c: num(x.c, 0, 400), f: num(x.f, 0, 200), conf: Math.round(num(x.conf, 1, 3)) || 2 }));
@@ -2157,7 +2175,7 @@ document.addEventListener('click', ev => {
     chapter: () => sheet(`<div class="row row--between"><h2 class="fq-t-title">챕터 바꾸기</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>${CH.map((c, i) => `<button class="pro-card" data-act="setCh" data-c="${i}"><div class="who"><span class="chip">챕터 ${i}</span>${i === DB.profile.rec ? '<span class="chip rd">추천</span>' : ''}</div><h4>${c.name} · ${c.sub}</h4><span class="fq-t-caption">칼로리 ${c.off > 0 ? '+' : ''}${c.off} · 단백질 ${c.pkg}g/kg</span></button>`).join('')}`),
     setCh: () => { DB.profile.chapter = +a.dataset.c; DB.profile.chapterStart = dayKey(); save(); closeSheet(); R[TAB](); toast(`<span>챕터 ${a.dataset.c} ${CH[+a.dataset.c].name} 시작!</span>`); },
     ch0Done: () => { DB.flags.tdee = +a.dataset.t; const rec = recChapter(DB.profile.sex, ib().pbf); DB.profile.chapter = rec; DB.profile.chapterStart = dayKey(); DB.xp += 500; const L = levelOf(DB.xp); if (L > levelOf(DB.xp - 500)) pendingLevel = L; save(); SFX.pr(); R.home(); showLevelUp(); },
-    inbody: () => sheet(`<h2 class="fq-t-title">새 인바디</h2><div class="grid2">${[['ibW', '체중 kg'], ['ibS', '골격근량 kg'], ['ibP', '체지방률 %'], ['ibB', '기초대사량 (선택)']].map(([id, l]) => `<label class="stack" for="${id}" style="gap:6px"><span class="fq-t-label">${l}</span><input id="${id}" class="inp" inputmode="decimal"></label>`).join('')}</div><label class="stack" for="ibD" style="gap:6px"><span class="fq-t-label">측정일</span><input id="ibD" class="inp" type="date" value="${new Date().toISOString().slice(0, 10)}"></label><button class="fq-btn fq-btn--lg fq-btn--block" data-act="ibSave">저장</button>`),
+    inbody: () => sheet(`<h2 class="fq-t-title">새 인바디</h2><label class="fq-btn fq-btn--secondary fq-btn--block" for="ibPhoto" style="margin-bottom:12px">${ico('camera')}<span id="ibPhotoT">인바디 결과지 사진으로 채우기</span></label><input id="ibPhoto" type="file" accept="image/*" hidden><div class="grid2">${[['ibW', '체중 kg'], ['ibS', '골격근량 kg'], ['ibP', '체지방률 %'], ['ibB', '기초대사량 (선택)']].map(([id, l]) => `<label class="stack" for="${id}" style="gap:6px"><span class="fq-t-label">${l}</span><input id="${id}" class="inp" inputmode="decimal"></label>`).join('')}</div><label class="stack" for="ibD" style="gap:6px"><span class="fq-t-label">측정일</span><input id="ibD" class="inp" type="date" value="${new Date().toISOString().slice(0, 10)}"></label><button class="fq-btn fq-btn--lg fq-btn--block" data-act="ibSave">저장</button>`),
     ibSave: () => { const v = id => parseFloat(($('#' + id).value || '').replace(',', '.')); const e = { date: $('#ibD').value, w: v('ibW'), smm: v('ibS'), pbf: v('ibP'), bmr: v('ibB') || null }; if (!(e.w > 30 && e.pbf > 2 && e.smm > 5)) return toast('<span>체중·골격근량·체지방률을 넣어 주세요.</span>'); DB.inbody.push(e); DB.inbody.sort((x, y) => x.date < y.date ? -1 : 1); DB.xp += 20; save(); closeSheet(); R.grow(); toast('<span>인바디 저장 · 목표가 새로 계산됐어요 · +20 XP</span>'); },
     tape: () => sheet(`<div class="row row--between"><h2 class="fq-t-title">줄자로 V 비율</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
       <div class="fq-card">${TAPE_SVG}</div>
