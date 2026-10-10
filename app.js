@@ -1507,7 +1507,7 @@ function qRow(e, i, cur) {
   const inc = incOf(e.id), up = lm != null && (as ? e.q.w0 < lm : e.q.w0 > lm) ? +Math.abs(e.q.w0 - lm).toFixed(2) : 0;
   return `<li class="qr${cur ? ' cur' : ''}" data-i="${i}" ${cur ? 'aria-current="step"' : ''}>${thumb}<div class="qr-t"><b>${esc(E.n)}</b>
       <span class="qr-m">${e.q.ed ? `<span class="qs" role="group" aria-label="세트 수"><button data-act="qs-" data-i="${i}" aria-label="세트 1개 줄이기">${ico('minus', 'ico--16')}</button><b class="num">${e.q.n}세트</b><button data-act="qs+" data-i="${i}" aria-label="세트 1개 늘리기">${ico('plus', 'ico--16')}</button></span>`
-        : `<button class="qs-chip" data-act="qsEd" data-i="${i}" aria-label="세트 수 ${e.q.n}개 · 바꾸기">${e.q.n}세트</button>`}<span>${rg[0]}–${rg[1]}회</span>${lm != null ? `<span>지난번 <b class="num">${wLabel(e.id, lm)}kg</b></span>` : '<span>첫 기록</span>'}${up ? `<span class="chip gd">${as ? '보조 −' : '+'}${up}kg 도전</span>` : ''}</span></div>
+        : `<button class="qs-chip" data-act="qsEd" data-i="${i}" aria-label="세트 수 ${e.q.n}개 · 바꾸기">${e.q.n}세트</button>`}<span>${rg[0]}–${rg[1]}회</span>${!cur ? `<button class="qs-chip q-pick" data-act="qPick" data-i="${i}" aria-label="${esc(E.n)} 지금 하기">지금 할래요</button>` : ''}${lm != null ? `<span>지난번 <b class="num">${wLabel(e.id, lm)}kg</b></span>` : '<span>첫 기록</span>'}${up ? `<span class="chip gd">${as ? '보조 −' : '+'}${up}kg 도전</span>` : ''}</span></div>
     <div class="qr-in"><div class="qw" role="group" aria-label="${as ? '보조 무게' : '오늘 최고 무게'}"><button data-act="qw-" data-i="${i}" aria-label="${inc}kg 줄이기">${ico('minus')}</button>
       <label class="v"><small>${as ? '보조' : '최고'}</small><input class="num qwi" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${e.q.w}" data-i="${i}" aria-label="${esc(E.n)} ${as ? '보조 무게' : '오늘 최고 무게'} kg"><small>kg</small></label>
       <button data-act="qw+" data-i="${i}" aria-label="${inc}kg 늘리기">${ico('plus')}</button></div>
@@ -1562,8 +1562,9 @@ function moreHtml() {
       <span class="qm-t"><b>${esc(EX[x.id].n)}</b><small>${esc(x.why)} · ${EX[x.id].range[0]}–${EX[x.id].range[1]}회</small></span>
       <button class="qm-add" data-act="qAdd" data-id="${x.id}" aria-label="${esc(EX[x.id].n)} 오늘 목록에 추가">${ico('plus', 'ico--16')}추가</button></div>`).join('')}</section>`;
 }
+function qCurIdx() { return W.pick != null && W.ex[W.pick] && !W.ex[W.pick].q.done ? W.pick : W.ex.findIndex(e => !e.q.done); }   // 1010 MJ '할 수 있는 운동을 먼저 골라서'
 function qView() {
-  const cur = W.ex.findIndex(e => !e.q.done), n = W.ex.filter(e => e.q.done).length, all = n === W.ex.length;
+  const cur = qCurIdx(), n = W.ex.filter(e => e.q.done).length, all = n === W.ex.length;
   const first = !DB.sessions.some(s => s.ex.some(e => e.q));
   const sum = all ? `<div class="tile ql-sum" style="--o:2"><span><b class="num">${W.ex.length}</b>운동</span><span><b class="num">${W.ex.reduce((a, e) => a + e.q.n, 0)}</b>세트</span>${W.prs ? `<span class="gold-t"><b class="num">${W.prs}</b>새 기록</span>` : ''}<span><b class="num">+${fmt(W.xp)}</b>XP</span></div>` : '';
   clearInterval(qView.cd);
@@ -1571,7 +1572,7 @@ function qView() {
     <div class="lg-grid ql-grid${all ? ' all' : ''}"><div class="lg-main">
       ${first && !all ? `<p class="ql-h">${coach('focus', 32)}<span>무게만 맞추고 <b>완료</b> · 그대로면 바로 완료</span></p>` : ''}
       ${all ? `<p class="ql-h">${coach('proud', 32)}<span><b>다 했어요!</b> 틀린 게 있으면 고치기 (결과 전에)</span></p>` : ''}
-      <ol class="ql-list">${W.ex.map((e, i) => qRow(e, i, i === cur)).join('')}</ol>
+      <ol class="ql-list">${W.ex.map((e, i) => [e, i]).sort((a, b) => (a[1] === cur ? -1 : b[1] === cur ? 1 : 0) || (a[0].q.done - b[0].q.done) || a[1] - b[1]).map(([e, i]) => qRow(e, i, i === cur)).join('')}</ol>
       ${moreHtml()}
       ${n && !all ? '<button class="ql-end" data-act="endAsk">여기서 끝내기</button>' : ''}
     </div><div class="lg-side">
@@ -1584,7 +1585,7 @@ function qView() {
 }
 function qDone(i) {
   const e = W.ex[i], E = EX[e.id]; if (!e || e.q.done) return;
-  e.q.done = true; e.q.ed = false; W.autoEnd = W.ex.every(x => x.q.done);   // 마지막 완료 → 3초 뒤 결과 (고치기로 멈춤)
+  e.q.done = true; e.q.ed = false; if (W.pick === i) W.pick = null; W.autoEnd = W.ex.every(x => x.q.done);   // 마지막 완료 → 3초 뒤 결과 (고치기로 멈춤)
   const inp = document.querySelector(`.qwi[data-i="${i}"]`); if (inp) qSetW(e, inp.value);   // 입력 중이던 숫자 먼저 반영
   let gain = 0, cnt = 0; for (let j = 0; j < e.q.n; j++) { const g = addXP('set', 3); gain += g; if (g) cnt++; }
   const bm = E.kind === 'as' ? 0 : bestMax(e.id);
@@ -2113,7 +2114,7 @@ document.addEventListener('click', ev => {
       DB.flags['pp_' + mondayOf(k)] = true; save(); R.work();
       toast(`<span>오늘 ${PART_NAME[partOf(t)]} 운동은 ${DOW[dow(ds[0])]}요일로${ds[1] ? `, ${N(ds[0], seq[1])} ${DOW[dow(ds[1])]}요일로` : ''} 밀렸어요.${last ? ` ${N(ds[ds.length - 1], last)} 이번 주 쉬어요.` : ''}</span>`, 6000); },
     setDone: () => setDone(+a.dataset.j), undoSet: () => undoSet(+a.dataset.j),
-    qDone: () => qDone(+a.dataset.i), qUndo: () => qUndo(+a.dataset.i),
+    qDone: () => qDone(+a.dataset.i), qUndo: () => qUndo(+a.dataset.i), qPick: () => { W.pick = +a.dataset.i; save(); qView(); const c = document.querySelector('.qr.cur'); if (c) c.scrollIntoView({ block: 'start', behavior: RM() ? 'auto' : 'smooth' }); },
     'qw+': () => qStep(+a.dataset.i, 1), 'qw-': () => qStep(+a.dataset.i, -1),
     qsEd: () => { W.ex[+a.dataset.i].q.ed = true; qView(); },
     'qs+': () => { const q = W.ex[+a.dataset.i].q; q.n = Math.min(8, q.n + 1); qView(); }, 'qs-': () => { const q = W.ex[+a.dataset.i].q; q.n = Math.max(1, q.n - 1); qView(); },
