@@ -593,7 +593,7 @@ function d3Sheet() {
 }
 /* 오늘 루틴이 채우는 우선 부위 세트 (보상 미리보기) */
 function tplPrio(t) {
-  const c = {}; TPL[t].ex.forEach(([id, n]) => [...new Set(EX[id].mus)].forEach(m => { if (BP_FOCUS.includes(m)) c[m] = (c[m] || 0) + n; }));
+  const c = {}; tplEx(t).forEach(([id, n]) => [...new Set(EX[id].mus)].forEach(m => { if (BP_FOCUS.includes(m)) c[m] = (c[m] || 0) + n; }));
   const m = BP_FOCUS.filter(x => c[x]).sort((a, b) => c[b] - c[a])[0]; return m ? `${PRIO.find(p => p[1] === m)[0]} +${c[m]}세트` : '';
 }
 /* 코치 한 줄: 지난 운동과 오늘을 이어서 */
@@ -759,7 +759,7 @@ function verdict(k, c, lifts, body) {
   if ([4, 5, 6, 0].includes(dow(k))) {
     const ws = weekSets(), lack = PRIO.find(([, m]) => (ws[m] || 0) / BP_T[m] < .5);
     if (lack) for (let i = DB.done[k] ? 1 : 0; i <= 7; i++) { const d = addDays(k, i), t = tplFor(d);
-      if (t && TPL[t].ex.some(([id]) => EX[id].mus.includes(lack[1]))) return ['think', `${lack[0]}${iga(lack[0])} 모자라요 · ${i ? DOW[dow(d)] + '요일' : '오늘'} ${PART_NAME[partOf(t)]}날에 채워요`]; }
+      if (t && tplEx(t).some(([id]) => EX[id].mus.includes(lack[1]))) return ['think', `${lack[0]}${iga(lack[0])} 모자라요 · ${i ? DOW[dow(d)] + '요일' : '오늘'} ${PART_NAME[partOf(t)]}날에 채워요`]; }
   }
   if (body.wrong) return ['think', `체중이 ${body.w > 0 ? '늘고' : '줄고'} 있어요 · 식단부터 봐요`, 'diet'];
   if (lifts.filter(x => x.d < 0).length >= 2) return ['think', '힘이 떨어져요 · 잠·단백질 확인'];
@@ -1231,7 +1231,7 @@ function foodSave(id) {
 R.work = () => {
   const k = dayKey(), tpl = tplFor(k), mon = mondayOf(k), done = !!DB.done[k], by = sessByDay(), wd = weekDone(), pl = Math.max(trainDaysPerWeek(), wd);
   let nx = null; if (!tpl) for (let i = 1; i <= 7 && !nx; i++) { const d = addDays(k, i); if (tplFor(d)) nx = d; }
-  const show = tpl || (nx && tplFor(nx)), T = show && TPL[show], cr = creatorOf(T), nSets = T ? T.ex.reduce((a, e) => a + e[1], 0) : 0;
+  const show = tpl || (nx && tplFor(nx)), T = show && TPL[show], cr = creatorOf(T), nSets = T ? tplEx(show).reduce((a, e) => a + e[1], 0) : 0;
   const week = [0, 1, 2, 3, 4, 5, 6].map(i => { const d = addDays(mon, i), t = tplFor(d), s = by[d] && by[d][0], p = s && PART_NAME[partOf(s.tpl, s.ex)];
     return { d, lab: DB.done[d] && p ? p : t ? TPL[t].code : '', aria: DB.done[d] && p ? `${p} 완료` : t ? TPL[t].code : '휴식', st: DB.done[d] ? 'done' : d === k ? 'today' : t ? '' : 'rest' }; });
   const ek = tpl ? !done && k : nx, nLib = ROUTINES.length + Object.keys((DB.custom && DB.custom.tpls) || {}).length;
@@ -1256,9 +1256,9 @@ R.work = () => {
 };
 /* 오늘(또는 다음) 루틴의 운동 목록 — 한 줄에 사진 · 이름 · 오늘 무게. 누르면 동작·팁. foot = 바꾸기 · 도감 한 줄 */
 function exList(tk, title, foot = '') {
-  const T = TPL[tk], rows = T.ex.map(([id0, n, o = {}]) => { const id = exSub(id0), sub = id !== id0; const E = EX[id], rg = o.r || E.range, pl = plannedFor(id, n, rg), st = prog(id), [bt, , up] = badgeFor(id); return { id, id0, sub, n, o, E, rg, pl, st, bt, up }; });
+  const T = TPL[tk], TE = tplEx(tk), rows = TE.map(([id0, n, o = {}]) => { const id = exSub(id0), sub = id !== id0; const E = EX[id], rg = o.r || E.range, pl = plannedFor(id, n, rg), st = prog(id), [bt, , up] = badgeFor(id); return { id, id0, sub, n, o, E, rg, pl, st, bt, up }; });
   const gap = Math.max(0, ...rows.map(r => r.pl.gap));
-  return `<section class="tile card-pad exlist" aria-labelledby="exH"><div class="card-h"><h2 class="fq-t-heading" id="exH">${title ? esc(title) : `운동 ${T.ex.length}가지`}</h2><span class="fq-t-caption">누르면 동작과 팁</span></div>
+  return `<section class="tile card-pad exlist" aria-labelledby="exH"><div class="card-h"><h2 class="fq-t-heading" id="exH">${title ? esc(title) : `운동 ${TE.length}가지`}</h2><span class="fq-t-caption">누르면 동작과 팁</span></div>
     ${rows.some(r => !r.st.n) ? '<p class="fq-t-caption">첫 기록은 10회 할 수 있는 무게로 가볍게</p>' : ''}${gap > 10 ? `<p class="fq-t-caption">${gap}일 쉬어서 무게를 낮췄어요</p>` : ''}
     <ol class="exl">${rows.map(r => `<li><button class="exrow" data-act="howtoId" data-id="${r.id}" data-t="${esc(tk)}" aria-label="${esc(r.E.n)} 동작·팁 보기">
       <span class="exthumb">${r.E.img ? `<img src="media/${r.E.img}_0.jpg" alt="" loading="lazy">` : ico('cplay')}</span>
@@ -1463,7 +1463,7 @@ function condSheet(tplKey) {
 function buildSession(c, tplKey) {
   const k = dayKey(), t = tplKey || tplFor(k) || 'A';
   const by = TPL[t].by;
-  let ex = TPL[t].ex.map(([id0, n, o = {}]) => { const id = exSub(id0); const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
+  let ex = tplEx(t).map(([id0, n, o = {}]) => { const id = exSub(id0); const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
   if (c === 'tired') ex = ex.slice(0, Math.max(2, ex.length - 1)).map(e => ({ ...e, sets: e.sets.slice(0, Math.max(2, e.sets.length - 1)) }));
   if (c === 'short') { const side = ex.find(e => EX[e.id].mus.includes('delt-side')) || (() => { const pl = plannedFor('slr', 3); return { id: 'slr', n: 3, rest: 75, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; })(); ex = [ex[0], side].filter((e, i, a) => a.indexOf(e) === i).map(e => ({ ...e, rest: 75, sets: e.sets.slice(0, 3) })); }
   if (c === 'good') { const s = ex.find(e => EX[e.id].mus.includes('delt-side')); if (s) { const l = s.sets[s.sets.length - 1]; s.sets.push({ w: l.w, r: l.r, done: false, bonus: true }); } }
@@ -1776,7 +1776,7 @@ function finish() {
   SHARE = { code: T0.code, title: T0.by ? T0.ko.replace(T0.by + ' · ', '') : T0.ko, by: T0.by || '', nEx, done, mins, prs: prs.slice(0, 4), mus: gain.map(m => MUS_KO[m] || m).filter((x, i, a) => a.indexOf(x) === i).slice(0, 6), p: Math.round(daySum().p), tp: targets().p, L: L1, streak: streakNow(), day: k };
   clearInterval(clockT); keepAwake(false); W = null; delete DB.live; save();
   go('sum');
-  const next = (() => { for (let i = 1; i <= 7; i++) { const d = addDays(k, i), t = tplFor(d); if (t) return `${DOW[dow(d)]}요일 ${TPL[t].code}: ${TPL[t].ex.map(([id]) => EX[id].n).join(', ')}`; } return '다음 운동 계획 없음'; })();
+  const next = (() => { for (let i = 1; i <= 7; i++) { const d = addDays(k, i), t = tplFor(d); if (t) return `${DOW[dow(d)]}요일 ${TPL[t].code}: ${tplEx(t).map(([id]) => EX[id].n).join(', ')}`; } return '다음 운동 계획 없음'; })();
   const Lb = bpLevels(), meal = nextMealName(), pct = L => Math.round((DB.xp - cum(L)) / (cum(L + 1) - cum(L)) * 100);
   const p0 = Math.max(0, Math.round((DB.xp - xp - cum(L0)) / (cum(L0 + 1) - cum(L0)) * 100));
   $('#scr-sum').innerHTML = `

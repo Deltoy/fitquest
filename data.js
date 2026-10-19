@@ -654,6 +654,15 @@ Object.assign(TPL, {"P1": {"code": "등", "ko": "이도황 · 한 달 등 넓히
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
+/* 1019 MJ: 등 날은 이두, 가슴 날은 삼두, 어깨 날은 복근을 같이 — 루틴 첫 부위 기준으로 뒤에 2종 붙임 (이미 그 근육 운동이 있으면 안 붙임) */
+EX.hlr = { n: '행잉 레그 레이즈', img: 'Hanging_Leg_Raise', eq: '철봉 · 맨몸 (무릎 굽혀도 OK)', kind: 'db', inc: 1, rest: 60, range: [10, 15], mus: ['abs'], def: 0, v: null };
+const PAIR = { back: { mus: 'biceps', ex: [['bcu', 3], ['hmc', 3]] }, chest: { mus: 'forearm', ex: [['cpd', 3], ['dte', 3]] }, shoulder: { mus: 'abs', ex: [['ccr', 3], ['hlr', 3]] } };
+function tplEx(t) {
+  const T = TPL[t]; if (!T) return [];
+  const p = PAIR[(TPL_PARTS[t] || T.parts || [])[0]];
+  if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
+  return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
+}
 const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7'], shoulder: ['P4', 'C', 'E', 'P9'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
