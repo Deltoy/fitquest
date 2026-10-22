@@ -949,3 +949,6 @@ html.gym .tabbar button[aria-current="page"] { color: #FF6B75; }
 .alt-r { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 68px; padding: 6px 12px 6px 6px; border-radius: 16px; border: 0; background: var(--canvas); color: var(--ink); text-align: left; cursor: pointer; }
 .alt-r img, .alt-ph { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; display: grid; place-items: center; background: var(--surface); }
 .alt-t { min-width: 0; display: grid; gap: 2px; } .alt-t b { font-size: 15px; font-weight: 700; } .alt-t small { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+/* 1023: 사진 없는 운동(인스타 루틴·유튜버 추가 X*)은 흰 상자 대신 어두운 칸 + 가운데 재생 표시 */
+.qr-th:not(:has(img)), .exthumb:not(:has(img)) { background: var(--surface); }
+.qr-th:not(:has(img)) .pl { display: grid; inset: 0; margin: auto; }

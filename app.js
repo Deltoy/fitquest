@@ -291,7 +291,7 @@ function pinClash(d) {
   return !!p && (at((d + 1) % 7) === p || at((d + 6) % 7) === p);
 }
 function rotCands(part) {
-  const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []);
+  const picks = (DB.profile.creators || []).flatMap(id => (CREATORS.find(c => c.id === id) || {}).tpls || []).concat(Object.keys(TPL).filter(k => TPL[k].mj));   // mj = MJ 가 직접 고른 루틴
   // 첫 부위(partOf)가 그 요일 부위인 루틴만 — 로테이션은 루틴만 바꾸고 부위는 절대 안 바꾼다
   const base = ROT[part].concat(Object.keys((DB.custom && DB.custom.tpls) || {}).filter(k => TPL[k] && !TPL[k].off)).filter(t => TPL[t] && partOf(t) === part);
   const mine = base.filter(t => picks.includes(t)), rest = base.filter(t => !picks.includes(t));
