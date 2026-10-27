@@ -727,6 +727,36 @@ ROUTINES.push(
     adapt: ['영상에 세트 수가 없어 앱 기본값 3세트로 채움', '스탠딩 숄더 프레스 머신이 없으면 숄더 프레스 머신으로'],
     videos: [{ u: IG.cbum, t: '비긴리프트 · 크리스 범스테드 어깨 루틴 (인스타)' }] }
 );
+/* 1027 MJ 인스타 '핏퀘스트에 루틴 추가' — pt_muscle_ 앤드류 잭드(2026 아놀드 챔피언) 어깨 7종목 (캡션 그대로 · 슈퍼세트 2쌍은 이어서 하는 두 줄) */
+IG.jacked = 'https://www.instagram.com/p/De_ESoHAVy4/';
+Object.assign(EX, {
+  ecr: { n: '케이블 외회전·내회전 (회전근개)', img: 'External_Rotation_with_Cable', eq: '케이블·밴드 · 팔꿈치 옆구리에 붙이고', kind: 'cb', inc: 1, rest: 45, range: [12, 15], mus: ['delt-side'], def: 2.5, v: null },
+  dsh: { n: '덤벨 슈러그', img: 'Dumbbell_Shrug', eq: '덤벨 · 양손', kind: 'db', inc: 2, rest: 75, range: [10, 15], mus: ['traps'], def: 20, v: null }
+});
+TPL.P13 = { code: '어깨', ko: '앤드류 잭드 · 아놀드 챔피언 어깨 7종목', by: '앤드류 잭드', video: IG.jacked, pro: 1, mj: 1, day: '2026-10-27', at: 4, parts: ['shoulder'], ex: [
+  ['ecr', 3, { tip: '본운동 전 가벼운 무게로 내회전·외회전. 어깨 안정화 준비 운동', r: [12, 15] }],
+  ['ssp', 4, { tip: '전면·측면 삼각근 중심. 중량을 통제하며 어깨를 강하게', r: [12, 12] }],
+  ['slr', 3, { tip: '15-15-15 드롭세트: 15회 → 무게 내려 15회 → 한 번 더 내려 15회. 반동 없이 측면 긴장 유지', r: [15, 15] }],
+  ['rdf', 3, { tip: '슈퍼세트 ① 리버스 펙덱 → 쉬지 않고 바로 리버스 케이블 플라이', r: [12, 15] }],
+  ['crd', 3, { tip: '슈퍼세트 ② 펙덱 바로 다음. 후면 자극 극대화', r: [12, 15] }],
+  ['fcr', 3, { tip: '슈퍼세트 ① 케이블 프론트 레이즈 → 바로 숄더 머신', r: [12, 12] }],
+  ['spm', 3, { tip: '슈퍼세트 ② 케이블 다음 바로. 다른 각도로 전면 마무리', r: [12, 12] }],
+  ['fpl', 2, { tip: '팔꿈치를 뒤로 벌리며 당기기 (후면·견갑 주변)', r: [12, 12] }],
+  ['dsh', 2, { tip: '어깨를 위로 끌어올리며 수축 (상부 승모근)', r: [12, 12] }]] };
+ROUTINES.push({ creator: '앤드류 잭드', meta: '어깨 · 7종목', title: '아놀드 챔피언의 어깨 루틴', tpl: 'P13', parts: ['shoulder'],
+  sub: '189cm·130kg 2026 아놀드 챔피언. 회전근개로 시작해 프레스·레이즈, 전면·측면·후면을 모두, 드롭세트와 슈퍼세트까지.',
+  tips: ['회전근개 운동으로 먼저 어깨 안정화', '사이드 레터럴은 15-15-15 드롭세트', '후면·전면은 두 운동을 쉬지 않고 이어서 (슈퍼세트)'],
+  ex: [
+    { n: '회전근개 운동 (내회전·외회전)', how: '본운동 전 가벼운 무게로', sr: '3세트' },
+    { n: '스미스 머신 숄더 프레스', how: '전면·측면 · 중량 통제', sr: '4 × 12' },
+    { n: '사이드 레터럴 레이즈', how: '15-15-15 드롭세트 · 반동 줄이기', sr: '3세트' },
+    { n: '리버스 펙덱 + 리버스 케이블 플라이', how: '후면 슈퍼세트 · 연속으로', sr: '3세트' },
+    { n: '케이블 프론트 레이즈 + 숄더 머신', how: '전면 · 케이블과 머신 조합', sr: '3 × 12' },
+    { n: '페이스 풀', how: '팔꿈치를 뒤로 벌리며 당기기', sr: '2 × 12' },
+    { n: '슈러그', how: '어깨를 위로 끌어올리며 수축', sr: '2 × 12' }
+  ],
+  adapt: ['캡션에 횟수가 없는 종목(회전근개·레터럴·후면)은 앱 기본 횟수로 채움', '슈퍼세트는 앱에서 두 줄로 — 첫 줄 끝나면 쉬지 말고 바로 다음 줄'],
+  videos: [{ u: IG.jacked, t: 'pt_muscle_ · 앤드류 잭드 어깨 루틴 (인스타)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -739,7 +769,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
