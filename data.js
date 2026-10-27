@@ -757,6 +757,57 @@ ROUTINES.push({ creator: '앤드류 잭드', meta: '어깨 · 7종목', title: '
   ],
   adapt: ['캡션에 횟수가 없는 종목(회전근개·레터럴·후면)은 앱 기본 횟수로 채움', '슈퍼세트는 앱에서 두 줄로 — 첫 줄 끝나면 쉬지 말고 바로 다음 줄'],
   videos: [{ u: IG.jacked, t: 'pt_muscle_ · 앤드류 잭드 어깨 루틴 (인스타)' }] });
+/* 1028 MJ 인스타 '핏퀘스트에 넣어줘 · 운동 모습도 그 사람 운동 모습으로' — beginlift 요코가와 나오타카(2026 올림피아 212 7위) 어깨 14종목 모음.
+   원본 = 本人 유튜브 '横川尚隆の肩ガチトレフル' (i_PvTmRjhQQ) · 종목마다 그 장면 시각(스토리보드로 확인) → 앱 안에서 유튜브 플레이어로 바로 재생 (e: 1) */
+IG.yoko = 'https://www.instagram.com/p/De6vtmEE_Dm/';
+const YK = (s, label) => ({ u: 'https://youtu.be/i_PvTmRjhQQ?t=' + s, t: String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'), who: '요코가와 나오타카', label: label || '横川くんの筋肉ちゃんねる · 肩ガチトレフル', e: 1 });
+Object.assign(EX, {
+  sdp: { n: '시티드 덤벨 숄더 프레스', img: 'Seated_Dumbbell_Press', eq: '덤벨 · 등받이 세운 벤치', kind: 'db', inc: 2, rest: 105, range: [8, 12], mus: ['delt-front', 'delt-side'], def: 16, v: null },
+  csl: { n: '체스트 서포티드 레터럴 레이즈', img: 'One-Arm_Incline_Lateral_Raise', eq: '덤벨 · 인클라인 벤치에 가슴 대고', kind: 'db', inc: 1, rest: 60, range: [12, 15], mus: ['delt-side'], def: 5, v: null },
+  ful: { n: '핏업 레터럴 레이즈 (벤치에 앉아서)', img: 'Seated_Side_Lateral_Raise', eq: '덤벨 · 벤치 끝에 앉아 상체 살짝 숙여', kind: 'db', inc: 1, rest: 60, range: [12, 15], mus: ['delt-side'], def: 5, v: null },
+  mlr: { n: '머신 레터럴 레이즈', img: null, eq: '레터럴 레이즈 머신 · 팔꿈치 패드', kind: 'mc', inc: 2.5, rest: 75, range: [12, 15], mus: ['delt-side'], def: 20, v: null },
+  mpr: { n: '밀리터리 프레스 (바벨 서서)', img: 'Standing_Military_Press', eq: '바벨 · 랙에서 서서', kind: 'bb', inc: 2.5, rest: 120, range: [8, 10], mus: ['delt-front', 'delt-side'], def: 30, v: null },
+  rdr: { n: '리어델트 로우 (EZ바)', img: 'Barbell_Rear_Delt_Row', eq: 'EZ바·바벨 · 상체 숙이고 팔꿈치 벌려', kind: 'bb', inc: 2.5, rest: 90, range: [10, 15], mus: ['traps'], def: 20, v: null },
+  sms: { n: '스미스 머신 슈러그', img: 'Barbell_Shrug', eq: '스미스 머신 · 서서', kind: 'bb', inc: 5, rest: 75, range: [10, 15], mus: ['traps'], def: 40, v: null },
+  cbo: { n: '케이블 벤트오버 레이즈', img: 'Bent_Over_Low-Pulley_Side_Lateral', eq: '케이블 · 낮은 도르래 · 상체 숙여서', kind: 'cb', inc: 1, rest: 60, range: [12, 15], mus: ['traps'], def: 5, v: null },
+  clr: { n: '케이블 레터럴 레이즈 (서서)', img: 'Standing_Low-Pulley_Deltoid_Raise', eq: '케이블 · 낮은 도르래 · 한 팔씩', kind: 'cb', inc: 1, rest: 60, range: [12, 15], mus: ['delt-side'], def: 5, v: null }
+});
+TPL.P14 = { code: '어깨', ko: '요코가와 나오타카 · 일본 보디빌딩 슈퍼스타 어깨 14종목', by: '요코가와 나오타카', video: IG.yoko, pro: 1, mj: 1, day: '2026-10-28', at: 4, parts: ['shoulder'], ex: [
+  ['ssp', 3, { tip: '스미스 머신에 앉아 프레스. 팔꿈치를 어깨보다 살짝 앞에', r: [8, 12], t: YK(120) }],
+  ['sdp', 3, { tip: '등받이 세운 벤치에서 덤벨 프레스. 내릴 때 승모근 힘 빼고 어깨로', r: [8, 12], t: YK(558) }],
+  ['csl', 2, { tip: '인클라인 벤치에 가슴을 대고 반동 없이 옆으로', t: YK(935) }],
+  ['ful', 2, { tip: '벤치 끝에 앉아 상체를 살짝 숙이고 측면만 고립', t: YK(1351) }],
+  ['slr', 2, { tip: '서서 하는 기본 레터럴. 벨트 차고 하체 고정', t: YK(1544) }],
+  ['bor', 2, { tip: '앉아서 상체를 숙이고 후면 삼각근으로 벌리기', t: YK(1753) }],
+  ['fpl', 2, { tip: '로프를 얼굴 쪽으로. 팔꿈치를 뒤로 벌리며', t: YK(2022) }],
+  ['mlr', 2, { tip: '팔꿈치 패드로 밀어 올리기. 측면에 계속 긴장', t: YK(2490) }],
+  ['mpr', 2, { tip: '랙에서 서서 바벨 프레스. 엘보 슬리브 착용', r: [8, 10], t: YK(3238) }],
+  ['rdr', 2, { tip: '상체를 숙이고 팔꿈치를 옆으로 벌려 당기기 (등이 아니라 후면 삼각근)', t: YK(3597) }],
+  ['rdf', 2, { tip: '리버스 펙덱. 가슴을 패드에 붙이고 팔을 뒤로 넓게', t: YK(3786) }],
+  ['sms', 2, { tip: '스미스 머신에서 어깨를 위로 끌어올려 1초 멈춤', t: YK(4005) }],
+  ['cbo', 2, { tip: '낮은 케이블로 상체 숙여 옆·뒤로 벌리기', t: YK(4264) }],
+  ['clr', 2, { tip: '한 팔씩 케이블 레터럴로 마무리. 끝까지 긴장 유지', t: YK(4533) }]] };
+ROUTINES.push({ creator: '요코가와 나오타카', meta: '어깨 · 14종목', title: '일본 보디빌딩 슈퍼스타의 어깨 루틴', tpl: 'P14', parts: ['shoulder'],
+  sub: '2026 올림피아 212 7위. 프레스 2종 → 레터럴 4종 → 후면·페이스풀 → 머신 → 밀리터리 → 후면 로우·펙덱 → 슈러그 → 케이블 마무리. 종목마다 본인 영상이 그 장면부터 나와요.',
+  tips: ['운동 종류와 양이 많은 루틴이라 그대로 따라 하기보다 어떤 운동을 어떻게 쓰는지 보는 데 의미 (원문)', '타이머로 쉬는 시간을 철저히 재고, 운동일지에 적어요', '레터럴은 앉아서·가슴 대고·서서·머신·케이블로 각도를 바꿔 여러 번'],
+  ex: [
+    { n: '스미스 머신 숄더 프레스', how: '앉아서 · 팔꿈치 살짝 앞', sr: '3세트' },
+    { n: '시티드 덤벨 숄더 프레스', how: '등받이 세운 벤치', sr: '3세트' },
+    { n: '체스트 서포티드 레터럴 레이즈', how: '인클라인 벤치에 가슴 대고', sr: '2세트' },
+    { n: '핏업 레터럴 레이즈', how: '벤치에 앉아 상체 살짝 숙여', sr: '2세트' },
+    { n: '스탠딩 레터럴 레이즈', how: '서서 · 반동 없이', sr: '2세트' },
+    { n: '벤트오버 레이즈', how: '앉아서 상체 숙여 · 후면', sr: '2세트' },
+    { n: '페이스 풀', how: '로프 · 팔꿈치 뒤로', sr: '2세트' },
+    { n: '머신 레터럴 레이즈', how: '팔꿈치 패드', sr: '2세트' },
+    { n: '밀리터리 프레스', how: '랙에서 서서 바벨', sr: '2세트' },
+    { n: '리어델트 로우', how: 'EZ바 · 팔꿈치 벌려', sr: '2세트' },
+    { n: '리버스 펙덱 플라이', how: '가슴 패드에 붙이고', sr: '2세트' },
+    { n: '스미스 머신 슈러그', how: '위로 끌어올려 멈춤', sr: '2세트' },
+    { n: '케이블 벤트오버 레이즈', how: '낮은 도르래 · 숙여서', sr: '2세트' },
+    { n: '케이블 레터럴 레이즈', how: '한 팔씩 마무리', sr: '2세트' }
+  ],
+  adapt: ['게시물에 세트·횟수가 없어 앱 기본 횟수로 채움 · 프레스 2종 3세트, 나머지 2세트 (모두 30세트)', '종목마다 [동작 보기]를 누르면 요코가와 본인 영상이 그 운동 장면부터 재생돼요 (유튜브)'],
+  videos: [{ u: IG.yoko, t: 'beginlift · 요코가와 나오타카 어깨 루틴 모음 (인스타)' }, { u: 'https://youtu.be/i_PvTmRjhQQ', t: '横川くんの筋肉ちゃんねる · 肩ガチトレフル (원본 유튜브)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -769,7 +820,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */

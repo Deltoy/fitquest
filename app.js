@@ -1440,11 +1440,14 @@ function crSave() {
 }
 function lastSets(id) { for (let i = DB.sessions.length - 1; i >= 0; i--) { const e = DB.sessions[i].ex.find(x => x.id === id); if (e && e.sets.length) return e.sets; } return null; }
 function lastStr(id) { const ss = lastSets(id); return ss ? `${wLabel(id, ss[0].w)}kg × ${ss.map(s => s.r).join('/')}` : '—'; }
-const howto = id => EX[id].img ? `<div class="howto" role="img" aria-label="${esc(EX[id].n)} 시작 자세와 끝 자세"><img src="media/${EX[id].img}_0.jpg" alt="" loading="lazy"><img src="media/${EX[id].img}_1.jpg" alt="" loading="lazy"><span class="lbl"></span></div>` : `<div class="howto howto--none"><span>사진 없음<br>영상에서 보기</span></div>`;
+/* 1028 MJ '운동 모습도 그 사람의 운동 모습으로' — 루틴이 본인 영상 시각을 주면(e: 1) 사진 대신 유튜브 플레이어가 그 장면부터 (남의 영상을 복사해 올리지 않고 유튜브에서 바로 재생) */
+const ytEmbed = (v, title) => { const m = String(v.u).match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/), s = +((String(v.u).match(/[?&]t=(\d+)/) || [])[1] || 0); return m ? `<div class="howto howto--yt"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?start=${s}&playsinline=1&rel=0" title="${esc(title)} · ${esc(v.who)} 본인 영상" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''; };
+const howto = (id, v) => (v && v.e && ytEmbed(v, EX[id].n)) || howtoImg(id);
+const howtoImg = id => EX[id].img ? `<div class="howto" role="img" aria-label="${esc(EX[id].n)} 시작 자세와 끝 자세"><img src="media/${EX[id].img}_0.jpg" alt="" loading="lazy"><img src="media/${EX[id].img}_1.jpg" alt="" loading="lazy"><span class="lbl"></span></div>` : `<div class="howto howto--none"><span>사진 없음<br>영상에서 보기</span></div>`;
 function howSheet(id, o = {}) {
   const E = { ...EX[id], v: o.v || EX[id].v, range: o.range || EX[id].range }, tip = o.tip || TIPS[id];
   sheet(`<div class="row row--between"><h2 class="fq-t-title">${E.n}</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
-    ${howto(id)}<p class="fq-t-caption" style="margin:-4px 0 0">시작 ↔ 끝 자세 · 사진 free-exercise-db (퍼블릭 도메인)</p>
+    ${howto(id, E.v)}<p class="fq-t-caption" style="margin:-4px 0 0">${E.v && E.v.e ? `${esc(E.v.who)} 본인 영상 · ${E.v.t}부터 (유튜브)` : '시작 ↔ 끝 자세 · 사진 free-exercise-db (퍼블릭 도메인)'}</p>
     <section class="fq-card stack"><span class="fq-eyebrow">세팅</span><span class="fq-t-body" style="font-size:15px">${E.eq} · 목표 ${E.range[0]}–${E.range[1]}회 · 휴식 ${E.rest}초</span>${tip ? `<div class="l-head" style="margin-top:6px">${coach('focus', 32)}<p>${esc(tip.t)}<small>${esc(tip.who)} 팁</small></p></div>` : ''}</section>
     ${E.v ? `<a class="fq-btn fq-btn--lg fq-btn--block" href="${E.v.u}" target="_blank" rel="noopener">${ico('cplay')}원본 영상 보기 · ${esc(E.v.who)} ${E.v.t !== '00:00' ? E.v.t : ''}</a><p class="fq-t-caption center" style="margin:-6px 0 0">${esc(E.v.label)}${E.v.t !== '00:00' ? ' · 그 운동 장면부터 재생돼요' : ''}</p>` : ''}`);
 }
@@ -1490,7 +1493,7 @@ R.logger = () => {
     <div class="lg-grid"><div class="lg-main">
       <p class="lab">${esc(E.eq)}${E.mus.some(m => BP_FOCUS.includes(m)) ? ' · V자 우선 부위' : ''}</p>
       <h1 class="lg-name">${E.n}</h1>
-      <div class="lg-photo">${howto(e.id)}<button class="watch" data-act="howtoEx" data-i="${W.i}">${ico('cplay')}동작 보기${vv ? ` <small>${esc(vv.who)}${vv.t !== '00:00' ? ` ${vv.t}부터` : ''}</small>` : ''}</button></div>
+      <div class="lg-photo">${howto(e.id, vv)}<button class="watch" data-act="howtoEx" data-i="${W.i}">${ico('cplay')}동작 보기${vv ? ` <small>${esc(vv.who)}${vv.t !== '00:00' ? ` ${vv.t}부터` : ''}</small>` : ''}</button></div>
       ${W.feel ? `<div class="tile feel sel">${coach('wow', 40, 'feelCoach')}<div><p class="fq-t-heading">${E.n} 끝! 어땠어요?</p><p class="fq-t-caption">다음 무게를 정하는 데 써요.</p></div>
         <div class="chips">${['쉬웠다', '딱 좋다', '한계'].map(f => `<button class="fq-chip" data-act="feel" data-f="${f}">${f}</button>`).join('')}</div></div>`
       : `<div class="tip">${coach('focus', 40, 'lgCoach')}<p>${tip ? esc(tip.t) : s ? `${setName(s, k)}, 목표 ${rg[0]}–${rg[1]}회예요.` : '이 운동은 끝났어요.'}<small>${tip ? `${esc(tip.who)} 팁` : '마지막 1~2회가 힘들면 딱 맞는 무게예요'}</small></p></div>`}
@@ -1596,7 +1599,7 @@ function qView() {
       ${moreHtml()}
       ${n && !all ? '<button class="ql-end" data-act="endAsk">여기서 끝내기</button>' : ''}
     </div><div class="lg-side">
-      ${cur >= 0 ? `<div class="lg-photo ql-photo">${howto(W.ex[cur].id)}<button class="watch" data-act="howtoEx" data-i="${cur}">${ico('cplay')}동작 보기</button></div>` : ''}
+      ${cur >= 0 ? `<div class="lg-photo ql-photo">${howto(W.ex[cur].id, W.ex[cur].v)}<button class="watch" data-act="howtoEx" data-i="${cur}">${ico('cplay')}동작 보기</button></div>` : ''}
       ${sum}
       ${all ? `<div class="dock ql-dock" style="--o:3"><div class="dock-toast" id="dockToast"></div><button class="fq-btn fq-btn--xl fq-btn--block btn-done sel" data-act="finish">${ico('check')}<span>운동 완료<small class="ql-cd" id="qlCd"> · 3초 뒤 결과</small></span></button></div>` : '<div class="dock-toast" id="dockToast"></div>'}
     </div></div>`;
@@ -1673,7 +1676,7 @@ function restView() {
         <div class="combo"><span class="z">${ico('zap', '')}</span><div style="flex:1;min-width:0"><p><b>${W.combo}콤보</b> ${W.combo % 5 === 0 ? '콤보 보너스 +10 받았어요' : `${5 - W.combo % 5}세트 더 하면 보너스 +10`}</p>
           <div class="pips" style="grid-template-columns:repeat(${total},1fr)" role="img" aria-label="오늘 ${total}세트 중 ${done}세트 완료">${'<i class="d"></i>'.repeat(done)}${'<i></i>'.repeat(total - done)}</div></div></div>
       </section>
-      <div class="lg-photo rs-photo">${howto(e.id)}<button class="watch" data-act="howtoEx" data-i="${W.i}">${ico('cplay')}동작 보기</button></div>
+      <div class="lg-photo rs-photo">${howto(e.id, e.v)}<button class="watch" data-act="howtoEx" data-i="${W.i}">${ico('cplay')}동작 보기</button></div>
       <div class="tile say" style="--o:3">${coach('think', 32)}<p>다음은 ${nx.bonus ? '보너스 세트' : `${k + 1}세트`} · ${wLabel(e.id, nx.w)}kg × ${nx.r}회<small>${E.kind === 'as' ? `모든 세트 ${hi}회를 채우면 다음엔 보조를 ${inc}kg 줄여 드려요` : `모든 세트 ${hi}회를 채우면 다음엔 ${+(nx.w + inc).toFixed(2)}kg로 올려 드려요`}</small></p></div>
     </div><div class="lg-side">
       <div class="ring${ready ? ' over' : ''}" style="--o:1" id="ring">
