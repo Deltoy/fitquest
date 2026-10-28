@@ -419,6 +419,8 @@ button.day:active .pill { transform: scale(.94); transition-duration: .07s; }
 @keyframes howto-l { 0% { content: "시작"; } 50% { content: "끝"; } }
 .howto--yt { aspect-ratio: 16 / 9; background: #000; }
 .howto--yt iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.howto--ig { aspect-ratio: auto; height: min(540px, 62dvh); background: #fff; }
+.howto--ig iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .lg-photo .howto--yt { height: auto; aspect-ratio: 16 / 9; }
 .howto--none { display: grid; place-items: center; background: var(--canvas); color: var(--ink-2); font-size: 12px; font-weight: 600; text-align: center; line-height: 1.3; }
 @media (prefers-reduced-motion: reduce) { .howto img + img { opacity: 0; } }

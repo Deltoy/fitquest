@@ -808,6 +808,34 @@ ROUTINES.push({ creator: '요코가와 나오타카', meta: '어깨 · 14종목'
   ],
   adapt: ['게시물에 세트·횟수가 없어 앱 기본 횟수로 채움 · 프레스 2종 3세트, 나머지 2세트 (모두 30세트)', '종목마다 [동작 보기]를 누르면 요코가와 본인 영상이 그 운동 장면부터 재생돼요 (유튜브)'],
   videos: [{ u: IG.yoko, t: 'beginlift · 요코가와 나오타카 어깨 루틴 모음 (인스타)' }, { u: 'https://youtu.be/i_PvTmRjhQQ', t: '横川くんの筋肉ちゃんねる · 肩ガチトレフル (원본 유튜브)' }] });
+/* 1028 MJ 인스타 릴스 (운동 링크는 묻지 말고 넣기) — bubufitness1 부부피트니스 '헬린이 가슴운동 1시간' 6종목 (화면 글자 그대로 · 쉬는 시간 모두 1분)
+   유튜브에 같은 영상이 없어 동작 보기 창에 인스타 릴스를 그대로 띄움 (ig: 1 · 처음부터 재생, t = 그 운동이 나오는 시각) */
+IG.bubu = 'https://www.instagram.com/reel/De_QMZWyxE6/';
+const BB = t => ({ u: IG.bubu, t, who: '부부피트니스', label: '헬린이 가슴운동 1시간 (인스타 릴스)', ig: 1 });
+Object.assign(EX, {
+  sbp: { n: '스미스 벤치프레스', img: 'Smith_Machine_Bench_Press', eq: '스미스머신 · 평벤치', kind: 'bb', inc: 2.5, rest: 120, range: [8, 12], mus: ['chest', 'delt-front'], def: 30, v: null },
+  dcm: { n: '디클라인 체스트 프레스 머신', img: 'Leverage_Decline_Chest_Press', eq: '머신 · 앉아서 아래로 밀기', kind: 'mc', inc: 5, rest: 90, range: [10, 15], mus: ['chest'], def: 30, v: null }
+});
+TPL.P15 = { code: '가슴', ko: '부부피트니스 · 헬린이 가슴 6종목', by: '부부피트니스', video: IG.bubu, pro: 1, mj: 1, day: '2026-10-28', at: 2, parts: ['chest'], ex: [
+  ['pov', 3, { tip: '가슴을 먼저 늘려 주는 준비. 가벼운 덤벨로 20개', r: [20, 20], t: BB('0:04') }],
+  ['sbp', 4, { tip: '스미스 머신이라 궤도가 고정돼 헬린이도 안전하게', r: [12, 15], t: BB('0:08') }],
+  ['isp', 4, { tip: '인클라인 멀티프레스 (스미스). 윗가슴 위주', r: [12, 15], t: BB('0:12') }],
+  ['idp', 4, { tip: '덤벨로 윗가슴 한 번 더. 무게보다 15~20개 반복', r: [15, 20], t: BB('0:16') }],
+  ['dcm', 4, { tip: '앉아서 아래쪽으로 미는 머신. 아랫가슴', r: [15, 20], t: BB('0:20') }],
+  ['cco', 3, { tip: '케이블 플라이로 마무리. 더 못 할 때까지 쥐어짜기', r: [15, 20], t: BB('0:24') }]] };
+ROUTINES.push({ creator: '부부피트니스', meta: '가슴 · 6종목', title: '헬린이 가슴운동 1시간', tpl: 'P15', parts: ['chest'],
+  sub: '"헬린이들아 아저씨만 믿어." 풀오버로 가슴을 늘리고 → 평·위·아래 순서로 밀고 → 케이블로 마무리. 6종목 22세트, 쉬는 시간 모두 1분.',
+  tips: ['무게보다 12~20개로 많이 반복하는 루틴', '쉬는 시간은 모두 1분 — 타이머로 지키기', '마지막 케이블 플라이는 더 못 할 때까지'],
+  ex: [
+    { n: '덤벨 풀오버', how: '가슴 늘리기 · 준비', sr: '3 × 20' },
+    { n: '스미스 벤치프레스', how: '평벤치 · 궤도 고정', sr: '4 × 12~15' },
+    { n: '인클라인 멀티프레스', how: '스미스 · 윗가슴', sr: '4 × 12~15' },
+    { n: '인클라인 덤벨 프레스', how: '덤벨 · 윗가슴', sr: '4 × 15~20' },
+    { n: '디클라인 프레스', how: '앉아서 하는 머신 · 아랫가슴', sr: '4 × 15~20' },
+    { n: '케이블 플라이', how: '마무리', sr: '3 × 실패 지점까지' }
+  ],
+  adapt: ['케이블 플라이 "실패 지점까지"는 앱에서 15~20회로 — 더 되면 더 해도 돼요', '[동작 보기]를 누르면 부부피트니스 릴스가 떠요 (인스타라 처음부터 재생 · 운동마다 몇 초쯤 나오는지 적어 둠)'],
+  videos: [{ u: IG.bubu, t: 'bubufitness1 · 헬린이 가슴운동 1시간 (인스타 릴스)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -820,7 +848,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */

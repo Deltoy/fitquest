@@ -1443,13 +1443,15 @@ function lastStr(id) { const ss = lastSets(id); return ss ? `${wLabel(id, ss[0].
 /* 1028 MJ '운동 모습도 그 사람의 운동 모습으로' — 루틴이 본인 영상 시각을 주면(e: 1) 사진 대신 유튜브 플레이어가 그 장면부터 (남의 영상을 복사해 올리지 않고 유튜브에서 바로 재생) */
 const ytEmbed = (v, title) => { const m = String(v.u).match(/(?:youtu\.be\/|[?&]v=)([\w-]{11})/), s = +((String(v.u).match(/[?&]t=(\d+)/) || [])[1] || 0); return m ? `<div class="howto howto--yt"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?start=${s}&playsinline=1&rel=0" title="${esc(title)} · ${esc(v.who)} 본인 영상" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''; };
 const howto = (id, v) => (v && v.e && ytEmbed(v, EX[id].n)) || howtoImg(id);
+/* 1028 유튜브에 없는 인스타 릴스(ig: 1) — 동작 보기 창에만 인스타 임베드 (세로 영상이라 작은 사진 칸에는 그대로 사진). 시각 지정이 안 돼 처음부터 재생 */
+const igEmbed = (v, title) => { const m = String(v.u).match(/instagram\.com\/(?:reel|p)\/([\w-]+)/); return m ? `<div class="howto howto--ig"><iframe src="https://www.instagram.com/reel/${m[1]}/embed/" title="${esc(title)} · ${esc(v.who)} 본인 영상" loading="lazy" allowfullscreen></iframe></div>` : ''; };
 const howtoImg = id => EX[id].img ? `<div class="howto" role="img" aria-label="${esc(EX[id].n)} 시작 자세와 끝 자세"><img src="media/${EX[id].img}_0.jpg" alt="" loading="lazy"><img src="media/${EX[id].img}_1.jpg" alt="" loading="lazy"><span class="lbl"></span></div>` : `<div class="howto howto--none"><span>사진 없음<br>영상에서 보기</span></div>`;
 function howSheet(id, o = {}) {
   const E = { ...EX[id], v: o.v || EX[id].v, range: o.range || EX[id].range }, tip = o.tip || TIPS[id];
   sheet(`<div class="row row--between"><h2 class="fq-t-title">${E.n}</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
-    ${howto(id, E.v)}<p class="fq-t-caption" style="margin:-4px 0 0">${E.v && E.v.e ? `${esc(E.v.who)} 본인 영상 · ${E.v.t}부터 (유튜브)` : '시작 ↔ 끝 자세 · 사진 free-exercise-db (퍼블릭 도메인)'}</p>
-    <section class="fq-card stack"><span class="fq-eyebrow">세팅</span><span class="fq-t-body" style="font-size:15px">${E.eq} · 목표 ${E.range[0]}–${E.range[1]}회 · 휴식 ${E.rest}초</span>${tip ? `<div class="l-head" style="margin-top:6px">${coach('focus', 32)}<p>${esc(tip.t)}<small>${esc(tip.who)} 팁</small></p></div>` : ''}</section>
-    ${E.v ? `<a class="fq-btn fq-btn--lg fq-btn--block" href="${E.v.u}" target="_blank" rel="noopener">${ico('cplay')}원본 영상 보기 · ${esc(E.v.who)} ${E.v.t !== '00:00' ? E.v.t : ''}</a><p class="fq-t-caption center" style="margin:-6px 0 0">${esc(E.v.label)}${E.v.t !== '00:00' ? ' · 그 운동 장면부터 재생돼요' : ''}</p>` : ''}`);
+    ${(E.v && E.v.ig && igEmbed(E.v, E.n)) || howto(id, E.v)}<p class="fq-t-caption" style="margin:-4px 0 0">${E.v && E.v.e ? `${esc(E.v.who)} 본인 영상 · ${E.v.t}부터 (유튜브)` : E.v && E.v.ig ? `${esc(E.v.who)} 본인 영상 · 이 운동은 ${E.v.t}쯤 나와요 (인스타)` : '시작 ↔ 끝 자세 · 사진 free-exercise-db (퍼블릭 도메인)'}</p>
+    <section class="fq-card stack"><span class="fq-eyebrow">세팅</span><span class="fq-t-body" style="font-size:15px">${E.eq} · 목표 ${E.range[0] === E.range[1] ? E.range[0] : `${E.range[0]}–${E.range[1]}`}회 · 휴식 ${E.rest}초</span>${tip ? `<div class="l-head" style="margin-top:6px">${coach('focus', 32)}<p>${esc(tip.t)}<small>${esc(tip.who)} 팁</small></p></div>` : ''}</section>
+    ${E.v ? `<a class="fq-btn fq-btn--lg fq-btn--block" href="${E.v.u}" target="_blank" rel="noopener">${ico('cplay')}원본 영상 보기 · ${esc(E.v.who)} ${E.v.t !== '00:00' ? E.v.t : ''}</a><p class="fq-t-caption center" style="margin:-6px 0 0">${esc(E.v.label)}${E.v.ig ? ' · 처음부터 재생돼요' : E.v.t !== '00:00' ? ' · 그 운동 장면부터 재생돼요' : ''}</p>` : ''}`);
 }
 
 /* ================= LOGGER ================= */
@@ -1493,7 +1495,7 @@ R.logger = () => {
     <div class="lg-grid"><div class="lg-main">
       <p class="lab">${esc(E.eq)}${E.mus.some(m => BP_FOCUS.includes(m)) ? ' · V자 우선 부위' : ''}</p>
       <h1 class="lg-name">${E.n}</h1>
-      <div class="lg-photo">${howto(e.id, vv)}<button class="watch" data-act="howtoEx" data-i="${W.i}">${ico('cplay')}동작 보기${vv ? ` <small>${esc(vv.who)}${vv.t !== '00:00' ? ` ${vv.t}부터` : ''}</small>` : ''}</button></div>
+      <div class="lg-photo">${howto(e.id, vv)}<button class="watch" data-act="howtoEx" data-i="${W.i}">${ico('cplay')}동작 보기${vv ? ` <small>${esc(vv.who)}${vv.t !== '00:00' ? ` ${vv.t}${vv.ig ? '쯤' : '부터'}` : ''}</small>` : ''}</button></div>
       ${W.feel ? `<div class="tile feel sel">${coach('wow', 40, 'feelCoach')}<div><p class="fq-t-heading">${E.n} 끝! 어땠어요?</p><p class="fq-t-caption">다음 무게를 정하는 데 써요.</p></div>
         <div class="chips">${['쉬웠다', '딱 좋다', '한계'].map(f => `<button class="fq-chip" data-act="feel" data-f="${f}">${f}</button>`).join('')}</div></div>`
       : `<div class="tip">${coach('focus', 40, 'lgCoach')}<p>${tip ? esc(tip.t) : s ? `${setName(s, k)}, 목표 ${rg[0]}–${rg[1]}회예요.` : '이 운동은 끝났어요.'}<small>${tip ? `${esc(tip.who)} 팁` : '마지막 1~2회가 힘들면 딱 맞는 무게예요'}</small></p></div>`}
@@ -1530,7 +1532,7 @@ function qRow(e, i, cur) {
   const inc = incOf(e.id), up = lm != null && (as ? e.q.w0 < lm : e.q.w0 > lm) ? +Math.abs(e.q.w0 - lm).toFixed(2) : 0;
   return `<li class="qr${cur ? ' cur' : ''}" data-i="${i}" ${cur ? 'aria-current="step"' : ''}>${thumb}<div class="qr-t"><b>${esc(E.n)}</b>
       <span class="qr-m">${e.q.ed ? `<span class="qs" role="group" aria-label="세트 수"><button data-act="qs-" data-i="${i}" aria-label="세트 1개 줄이기">${ico('minus', 'ico--16')}</button><b class="num">${e.q.n}세트</b><button data-act="qs+" data-i="${i}" aria-label="세트 1개 늘리기">${ico('plus', 'ico--16')}</button></span>`
-        : `<button class="qs-chip" data-act="qsEd" data-i="${i}" aria-label="세트 수 ${e.q.n}개 · 바꾸기">${e.q.n}세트</button>`}<span>${rg[0]}–${rg[1]}회</span>${!cur ? `<button class="qs-chip q-pick" data-act="qPick" data-i="${i}" aria-label="${esc(E.n)} 지금 하기">지금 할래요</button>` : ''}${lm != null ? `<span>지난번 <b class="num">${wLabel(e.id, lm)}kg</b></span>` : '<span>첫 기록</span>'}${up ? `<span class="chip gd">${as ? '보조 −' : '+'}${up}kg 도전</span>` : ''}</span></div>
+        : `<button class="qs-chip" data-act="qsEd" data-i="${i}" aria-label="세트 수 ${e.q.n}개 · 바꾸기">${e.q.n}세트</button>`}<span>${rg[0] === rg[1] ? rg[0] : `${rg[0]}–${rg[1]}`}회</span>${!cur ? `<button class="qs-chip q-pick" data-act="qPick" data-i="${i}" aria-label="${esc(E.n)} 지금 하기">지금 할래요</button>` : ''}${lm != null ? `<span>지난번 <b class="num">${wLabel(e.id, lm)}kg</b></span>` : '<span>첫 기록</span>'}${up ? `<span class="chip gd">${as ? '보조 −' : '+'}${up}kg 도전</span>` : ''}</span></div>
     <div class="qr-in"><div class="qw" role="group" aria-label="${as ? '보조 무게' : '오늘 최고 무게'}"><button data-act="qw-" data-i="${i}" aria-label="${inc}kg 줄이기">${ico('minus')}</button>
       <label class="v"><small>${as ? '보조' : '최고'}</small><input class="num qwi" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${e.q.w}" data-i="${i}" aria-label="${esc(E.n)} ${as ? '보조 무게' : '오늘 최고 무게'} kg"><small>kg</small></label>
       <button data-act="qw+" data-i="${i}" aria-label="${inc}kg 늘리기">${ico('plus')}</button></div>
