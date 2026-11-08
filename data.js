@@ -836,6 +836,35 @@ ROUTINES.push({ creator: '부부피트니스', meta: '가슴 · 6종목', title:
   ],
   adapt: ['케이블 플라이 "실패 지점까지"는 앱에서 15~20회로 — 더 되면 더 해도 돼요', '[동작 보기]를 누르면 부부피트니스 릴스가 떠요 (인스타라 처음부터 재생 · 운동마다 몇 초쯤 나오는지 적어 둠)'],
   videos: [{ u: IG.bubu, t: 'bubufitness1 · 헬린이 가슴운동 1시간 (인스타 릴스)' }] });
+/* 1108 MJ 인스타 릴스 (운동 링크는 묻지 말고 넣기) — militaryfriends_official '월요일 미는 날, 최적의 루틴' 푸시데이 7종목 (영상 첫 화면 목록 그대로)
+   세트·횟수는 영상에 없어 앱 기본값 · 동작 보기 = 인스타 릴스 (처음부터 재생, t = 그 운동이 나오는 대략 시각) */
+IG.mfpush = 'https://www.instagram.com/reel/DfdtyvAKbqb/';
+const MFP = t => ({ u: IG.mfpush, t, who: '밀리터리프렌즈', label: '월요일 푸시데이 루틴 (인스타 릴스)', ig: 1 });
+Object.assign(EX, {
+  bbp: { n: '바벨 벤치프레스', img: 'Barbell_Bench_Press_-_Medium_Grip', eq: '바벨 · 평벤치 · 랙', kind: 'bb', inc: 2.5, rest: 120, range: [6, 10], mus: ['chest', 'delt-front', 'triceps'], def: 40, v: null }
+});
+TPL.P16 = { code: '가슴·어깨·삼두', ko: '밀리터리프렌즈 · 월요일 푸시데이 7종목', by: '밀리터리프렌즈', video: IG.mfpush, pro: 1, mj: 1, day: '2026-11-08', at: 2, parts: ['chest', 'shoulder', 'arms'], ex: [
+  ['bbp', 4, { tip: '가슴 위주로 미는 첫 운동. 바가 내려올 때 가슴이 펴진 채로', t: MFP('0:04') }],
+  ['idp', 3, { tip: '벤치를 세우면 윗가슴. 내려갈 때 천천히', t: MFP('0:18') }],
+  ['cco', 3, { tip: '케이블 플라이로 가슴 쥐어짜기', t: MFP('0:00') }],
+  ['sdp', 3, { tip: '덤벨 숄더 프레스 · 어깨 앞쪽', t: MFP('0:25') }],
+  ['slr', 4, { tip: '사레레 · 가볍게, 어깨 옆쪽', t: MFP('0:00') }],
+  ['cpd', 3, { tip: '케이블 푸시다운 · 삼두', t: MFP('0:00') }],
+  ['ohe', 3, { tip: '오버헤드 익스텐션 · 삼두 긴 머리', t: MFP('0:00') }]] };
+ROUTINES.push({ creator: '밀리터리프렌즈', meta: '가슴·어깨·삼두 · 7종목', title: '월요일 미는 날 (푸시데이)', tpl: 'P16', parts: ['chest', 'shoulder', 'arms'],
+  sub: '미는 근육만 하루에 몰아서: 가슴(벤치 → 인클라인 덤벨 → 케이블 플라이) → 어깨(숄더 프레스 → 사레레) → 삼두(푸시다운 → 오버헤드).',
+  tips: ['큰 근육(가슴)부터 작은 근육(삼두) 순서', '사레레는 무게보다 어깨 옆으로 들어 올리는 느낌', '다음 날은 당기는 날(등·이두)로 이어 가면 좋아요'],
+  ex: [
+    { n: '벤치프레스', how: '바벨 · 평벤치', sr: '영상에 세트 수 없음' },
+    { n: '인클라인 덤벨 프레스', how: '벤치를 세워서 · 윗가슴', sr: '영상에 세트 수 없음' },
+    { n: '케이블 플라이', how: '케이블', sr: '영상에 세트 수 없음' },
+    { n: '덤벨 숄더 프레스', how: '앉아서', sr: '영상에 세트 수 없음' },
+    { n: '사이드 레터럴 레이즈 (사레레)', how: '덤벨', sr: '영상에 세트 수 없음' },
+    { n: '푸시다운', how: '케이블', sr: '영상에 세트 수 없음' },
+    { n: '오버헤드 익스텐션', how: '케이블 · 머리 위로', sr: '영상에 세트 수 없음' }
+  ],
+  adapt: ['세트·횟수는 영상에 없어서 앱 기본값으로 넣었어요 (큰 운동 4세트, 나머지 3세트)', '[동작 보기]를 누르면 밀리터리프렌즈 릴스가 떠요 (인스타라 처음부터 재생)'],
+  videos: [{ u: IG.mfpush, t: 'militaryfriends_official · 월요일 미는 날, 최적의 루틴 (인스타 릴스)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -848,7 +877,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
