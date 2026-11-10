@@ -898,6 +898,58 @@ ROUTINES.push({ creator: 'pt_muscle_', meta: '등·이두·후면 어깨 · 7종
   ],
   adapt: ['트라이세트 횟수는 게시물에 없어서 10~12회로 넣었어요', '레스트 포즈 워밍업 세트 수는 게시물에 없어 3세트로', '[동작 보기]를 누르면 pt_muscle_ 게시물이 떠요'],
   videos: [{ u: IG.ptback, t: 'pt_muscle_ · 등 트라이세트 루틴 (인스타)' }] });
+/* 1110 MJ 유튜브 — 헬마드 '무분할 루틴이 치트키일 수 있는 이유' (SKdYW2hypHk): 5종목 × 3세트 = 15세트, 주 3회(바쁘면 2회), 매주 조금씩 증량 */
+const HM = (s, label) => ({ u: 'https://youtu.be/SKdYW2hypHk?t=' + s, t: String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'), who: '헬마드', label: label || '무분할 5종목 루틴', e: 1 });
+Object.assign(EX, {
+  pup: { n: '풀업 (턱걸이)', img: 'Pullups', eq: '철봉 · 맨몸 (안 되면 어시스트·밴드·랫풀다운)', kind: 'db', inc: 2.5, rest: 120, range: [5, 8], mus: ['lats', 'biceps'], def: 0, v: null },
+  fsq: { n: '프론트 스쿼트', img: 'Front_Barbell_Squat', eq: '바벨 · 쇄골 앞에 얹고 상체 세워', kind: 'bbl', inc: 2.5, rest: 150, range: [6, 8], mus: ['quads'], def: 30, v: null },
+  dlf: { n: '데드리프트', img: 'Barbell_Deadlift', eq: '바벨 · 처음엔 스모·랙풀도 OK', kind: 'bbl', inc: 2.5, rest: 180, range: [5, 6], mus: ['quads', 'lats', 'traps'], def: 40, v: null }
+});
+TPL.P18 = { code: '전신', ko: '헬마드 · 무분할 5종목', by: '헬마드', video: 'https://youtu.be/SKdYW2hypHk', pro: 1, mj: 1, day: '2026-11-10', at: 1, parts: ['full'], ex: [
+  ['pup', 3, { tip: '힘이 제일 많을 때 맨 앞에. 1개도 안 되면 매달려 버티기 → 밴드 → 천천히 내려오기 (또는 어시스트 머신·랫풀다운)', r: [5, 8], t: HM(122) }],
+  ['fsq', 3, { tip: '바를 가슴 앞에. 상체를 꼿꼿이 세우면 허벅지에 집중되고 허리 부담은 적어요', r: [6, 8], t: HM(142) }],
+  ['mpr', 3, { tip: '서서 머리 위로. 엉덩이·배에 힘 줘서 허리가 꺾이지 않게', r: [6, 8], t: HM(163) }],
+  ['bbp', 3, { tip: '어깨는 앞에서 썼으니 가슴에 집중', r: [6, 8], t: HM(181) }],
+  ['dlf', 3, { tip: '가장 무거워서 맨 끝에. 자세가 아직이면 스모 데드리프트나 랙풀부터', r: [5, 6], t: HM(201) }]] };
+ROUTINES.push({ creator: '헬마드', meta: '전신 · 5종목 15세트', title: '무분할 5종목 (주 3회)', tpl: 'P18', parts: ['full'],
+  sub: '쪼개지 말고 큰 운동 5개만. 당기기 → 앉기 → 머리 위로 밀기 → 앞으로 밀기 → 바닥에서 들기. 한 번에 15세트, 주 3회 (바쁘면 2회).',
+  tips: ['주 3회면 가슴·등·하체가 저절로 주 3번씩 운동돼요', '무게는 자세가 무너지지 않는 선에서 매주 조금씩만', '빠지는 날이 생겨도 타격이 적어서 바쁜 직장인에게 잘 맞아요', '운동한 다음 날은 쉬어요 (예: 월·수·금)'],
+  ex: [
+    { n: '풀업 (턱걸이)', how: '안 되면 매달리기·밴드·랫풀다운', sr: '3세트' },
+    { n: '프론트 스쿼트', how: '바벨 앞에 · 상체 세워', sr: '3세트' },
+    { n: '밀리터리 프레스', how: '서서 머리 위로', sr: '3세트' },
+    { n: '벤치프레스', how: '가슴 집중', sr: '3세트' },
+    { n: '데드리프트', how: '처음엔 스모·랙풀', sr: '3세트' }
+  ],
+  adapt: ['횟수는 영상에 없어서 무거운 복합 운동 기준(5~8회)으로 넣었어요', '[동작 보기]를 누르면 헬마드 영상이 그 종목 장면부터 나와요'],
+  videos: [{ u: 'https://youtu.be/SKdYW2hypHk', t: '헬마드 · 무분할 루틴이 치트키일 수 있는 이유 (유튜브)' }] });
+/* 1110 MJ 유튜브 — 피지컬에셋 '대부분 근육만 키우고, 진짜 힘은 놓칩니다' (QUHe5hOOcX8): 힘줄 버티기 5동작. 앱에 '초' 종류가 없어서 횟수 칸 = 버틴 초 (25~30초 채우면 다음엔 가방 무게 +) */
+const PA = (s, label) => ({ u: 'https://youtu.be/QUHe5hOOcX8?t=' + s, t: String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'), who: '피지컬에셋', label: label || '신경·힘줄 버티기 프로토콜', e: 1 });
+Object.assign(EX, {
+  wsh: { n: '월싯 버티기 (횟수 = 초)', img: null, eq: '벽 · 맨몸 (쉬우면 무릎 위에 물통·가방)', kind: 'db', inc: 2, rest: 90, range: [25, 30], mus: ['quads'], def: 0, v: null },
+  cfh: { n: '한 발 카프 버티기 (횟수 = 초)', img: 'Standing_Calf_Raises', eq: '계단 끝 · 한 발 · 난간 잡아도 OK', kind: 'db', inc: 2, rest: 90, range: [25, 30], mus: ['calves'], def: 0, v: null },
+  twd: { n: '수건 데드리프트 버티기 (횟수 = 초)', img: null, eq: '안 늘어나는 수건·요가 스트랩 · 양발로 밟고', kind: 'db', inc: 1, rest: 90, range: [25, 25], mus: ['quads', 'lats', 'traps'], def: 0, v: null },
+  wlp: { n: '벽 밀기 버티기 (횟수 = 초)', img: null, eq: '벽·문틀 · 손은 가슴 옆', kind: 'db', inc: 1, rest: 90, range: [25, 25], mus: ['chest', 'delt-front'], def: 0, v: null },
+  ahg: { n: '액티브 행 (횟수 = 초)', img: 'Scapular_Pull-Up', eq: '철봉 · 날개뼈 끌어내리고 (쉬우면 허리에 무게)', kind: 'db', inc: 2, rest: 90, range: [25, 30], mus: ['lats', 'forearm'], def: 0, v: null }
+});
+TPL.P19 = { code: '힘줄', ko: '피지컬에셋 · 힘줄 버티기 5동작', by: '피지컬에셋', video: 'https://youtu.be/QUHe5hOOcX8', pro: 1, mj: 1, day: '2026-11-10', at: 0, parts: ['full'], ex: [
+  ['wsh', 3, { tip: '숫자는 버틴 초. 허벅지가 바닥과 수평 직전에서 멈춤. 무릎 앞이 아프면 더 높게, 그래도 아프면 건너뛰기', r: [25, 30], t: PA(334) }],
+  ['cfh', 3, { tip: '숫자는 버틴 초 (다리마다). 뒤꿈치를 끝까지 올렸다가 맨 아래까지 내려와서 멈춤', r: [25, 30], t: PA(363) }],
+  ['twd', 4, { tip: '숫자는 버틴 초. 무릎 45도·허리 중립, 바닥을 통째로 들듯 수건을 위로 당기기. 전력의 80%', r: [25, 25], t: PA(388) }],
+  ['wlp', 3, { tip: '숫자는 버틴 초. 한 발 뒤로 빼고 벽을 끝까지 밀어내듯. 어깨 앞이 끼면 바로 멈춤', r: [25, 25], t: PA(435) }],
+  ['ahg', 3, { tip: '숫자는 버틴 초. 축 늘어지지 말고 날개뼈를 아래로. 30초가 안 되면 발을 살짝 땅에', r: [25, 30], t: PA(467) }]] };
+ROUTINES.push({ creator: '피지컬에셋', meta: '힘줄 · 5동작 · 약 10분', title: '힘줄 버티기 (아이소메트릭)', tpl: 'P19', parts: ['full'],
+  sub: '움직이지 않고 25~30초 버티기 5동작. 무릎·아킬레스건·등·가슴·어깨 힘줄에 묵직한 장력. 본운동 끝난 직후나 따로, 주 2~3회.',
+  tips: ['앱에서 "횟수" 칸 = 버틴 초예요', '세트마다: 처음 5초는 천천히 힘 올리기 → 20~25초 강하게 (전력의 70~80%)', '숨 참지 말고 짧게 계속 쉬기', '통증 없는 범위에서 근육이 가장 길게 늘어난 자리에서 멈춤', '처음 2세트는 6~7할로 시작해 세트마다 올리기 · 세트 사이 1~2분 쉬기', '첫 2~4주는 신경이 먼저 좋아지는 것. 힘줄 변화는 8~12주 꾸준히', '지금 아픈 힘줄이 있거나 고혈압·심장 질환이 있으면 시작 전에 의사·물리치료사와 먼저 상의'],
+  ex: [
+    { n: '월싯', how: '무릎 앞 힘줄', sr: '3~4 × 25~30초' },
+    { n: '한 발 카프 레이즈 홀드 (맨 아래)', how: '아킬레스건', sr: '다리당 3~4 × 25~30초' },
+    { n: '수건 데드리프트 당기기', how: '등·엉덩이·햄스트링', sr: '4 × 25초' },
+    { n: '벽 밀기', how: '가슴·어깨 앞', sr: '3~4 × 25초' },
+    { n: '액티브 행 홀드', how: '어깨·악력', sr: '3~4 × 30초' }
+  ],
+  adapt: ['앱에 "초" 기록 칸이 없어서 횟수 칸에 버틴 초를 적어요. 30초를 다 채우면 다음엔 가방·물통으로 무게를 더하라고 알려 줘요', '수건·벽 밀기는 무게 칸을 0 그대로 두고, 미는·당기는 힘(%)으로 조절해요', '[동작 보기]를 누르면 피지컬에셋 영상이 그 동작 장면부터 나와요'],
+  videos: [{ u: 'https://youtu.be/QUHe5hOOcX8', t: '피지컬에셋 · 대부분 근육만 키우고, 진짜 힘은 놓칩니다 (유튜브)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -910,7 +962,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D', 'P18', 'P19'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
