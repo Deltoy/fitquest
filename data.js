@@ -865,6 +865,39 @@ ROUTINES.push({ creator: '밀리터리프렌즈', meta: '가슴·어깨·삼두 
   ],
   adapt: ['세트·횟수는 영상에 없어서 앱 기본값으로 넣었어요 (큰 운동 4세트, 나머지 3세트)', '[동작 보기]를 누르면 밀리터리프렌즈 릴스가 떠요 (인스타라 처음부터 재생)'],
   videos: [{ u: IG.mfpush, t: 'militaryfriends_official · 월요일 미는 날, 최적의 루틴 (인스타 릴스)' }] });
+/* 1110 MJ 인스타 '핏퀘스트 등루틴에 넣어줘' — pt_muscle_ 등 트라이세트 (게시물 글 그대로: 레스트포즈 랫풀다운 → T바·머신·하이 로우 트라이세트 3세트 → 프리처·리버스 컬 · 리버스 플라이 10×10) */
+IG.ptback = 'https://www.instagram.com/p/DfjSkZMAXUG/';
+const PTB = t => ({ u: IG.ptback, t, who: 'pt_muscle_', label: '등 트라이세트 루틴 (인스타)', ig: 1 });
+Object.assign(EX, {
+  ulp: { n: '언더그립 랫풀다운', img: 'Underhand_Cable_Pulldowns', eq: '케이블 · 손바닥이 나를 보게', kind: 'cb', inc: 5, rest: 90, range: [8, 8], mus: ['lats', 'biceps'], def: 40, v: null },
+  tbr: { n: 'T바 로우', img: 'T-Bar_Row_with_Handle', eq: 'T바 머신 또는 랜드마인 · 손잡이', kind: 'bb', inc: 2.5, rest: 60, range: [10, 12], mus: ['lats', 'traps'], def: 30, v: null },
+  mro: { n: '머신 로우', img: 'Leverage_Iso_Row', eq: '머신 · 가슴 패드에 붙이고', kind: 'mc', inc: 5, rest: 60, range: [10, 12], mus: ['lats', 'traps'], def: 40, v: null },
+  hro: { n: '하이 로우', img: 'Leverage_High_Row', eq: '머신 · 위에서 아래로 당기기', kind: 'mc', inc: 5, rest: 120, range: [10, 12], mus: ['lats'], def: 40, v: null },
+  prc: { n: '프리처 컬', img: 'Preacher_Curl', eq: '프리처 벤치 · EZ바 또는 덤벨', kind: 'bb', inc: 2.5, rest: 60, range: [12, 12], mus: ['biceps'], def: 15, v: null },
+  rvc: { n: '리버스 컬', img: 'Reverse_Barbell_Curl', eq: '바벨·EZ바 · 손등이 위로', kind: 'bb', inc: 2.5, rest: 60, range: [12, 12], mus: ['forearm', 'biceps'], def: 15, v: null }
+});
+TPL.P17 = { code: '등·이두·후면', ko: 'pt_muscle_ · 등 트라이세트', by: 'pt_muscle_', video: IG.ptback, pro: 1, mj: 1, day: '2026-11-10', at: 0, parts: ['back', 'arms'], ex: [
+  ['ulp', 3, { tip: '워밍업 레스트 포즈: 8회 → 10초 쉬고 → 8회 = 1세트', r: [8, 8], t: PTB('0:00') }],
+  ['tbr', 3, { tip: '트라이세트 ① T바 로우 → 쉬지 않고 바로 머신 로우', r: [10, 12], t: PTB('0:00') }],
+  ['mro', 3, { tip: '트라이세트 ② 머신 로우 → 바로 하이 로우', r: [10, 12], t: PTB('0:00') }],
+  ['hro', 3, { tip: '트라이세트 ③ 하이 로우까지 끝나면 1세트. 여기서 쉬고 총 3세트', r: [10, 12], t: PTB('0:00') }],
+  ['prc', 3, { tip: '이두 마무리 · 팔꿈치를 패드에 고정', r: [12, 12], t: PTB('0:00') }],
+  ['rvc', 3, { tip: '손등이 위로 · 전완·이두 바깥쪽', r: [12, 12], t: PTB('0:00') }],
+  ['rdf', 10, { tip: '후면 어깨 10세트 × 10회 · 가볍게, 세트 사이 짧게', r: [10, 10], t: PTB('0:00') }]] };
+ROUTINES.push({ creator: 'pt_muscle_', meta: '등·이두·후면 어깨 · 7종목', title: '등 트라이세트', tpl: 'P17', parts: ['back', 'arms'],
+  sub: '랫풀다운 레스트 포즈로 데우고 → 로우 3종을 쉬지 않고 이어서(트라이세트) 3번 → 이두·후면 어깨로 마무리.',
+  tips: ['트라이세트 = 세 종목을 쉬지 않고 연달아 하는 게 1세트', 'T바 로우 → 머신 로우 → 하이 로우: 당기는 각도가 조금씩 달라져요', '리버스 플라이 10세트는 무게보다 횟수·자극 유지'],
+  ex: [
+    { n: '언더그립 랫풀다운 (레스트 포즈)', how: '8회 → 10초 휴식 → 8회', sr: '워밍업' },
+    { n: 'T바 로우', how: '트라이세트 ①', sr: '3세트' },
+    { n: '머신 로우', how: '트라이세트 ②', sr: '3세트' },
+    { n: '하이 로우', how: '트라이세트 ③', sr: '3세트' },
+    { n: '프리처 컬', how: '이두', sr: '3 × 12' },
+    { n: '리버스 컬', how: '이두·전완', sr: '3 × 12' },
+    { n: '리버스 플라이', how: '후면 어깨', sr: '10 × 10' }
+  ],
+  adapt: ['트라이세트 횟수는 게시물에 없어서 10~12회로 넣었어요', '레스트 포즈 워밍업 세트 수는 게시물에 없어 3세트로', '[동작 보기]를 누르면 pt_muscle_ 게시물이 떠요'],
+  videos: [{ u: IG.ptback, t: 'pt_muscle_ · 등 트라이세트 루틴 (인스타)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -877,7 +910,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14'], arms: ['P5'], full: ['D'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
