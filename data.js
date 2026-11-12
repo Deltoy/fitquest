@@ -1102,7 +1102,7 @@ ROUTINES.push({ creator: 'health_checklist_kr', meta: '어깨 · 6종목 16세�
    영상 속 숫자 중 확인 안 된 것(악력 기준 33/20kg·척추기립근 3배 등)은 앱에 안 넣음. day 11-20: 11/16 주 전신날은 P23 몫이라 11/23 주 첫 전신날에 들어감 */
 const GB = (s, label) => ({ u: 'https://youtu.be/wB9Gu9FenVI?t=' + s, t: String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'), who: '그래바디', label: label || '그냥 들고 걷기만 하세요', e: 1 });
 Object.assign(EX, {
-  fwk: { n: '파머스 캐리 (횟수 = 걸은 초)', img: 'Farmers_Walk', eq: '덤벨·케틀벨 양손 · 집: 생수 2L×6 묶음(약 12kg) 양손에 하나씩', kind: 'db', inc: 2, rest: 30, range: [30, 40], mus: ['forearm', 'traps', 'obliques', 'glutes'], def: 12, v: null },
+  fwk: { n: '파머스 캐리 (횟수 = 걸은 초)', img: 'Farmers_Walk', eq: '덤벨·케틀벨 양손 · 집: 생수 2L×6 묶음(약 12kg) 양손에 하나씩', kind: 'db', inc: 2, rest: 30, range: [30, 40], mus: ['obliques', 'traps', 'forearm', 'glutes'], def: 12, v: null },   // mus[0] = obliques: 이 앱에서 forearm 은 삼두 운동에도 붙어 있어 대체 운동이 삼두로 잡히지 않게
   sck: { n: '한 손 캐리 (횟수 = 한쪽 걸은 초)', img: null, eq: '덤벨·케틀벨 한 손 · 장바구니·물 채운 가방도 OK', kind: 'db', inc: 2, rest: 30, range: [30, 30], mus: ['obliques', 'forearm', 'glutes'], def: 6, v: null }
 });
 TPL.P26 = { code: '전신', ko: '그래바디 · 들고 걷기 (30초 걷고 30초 쉬기)', by: '그래바디', video: 'https://youtu.be/wB9Gu9FenVI', pro: 1, mj: 1, day: '2026-11-20', at: 1, parts: ['full'], ex: [
@@ -1141,6 +1141,25 @@ ROUTINES.push({ creator: '밀리터리프렌즈', meta: '자세 · 3동작 6세�
   ],
   adapt: ['스트레칭은 "횟수" 칸 = 버틴 초, 무게 칸은 0 그대로', '데드버그 세트 수는 영상에 없어 브릿지와 같은 2세트로 넣었어요', '하루 운동 대신 들어가지 않게 로테이션엔 안 넣었어요 — 운동 전 몸풀기나 쉬는 날 5분용 (요일 고정은 아래 버튼)', '[동작 보기]를 누르면 인스타 릴스가 나와요 (그 동작이 나오는 대략 시각 표시)', '원본 3D 화면은 옮기지 않았어요 — 동작 사진은 무료 운동 사진 모음'],
   videos: [{ u: IG.mfapt, t: 'militaryfriends_official · 전방 경사, 알고 계셨나요? (인스타 릴스 · 아이디어 출처)' }] });
+/* 1113 MJ 인스타 — this_is_marcin '티셔츠 입었을 때 더 커 보이게 만드는 4가지 치트키 근육' 캐러셀 (DfOPu38jxa-, MJ 는 2장 = 측면 삼각근에서 멈춤): 측면 삼각근·상부 가슴·광배·삼두 + 근육마다 추천 종목 목록.
+   세트·횟수 없음 → 근육마다 앱에 있는 종목 하나씩, 세트는 앱 기본값. 이미지(AI 그림)는 옮기지 않고 링크만. day 11-27: 11/16·11/23 주 어깨날은 P20~P22·P25 몫이라 11/30 주 첫 어깨날 */
+IG.marcin4 = 'https://www.instagram.com/p/DfOPu38jxa-/';
+TPL.P28 = { code: '어깨·가슴·등·삼두', ko: 'this_is_marcin · 티셔츠 핏 4근육 (옆 어깨·윗가슴·광배·삼두)', by: 'this_is_marcin', video: IG.marcin4, pro: 1, mj: 1, day: '2026-11-27', at: 1, parts: ['shoulder', 'chest', 'back', 'arms'], ex: [
+  ['slr', 3, { tip: '옆 어깨 = 어깨 넓이. 넷 중 1순위라 맨 앞에. 팔꿈치 먼저 어깨 높이까지, 몸이 흔들리면 무게를 내려요', r: [12, 20] }],
+  ['idp', 3, { tip: '윗가슴 = 쇄골 아래 두께. 벤치 30~45도, 쇄골을 들고 천천히 내려 가슴이 늘어나는 느낌', r: [8, 10] }],
+  ['lpd', 3, { tip: '광배 = V자. 손으로 당기지 말고 팔꿈치를 골반 쪽으로 내린다고 생각하기. 몸은 뒤로 젖히지 않게', r: [10, 12] }],
+  ['dte', 3, { tip: '삼두 = 소매를 채우는 팔 뒤쪽. 팔꿈치는 머리 옆에 고정하고 머리 뒤로 깊게 내렸다가 쭉', r: [10, 12] }]] };
+ROUTINES.push({ creator: 'this_is_marcin', meta: '상체 · 4종목 12세트 · 커 보이는 4근육', title: '티셔츠 핏 4근육: 옆 어깨 · 윗가슴 · 광배 · 삼두', tpl: 'P28', parts: ['shoulder', 'chest', 'back', 'arms'],
+  sub: '티셔츠를 입었을 때 몸을 커 보이게 하는 네 군데 — 옆 어깨(넓이), 윗가슴(두께), 광배(V자), 삼두(소매). 근육마다 한 종목씩, 한 번에 지나가요.',
+  tips: ['① 옆 어깨: 어깨가 넓어 보이면 허리는 가늘어 보여요. 레터럴 레이즈는 주 2~4회까지 자주 해도 돼요', '② 윗가슴: 인클라인 덤벨·바벨 프레스, 로우 투 하이 케이블 플라이 중 하나', '③ 광배: 풀업·랫풀다운·싱글 암 풀다운·로우 — 팔꿈치를 골반 쪽으로', '④ 삼두: 팔 굵기에서 몫이 커요. 오버헤드 익스텐션·푸시다운·딥스·클로즈 그립 프레스 중 하나', '다른 날 이미 그 근육을 했으면 이 루틴에서 그 종목은 가볍게'],
+  ex: [
+    { n: '덤벨 사이드 레터럴 레이즈 (옆 어깨)', how: '팔꿈치 먼저 · 어깨 높이까지', sr: '3 × 12–20' },
+    { n: '인클라인 덤벨 프레스 (윗가슴)', how: '벤치 30~45도', sr: '3 × 8–10' },
+    { n: '랫풀다운 (광배)', how: '팔꿈치를 골반 쪽으로', sr: '3 × 10–12' },
+    { n: '덤벨 오버헤드 익스텐션 (삼두)', how: '팔꿈치 고정 · 깊게', sr: '3 × 10–12' }
+  ],
+  adapt: ['원본은 근육마다 추천 종목 목록만 있고 세트·횟수가 없어서, 근육마다 한 종목씩 골라 앱 기본값으로 넣었어요 (레터럴만 원본대로 주 2~4회 안내)', '같은 칸의 다른 종목(인클라인 바벨·로우 투 하이 플라이 / 풀업·싱글 암 풀다운·로우 / 푸시다운·딥스·클로즈 그립)으로 바꿔도 돼요', '원본 이미지는 앱에 옮기지 않았어요 — 아래 링크에서 볼 수 있어요'],
+  videos: [{ u: IG.marcin4, t: 'this_is_marcin · 티셔츠 입었을 때 더 커 보이게 만드는 4가지 치트키 근육 (인스타 · 아이디어 출처)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -1153,7 +1172,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25'], arms: ['P5'], full: ['D', 'P18', 'P19', 'P23', 'P26'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25', 'P28'], arms: ['P5'], full: ['D', 'P18', 'P19', 'P23', 'P26'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
