@@ -745,7 +745,7 @@ function bodyTrend(k = dayKey()) {
   const a = avg(0, 6), b = avg(14, 20), w = a != null && b != null ? Math.round((a - b) * 10) / 10 : null, L = DB.inbody.length;
   const pbf = L >= 2 ? Math.round((DB.inbody[L - 1].pbf - DB.inbody[L - 2].pbf) * 10) / 10 : null, ch = DB.profile.chapter, wk = w / 2;
   const good = w == null ? null : ch === 1 ? w < 0 : ch === 3 ? wk >= .2 && wk <= .5 : ch === 2 ? Math.abs(wk) <= .3 : null;
-  const wrong = w != null && (ch === 1 ? w > .2 : ch === 3 ? w < -.2 : false);
+  const wrong = w != null && (ch === 1 ? w > .2 : ch === 3 ? w < -.2 || wk > .5 : false);   // 1113 MJ 링크(린벌크 카드): 주 0.5kg 넘게 늘면 너무 빠름 = 지방
   return { w, now: a, pbf, good, wrong };
 }
 /* 최근 3주 7일 평균 체중 (몸 추세 · 성장 탭 선) */
@@ -762,7 +762,7 @@ function verdict(k, c, lifts, body) {
     if (lack) for (let i = DB.done[k] ? 1 : 0; i <= 7; i++) { const d = addDays(k, i), t = tplFor(d);
       if (t && tplEx(t).some(([id]) => EX[id].mus.includes(lack[1]))) return ['think', `${lack[0]}${iga(lack[0])} 모자라요 · ${i ? DOW[dow(d)] + '요일' : '오늘'} ${PART_NAME[partOf(t)]}날에 채워요`]; }
   }
-  if (body.wrong) return ['think', `체중이 ${body.w > 0 ? '늘고' : '줄고'} 있어요 · 식단부터 봐요`, 'diet'];
+  if (body.wrong) return ['think', DB.profile.chapter === 3 && body.w > 0 ? '린벌크치고 너무 빨리 늘어요(주 0.5kg↑) · 하루 100~200kcal 줄여요' : `체중이 ${body.w > 0 ? '늘고' : '줄고'} 있어요 · 식단부터 봐요`, 'diet'];
   if (lifts.filter(x => x.d < 0).length >= 2) return ['think', '힘이 떨어져요 · 잠·단백질 확인'];
   return ['happy', '잘하고 있어요, 이대로'];
 }
