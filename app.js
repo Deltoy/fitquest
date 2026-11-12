@@ -763,6 +763,7 @@ function verdict(k, c, lifts, body) {
       if (t && tplEx(t).some(([id]) => EX[id].mus.includes(lack[1]))) return ['think', `${lack[0]}${iga(lack[0])} 모자라요 · ${i ? DOW[dow(d)] + '요일' : '오늘'} ${PART_NAME[partOf(t)]}날에 채워요`]; }
   }
   if (body.wrong) return ['think', DB.profile.chapter === 3 && body.w > 0 ? '린벌크치고 너무 빨리 늘어요(주 0.5kg↑) · 하루 100~200kcal 줄여요' : `체중이 ${body.w > 0 ? '늘고' : '줄고'} 있어요 · 식단부터 봐요`, 'diet'];
+  const sw = dayFoods(k).map(f => swapFor(f.n || '')).find(Boolean); if (sw) return ['think', `${sw} · 같은 음식, 다른 모양`, 'diet'];   // 1113 MJ 링크: 먹어라 vs 먹지 마라 (data.js SWAP)
   if (lifts.filter(x => x.d < 0).length >= 2) return ['think', '힘이 떨어져요 · 잠·단백질 확인'];
   return ['happy', '잘하고 있어요, 이대로'];
 }
