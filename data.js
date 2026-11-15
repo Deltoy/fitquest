@@ -1480,7 +1480,34 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16', 'P31'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25', 'P28', 'P34', 'P39', 'P41'], arms: ['P5', 'P35', 'P40', 'P42', 'P43'], full: ['D', 'P18', 'P19', 'P23', 'P26'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+/* 1115 MJ 인스타 — fit_joel_187 (DfvfRook2rM, 'AI 콘텐츠' 표시 캐러셀): 하루 종일 앉아 있던 날 매트 스트레칭 5가지 · 동작마다 30초 × 3세트.
+   글의 '#키크는법'(키 큰다)은 근거 없어 옮기지 않음 — 앉은 자세로 굳은 등·고관절 풀기로만. 그림은 안 옮김. 새 EX sbw·sff·cob·k2c·bfl, 전신 로테이션 끝에 */
+Object.assign(EX, {
+  sbw: { n: '활 자세 (횟수 = 초)', img: null, eq: '매트 · 엎드려 양손으로 발목 잡기', kind: 'db', inc: 5, rest: 20, range: [30, 30], mus: ['abs', 'quads'], def: 0, v: null },
+  sff: { n: '서서 앞으로 숙이기 (횟수 = 초)', img: null, eq: '맨몸 · 골반부터 숙이기', kind: 'db', inc: 5, rest: 20, range: [30, 30], mus: ['hams'], def: 0, v: null },
+  cob: { n: '코브라 스트레칭 (횟수 = 초)', img: null, eq: '매트 · 손은 어깨 아래, 골반은 바닥', kind: 'db', inc: 5, rest: 20, range: [30, 30], mus: ['abs'], def: 0, v: null },
+  k2c: { n: '무릎 가슴으로 당기기 (횟수 = 초)', img: null, eq: '매트 · 누워서 양손으로 정강이 감싸기', kind: 'db', inc: 5, rest: 20, range: [30, 30], mus: ['glutes'], def: 0, v: null },
+  bfl: { n: '나비 자세 (횟수 = 초)', img: null, eq: '매트 · 발바닥 맞대고 앉기', kind: 'db', inc: 5, rest: 20, range: [30, 30], mus: ['glutes'], def: 0, v: null }
+});
+TPL.P44 = { code: '스트레칭', ko: '핏조엘 · 오래 앉은 날 매트 스트레칭 5가지', by: 'fit_joel_187', video: 'https://www.instagram.com/p/DfvfRook2rM/', pro: 1, parts: ['full'], ex: [
+  ['sbw', 3, { tip: '숫자는 버틴 초. 엎드려 양손으로 발목을 잡고, 발을 뒤로·위로 밀어 가슴이 들리게. 허리가 찌릿하면 바로 내려오기', r: [30, 30] }],
+  ['sff', 3, { tip: '숫자는 버틴 초. 허리 말고 골반부터 접기, 무릎은 살짝 굽혀도 OK. 손은 닿는 곳까지만, 목 힘 빼기', r: [30, 30] }],
+  ['cob', 3, { tip: '숫자는 버틴 초. 손은 어깨 아래, 골반은 매트에 붙인 채 가슴만 천천히. 팔을 끝까지 펴지 않아도 돼요', r: [30, 30] }],
+  ['k2c', 3, { tip: '숫자는 버틴 초. 등 대고 누워 정강이를 감싸 무릎을 가슴 쪽으로. 엉덩이·허리 아래가 늘어나는 느낌', r: [30, 30] }],
+  ['bfl', 3, { tip: '숫자는 버틴 초. 발바닥 맞대고 무릎을 옆으로, 허리는 길게 편 채 상체만 살짝 앞으로. 무릎을 억지로 누르지 않기', r: [30, 30] }]] };
+ROUTINES.push({ creator: 'fit_joel_187', meta: '스트레칭 · 5동작 · 30초 × 3세트 · 약 10분', title: '하루 종일 앉아 있었다면: 매트 스트레칭 5가지', tpl: 'P44', parts: ['full'],
+  sub: '오래 앉아 있으면 가슴·고관절 앞이 접힌 채 굳어요. 엎드려 펴는 동작(활·코브라)과 접는 동작(숙이기·무릎 당기기·나비)을 번갈아 매트 한 장으로 풀어 주는 10분이에요.',
+  tips: ['동작마다 30초 × 3세트, 가볍게 당기는 데까지만', '숨 참지 말고 편하게 — 아프면 범위 줄이기', '퇴근 후·운동 없는 날 이것만 해도 OK', '키가 큰다는 말은 근거가 없어요 — 굳은 몸 풀기로만'],
+  ex: [
+    { n: '활 자세', how: '엎드려 발목 잡고 가슴 들기', sr: '3 × 30초' },
+    { n: '서서 앞으로 숙이기', how: '골반부터 접기 · 목 힘 빼기', sr: '3 × 30초' },
+    { n: '코브라 스트레칭', how: '골반은 바닥, 가슴만 천천히', sr: '3 × 30초' },
+    { n: '무릎 가슴으로 당기기', how: '누워서 정강이 감싸기', sr: '3 × 30초' },
+    { n: '나비 자세', how: '발바닥 맞대고 상체 살짝 앞으로', sr: '3 × 30초' }
+  ],
+  adapt: ['글 그대로 5동작 · 30초 × 3세트', '글의 \'키 크는 법\' 해시태그는 근거가 없어 앱엔 안 넣었어요', '사진은 없어요 — 동작 설명만 (원본 그림은 안 옮김)'],
+  videos: [{ u: 'https://www.instagram.com/p/DfvfRook2rM/', t: 'fit_joel_187 · 하루 종일 앉아 있었다면 (인스타 · 아이디어 출처)' }] });
+const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16', 'P31'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25', 'P28', 'P34', 'P39', 'P41'], arms: ['P5', 'P35', 'P40', 'P42', 'P43'], full: ['D', 'P18', 'P19', 'P23', 'P26', 'P44'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
