@@ -1456,6 +1456,18 @@ ROUTINES.push({ creator: '헬창극장', meta: '팔 · 2종목 6세트 · 팔꿈
   ],
   adapt: ['영상은 55초 상황극이라 운동이 2가지 — 그대로 2종목, 다른 팔 루틴 끝에 붙이기 좋게 짧게 뒀어요', '세트·횟수는 영상에 없어 앱 기본값', '사진은 비슷한 동작(free-exercise-db) — 정확한 자세는 [동작 보기]의 그 장면으로'],
   videos: [{ u: 'https://youtube.com/shorts/ZlJJ5eyEXe8', t: '헬창극장 · 이두 단두 상황극 (유튜브 쇼츠 · 아이디어 출처)' }] });
+/* 1115 MJ 유튜브 쇼츠 — 헬창극장 '30대 남자가 팔부터 키워야 하는 진짜 이유' (F6sqnAWbi8s, 2분 21초 상황극): 반동으로 올리고 천천히 내리는 네거티브(신장성) 컬 + 손목 보호대는 무거울 때만·손등 덮게 (광고 제품 이름은 안 넣음) */
+const HCG2 = (s, label) => ({ u: 'https://www.youtube.com/watch?v=F6sqnAWbi8s&t=' + s, t: (s >= 60 ? '01:' + String(s - 60).padStart(2, '0') : '00:' + String(s).padStart(2, '0')), who: '헬창극장', label: label, e: 1 });
+TPL.P43 = { code: '팔', ko: '헬창극장 · 내릴 때 키우는 이두 (네거티브 컬)', by: '헬창극장', video: 'https://youtube.com/shorts/F6sqnAWbi8s', pro: 1, parts: ['arms'], ex: [
+  ['bcu', 3, { tip: '평소보다 조금 무겁게 — 올릴 땐 반동을 살짝 써도 되고, 내릴 때 3~4초 버티며 천천히. 이두는 내리는 구간(신장성 수축)에서도 올릴 때 못지않게 자극이 들어가요', t: HCG2(50, '네거티브 컬') }]] };
+ROUTINES.push({ creator: '헬창극장', meta: '팔 · 1종목 3세트 · 반동 올리고 천천히 내리기', title: '내릴 때 키운다: 바벨 컬 네거티브', tpl: 'P43', parts: ['arms'],
+  sub: '무거운 바벨 컬을 억지로 올리면 어깨·허리가 대신 일해요. 올리는 건 반동에 맡기고, 내리는 3~4초를 이두로 버티는 방식 — 신장성 수축이라 내릴 때도 자극이 충분히 들어가요.',
+  tips: ['내리는 데 3~4초, 끝까지 천천히', '올릴 때 반동은 살짝만 — 허리를 젖히면 무게를 낮추기', '손목 보호대는 워밍업(가벼운 무게)에선 빼기 — 손목 주변 근육도 같이 커야 해요', '무거워질 때만 차고, 손등을 살짝 덮게 감아야 손목이 안 꺾여요'],
+  ex: [
+    { n: '바벨 네거티브 컬', how: '반동으로 올리고 3~4초 내리기', sr: '3 × 6–8' }
+  ],
+  adapt: ['영상은 2분 상황극이라 운동은 1가지 — 다른 팔 루틴 끝에 붙이기 좋게 짧게 뒀어요', '세트·횟수는 영상에 없어 네거티브에 맞게 6–8회로 둠', '영상 속 손목 보호대 제품은 광고라 이름은 안 넣었어요'],
+  videos: [{ u: 'https://youtube.com/shorts/F6sqnAWbi8s', t: '헬창극장 · 네거티브 컬·손목 보호대 상황극 (유튜브 쇼츠 · 아이디어 출처)' }] });
 Object.keys(TPL).forEach(k => { if (TPL[k].parts) TPL_PARTS[k] = TPL[k].parts; });
 const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1', 'P2', 'P3', 'P4', 'P5'], 6: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'], 7: ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8'] };
 /* 주간 로테이션 — 부위별 후보를 매주 돌려서 같은 운동만 반복하지 않게 (기본 V자 + 유튜버 루틴 병행) */
@@ -1468,7 +1480,7 @@ function tplEx(t) {
   if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
   return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
 }
-const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16', 'P31'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25', 'P28', 'P34', 'P39', 'P41'], arms: ['P5', 'P35', 'P40', 'P42'], full: ['D', 'P18', 'P19', 'P23', 'P26'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
+const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16', 'P31'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25', 'P28', 'P34', 'P39', 'P41'], arms: ['P5', 'P35', 'P40', 'P42', 'P43'], full: ['D', 'P18', 'P19', 'P23', 'P26'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */
