@@ -1244,6 +1244,7 @@ R.work = () => {
         return w.d >= k && !DB.done[w.d] ? `<li><button class="day" data-act="dayEdit" data-k="${w.d}" data-s="${w.st}" aria-haspopup="dialog" aria-label="${lab}">${inner}</button></li>` : `<li class="day" data-s="${w.st}" aria-label="${lab}">${inner}</li>`; }).join('')}</ol>
       <button class="linkbtn" data-act="schedule">${ico('repeat', 'ico--16')}${DB.rot && DB.rot.on ? `로테이션 ${rotWeek(k) + 1}주차 · 요일 바꾸기` : '요일 바꾸기'}</button></header>
     <div class="cols cols--flow"><div class="col">
+    ${typeof BELLY_PLAN !== 'undefined' && k <= BELLY_PLAN.until ? `<section class="tile card-pad" aria-label="${BELLY_PLAN.t}"><p class="lab">${BELLY_PLAN.t} · ${BELLY_PLAN.remeasure.slice(5).replace('-', '/')} 인바디 다시 재기${k >= BELLY_PLAN.remeasure ? ' — 이번 주예요!' : ''}</p><ul style="margin:8px 0 0;padding-left:18px;line-height:1.6">${BELLY_PLAN.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul><p class="by" style="margin-top:8px">${esc(BELLY_PLAN.note)}</p></section>` : ''}
     ${tpl ? `<section class="tile card-pad today" aria-label="오늘 운동">
       <p class="lab">오늘 ${esc(T.code)}</p>
       <h2 class="fq-t-title">${esc(T.by ? T.ko.replace(T.by + ' · ', '') : T.ko)}</h2>
@@ -1264,7 +1265,7 @@ function exList(tk, title, foot = '') {
     ${rows.some(r => !r.st.n) ? '<p class="fq-t-caption">첫 기록은 10회 할 수 있는 무게로 가볍게</p>' : ''}${gap > 10 ? `<p class="fq-t-caption">${gap}일 쉬어서 무게를 낮췄어요</p>` : ''}
     <ol class="exl">${rows.map(r => `<li><button class="exrow" data-act="howtoId" data-id="${r.id}" data-t="${esc(tk)}" aria-label="${esc(r.E.n)} 동작·팁 보기">
       <span class="exthumb">${r.E.img ? `<img src="media/${r.E.img}_0.jpg" alt="" loading="lazy">` : ico('cplay')}</span>
-      <span class="exrow-t"><span class="exrow-n"><b>${esc(r.E.n)}</b>${r.sub ? `<span class="chip">${esc(EX[r.id0].n)} 대신</span>` : ''}${r.up ? `<span class="chip gd">${r.bt}</span>` : ''}</span><span class="exrow-l"><span class="exrow-w num">${wLabel(r.id, r.pl.w)}<small>kg</small></span><span class="fq-t-caption">${r.n}세트 ${r.rg[0]}–${r.rg[1]}회${r.o.d ? ' · 처음 무게' : ''}</span></span></span></button></li>`).join('')}</ol>${foot}</section>`;
+      <span class="exrow-t"><span class="exrow-n"><b>${esc(r.E.n)}</b>${r.sub ? `<span class="chip">${esc(EX[r.id0].n)} 대신</span>` : ''}${r.up ? `<span class="chip gd">${r.bt}</span>` : ''}</span><span class="exrow-l">${r.E.tm ? `<span class="exrow-w num">${r.rg[0]}<small>${r.E.tm}</small></span><span class="fq-t-caption">${esc(r.E.eq)}</span>` : `<span class="exrow-w num">${wLabel(r.id, r.pl.w)}<small>kg</small></span><span class="fq-t-caption">${r.n}세트 ${r.rg[0]}–${r.rg[1]}회${r.o.d ? ' · 처음 무게' : ''}</span>`}</span></span></button></li>`).join('')}</ol>${foot}</section>`;
 }
 /* 루틴 도감: 부위별 공략서(proSheet) · 내가 배운 루틴 · 롤모델 · 내 유튜버 추가 */
 function libSheet() {

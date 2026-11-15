@@ -1474,11 +1474,17 @@ const PRO_WEEK = { 3: ['P7', 'P1', 'P2'], 4: ['P1', 'P2', 'P7', 'P5'], 5: ['P1',
 /* 1019 MJ: 등 날은 이두, 가슴 날은 삼두, 어깨 날은 복근을 같이 — 루틴 첫 부위 기준으로 뒤에 2종 붙임 (이미 그 근육 운동이 있으면 안 붙임) */
 EX.hlr = { n: '행잉 레그 레이즈', img: 'Hanging_Leg_Raise', eq: '철봉 · 맨몸 (무릎 굽혀도 OK)', kind: 'db', inc: 1, rest: 60, range: [10, 15], mus: ['abs'], def: 0, v: null };
 const PAIR = { back: { mus: 'biceps', ex: [['bcu', 3], ['hmc', 3]] }, chest: { mus: 'forearm', ex: [['cpd', 3], ['dte', 3]] }, shoulder: { mus: 'abs', ex: [['ccr', 3], ['hlr', 3]] } };
+/* 1115 MJ '유산소 20분 넣어줘' (인바디 11/15: 복부지방률 1.00 · 내장지방 9 → 근육은 지키고 배 쪽 지방부터) — 등·가슴·팔 날 근력 끝에 마무리 유산소 20분 1세트.
+   주 2~3번이 되게 하체·어깨 날은 뺌 (3~4일 분할 = 등·가슴 2번, 5일 = 3번). 강도는 '말은 되는데 노래는 안 되는' 정도 */
+EX.cdf = { n: '마무리 유산소 20분', tm: '분', img: 'Walking_Treadmill', eq: '인클라인 빠르게 걷기 · 실내자전거 · 스텝밀 중 하나', kind: 'db', inc: 5, rest: 0, range: [20, 20], mus: ['abs'], def: 0, v: null };
+const FINISH_PARTS = ['back', 'chest', 'arms'];
+const FINISH = ['cdf', 1, { d: 1, finish: 1, tip: '근력 끝나고 바로 20분 — 인클라인 빠르게 걷기·실내자전거·스텝밀 중 편한 것. 말은 되는데 노래는 안 되는 정도(최대심박 60~70%). 숨 턱까지 차게 할 필요 없어요. 뱃살은 배 운동이 아니라 몸 전체 지방이 줄 때 빠져요' }];
 function tplEx(t) {
   const T = TPL[t]; if (!T) return [];
-  const p = PAIR[(TPL_PARTS[t] || T.parts || [])[0]];
-  if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex;   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
-  return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]));
+  const part = (TPL_PARTS[t] || T.parts || [])[0], p = PAIR[part];
+  const fin = FINISH_PARTS.includes(part) && !T.ex.some(([id]) => id === 'cdf') ? [FINISH] : [];
+  if (!p || T.ex.some(([id]) => EX[id] && EX[id].mus[0] === p.mus)) return T.ex.concat(fin);   // 주 근육이 이미 그 부위인 운동이 있으면 (풀업의 이두처럼 보조는 안 셈)
+  return T.ex.concat(p.ex.filter(([id]) => EX[id]).map(([id, n]) => [id, n, { d: 1, pair: 1 }]), fin);
 }
 /* 1115 MJ 인스타 — fit_joel_187 (DfvfRook2rM, 'AI 콘텐츠' 표시 캐러셀): 하루 종일 앉아 있던 날 매트 스트레칭 5가지 · 동작마다 30초 × 3세트.
    글의 '#키크는법'(키 큰다)은 근거 없어 옮기지 않음 — 앉은 자세로 굳은 등·고관절 풀기로만. 그림은 안 옮김. 새 EX sbw·sff·cob·k2c·bfl, 전신 로테이션 끝에 */
@@ -1507,6 +1513,17 @@ ROUTINES.push({ creator: 'fit_joel_187', meta: '스트레칭 · 5동작 · 30초
   ],
   adapt: ['글 그대로 5동작 · 30초 × 3세트', '글의 \'키 크는 법\' 해시태그는 근거가 없어 앱엔 안 넣었어요', '사진은 없어요 — 동작 설명만 (원본 그림은 안 옮김)'],
   videos: [{ u: 'https://www.instagram.com/p/DfvfRook2rM/', t: 'fit_joel_187 · 하루 종일 앉아 있었다면 (인스타 · 아이디어 출처)' }] });
+/* 1115 MJ '집에서 ab슬라이드 10분씩 꾸준히' — 무릎 대고 복근 롤아웃 10분, 주 3~4회. 복근(코어)은 단단해지지만 배 지방만 골라 빼진 않음 → 유산소·식사와 같이. 로테이션 밖(집에서 따로) */
+EX.awr = { n: '무릎 대고 복근 롤아웃 (AB 슬라이드)', img: 'Ab_Roller', eq: '복근 롤러(AB 슬라이드) · 매트 · 무릎 대고', kind: 'db', inc: 1, rest: 60, range: [8, 10], mus: ['abs'], def: 0, v: null };
+TPL.P45 = { code: '복근', ko: '집 롤아웃 10분', pro: 1, parts: ['full'], ex: [
+  ['awr', 4, { tip: '무릎 대고 시작 · 배에 힘 꽉, 엉덩이를 살짝 말아(골반 뒤로) 허리가 아래로 꺼지지 않게. 갈 수 있는 데까지만 굴렸다가 배로 당겨 돌아오기. 허리가 아프면 굴리는 거리를 줄이기', r: [8, 10] }]] };
+ROUTINES.push({ creator: 'FitQuest', meta: '복근 · 1종목 3~4세트 · 쉬는 60초 · 약 10분 · 주 3~4회', title: '집 롤아웃 10분 (AB 슬라이드)', tpl: 'P45', parts: ['full'],
+  sub: '복근 롤러로 하는 10분 코어 루틴이에요. 배 근육은 단단해지지만, 배 지방만 골라 빼 주진 않아요 — 뱃살은 마무리 유산소·식사로 몸 전체 지방이 줄 때 같이 빠져요.',
+  tips: ['8~10회 × 3~4세트, 세트 사이 60초', '배에 힘 · 엉덩이 살짝 말기 · 허리가 꺼지지 않게', '허리가 아프면 굴리는 거리를 줄이기 (벽 앞에서 하면 멈출 곳이 생겨요)', '주 3~4회, 연달아 이틀은 쉬기'],
+  ex: [{ n: '무릎 대고 롤아웃', how: '배로 버티며 굴렸다 당기기', sr: '3~4 × 8–10' }],
+  adapt: ['MJ 집 루틴 — 영상 출처 없음', '로테이션엔 안 넣었어요: 운동 없는 날·퇴근 후 [이 루틴으로 지금 운동하기]로'], videos: [] });
+/* 1115 MJ 인바디(복부지방률 1.00·내장지방 9) '배 쪽 지방을 걷어내야' — 운동 탭 위 4주 계획 카드, 재측정 12/13 무렵. 12/20 지나면 안 보임 */
+const BELLY_PLAN = { until: '2026-12-20', remeasure: '2026-12-13', t: '배 쪽 지방 4주 계획', items: ['하루 걸음 8,000~10,000보', '먹는 양은 평소보다 조금만 덜 (하루 300~500kcal)', '단백질 체중 1kg당 약 1.6g — 근육 지키기', '잠 7시간 이상', '술·야식 줄이기', '등·가슴·팔 날엔 마무리 유산소 20분'], note: '배 운동만으로 배 지방이 골라 빠지진 않아요 — 몸 전체 지방이 줄면서 배도 같이 빠져요.' };
 const ROT = { back: ['A', 'P1', 'P8', 'P17'], legs: ['B', 'P2', 'P6', 'P24'], chest: ['P3', 'P7', 'P15', 'P16', 'P31'], shoulder: ['P4', 'C', 'E', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P20', 'P21', 'P22', 'P25', 'P28', 'P34', 'P39', 'P41'], arms: ['P5', 'P35', 'P40', 'P42', 'P43'], full: ['D', 'P18', 'P19', 'P23', 'P26', 'P44'] };   // 첫 부위가 그 부위인 루틴만 (C·E는 어깨, P7은 가슴이 첫 부위)
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
