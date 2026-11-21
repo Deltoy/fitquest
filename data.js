@@ -1616,6 +1616,32 @@ ROUTINES.push({ creator: 'FitQuest', meta: '월~금 5일 · 하루 7~8종목 · 
   ],
   adapt: ['요일마다 루틴이 따로 들어 있어요: 월 P48 · 화 P49 · 수 P50 · 목 P51 · 금 P52 — 로테이션이 그 부위 날에 넣어요', '[이 루틴으로 지금 운동하기]는 월(가슴+삼두)부터예요. 다른 요일은 [요일에 고정하기]나 로테이션으로', '게시물 표지와 본문이 조금 달라(표지는 목 어깨만·금 팔) 본문·설명 기준으로 넣었어요', '종목은 앱에 있는 것으로 맞췄어요 — 게시물과 이름이 다를 수 있어요'],
   videos: [{ u: IG.split5, t: '인스타그램 게시물 · 주 5일 분할 운동 루틴 (아이디어 출처)' }] });
+/* 1121 MJ 유튜브 (0gj5rw4Uit8) — 정체기 돌파 2세트: 상·하 2분할 주 4회(월·목 상체 / 화·금 하체), 전 종목 2세트 RIR 1~2(마지막 세트 0~1), 쉬는 시간 2~3분.
+   영상은 아이디어만(주제·원리), 채널 이름은 안 씀. 종목은 앱에 있는 것으로. day 없음 = 예약된 루틴을 밀어내지 않고 MJ 고른 루틴으로만 로테이션에 */
+const PLATEAU_CUE = '마지막 반복이 확 느려질 때까지, 첫 회와 같은 자세로';
+TPL.P53 = { code: '상체', ko: '정체기 돌파 2세트 · 월·목 상체', video: 'https://youtu.be/0gj5rw4Uit8', pro: 1, mj: 1, parts: ['chest', 'back', 'shoulder', 'arms'], ex: [
+  ['idp', 2, { tip: PLATEAU_CUE, r: [6, 10], rest: 150 }],
+  ['lpd', 2, { tip: PLATEAU_CUE, r: [6, 10], rest: 150 }],
+  ['sdp', 2, { tip: PLATEAU_CUE, r: [6, 10], rest: 150 }],
+  ['scr', 2, { tip: PLATEAU_CUE, r: [6, 10], rest: 150 }],
+  ['cpd', 2, { tip: PLATEAU_CUE, r: [6, 10], rest: 120 }]] };
+TPL.P54 = { code: '하체', ko: '정체기 돌파 2세트 · 화·금 하체', video: 'https://youtu.be/0gj5rw4Uit8', pro: 1, mj: 1, parts: ['legs'], ex: [
+  ['lpr', 2, { tip: PLATEAU_CUE, r: [8, 12], rest: 150 }],
+  ['rdl', 2, { tip: PLATEAU_CUE, r: [8, 12], rest: 180 }],
+  ['lex', 2, { tip: PLATEAU_CUE, r: [8, 12], rest: 120 }],
+  ['lcu', 2, { tip: PLATEAU_CUE, r: [8, 12], rest: 120 }],
+  ['cfr', 2, { tip: PLATEAU_CUE, r: [8, 12], rest: 120 }]] };
+['P53', 'P54'].forEach(k => { TPL_PARTS[k] = TPL[k].parts; });
+ROT.chest.push('P53'); ROT.legs.push('P54');
+ROUTINES.push({ creator: 'FitQuest', meta: '주 4회 · 월·목 상체 / 화·금 하체 · 종목마다 2세트 · RIR 1~2 · 쉬는 시간 2~3분', title: '정체기 돌파 2세트', tpl: 'P53', parts: ['chest', 'back', 'shoulder', 'arms', 'legs'],
+  sub: '몸이 멈췄을 때 세트부터 늘리지 말고 강도를 먼저 점검해요. 진짜 실패 신호 = 마지막 반복이 4~6초로 확 느려지고, 자세는 첫 회와 같아요. 반동·허리로 버티면 실패를 피한 거예요.',
+  tips: ['종목마다 2세트 × 6~10회 (하체 8~12회)', '1세트는 1~2회 남기고(RIR 1~2), 마지막 세트는 0~1회 남기고', '세트 사이 2~3분 푹 쉬기 — 무게가 떨어지지 않게', '세트를 늘리는 건 마지막 수단: 먼저 이 2세트를 제대로', '"낮은 강도로도 큰다"는 연구는 대부분 초보자 대상이에요'],
+  ex: [
+    { n: '월·목 · 상체', how: '인클라인 덤벨 프레스 · 랫풀다운 · 덤벨 숄더 프레스 · 시티드 케이블 로우 · 케이블 푸시다운', sr: '5종목 × 2세트 · 6~10회' },
+    { n: '화·금 · 하체', how: '레그프레스 · 루마니안 데드리프트 · 레그 익스텐션 · 라잉 레그컬 · 카프레이즈', sr: '5종목 × 2세트 · 8~12회' }
+  ],
+  adapt: ['상체 P53 · 하체 P54가 따로 들어 있어요 — 로테이션이 가슴 날엔 상체, 하체 날엔 하체를 넣어요', '[이 루틴으로 지금 운동하기]는 상체부터예요. 하체는 [요일에 고정하기]나 로테이션으로', '이미 예약된 루틴은 그대로 두고, 고른 루틴 후보로만 들어가요', '쉬는 시간은 종목마다 2~3분으로 맞춰 두었어요(작은 운동은 2분)'],
+  videos: [{ u: 'https://youtu.be/0gj5rw4Uit8', t: '유튜브 영상 · 볼륨 vs 강도 (아이디어 출처)' }] });
 const PART_NAME = { back: '등', legs: '하체', chest: '가슴', shoulder: '어깨', arms: '팔', full: '전신' };
 const SLOT_SEQ = { 2: ['back', 'legs'], 3: ['back', 'legs', 'chest'], 4: ['back', 'legs', 'chest', 'shoulder'], 5: ['back', 'legs', 'chest', 'shoulder', 'arms'], 6: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs'], 7: ['back', 'legs', 'chest', 'shoulder', 'arms', 'legs', 'full'] };
 /* 직장인 점심 = 일반식 (대략값, 식당마다 ±25%) — 단백질 높은 순으로 추천 */

@@ -1471,7 +1471,7 @@ function condSheet(tplKey) {
 function buildSession(c, tplKey) {
   const k = dayKey(), t = tplKey || tplFor(k) || 'A';
   const by = TPL[t].by;
-  let ex = tplEx(t).map(([id0, n, o = {}]) => { const id = exSub(id0); const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
+  let ex = tplEx(t).map(([id0, n, o = {}]) => { const id = exSub(id0); const range = o.r || EX[id].range, pl = plannedFor(id, n, range); return { id, n, range, rest: o.rest || EX[id].rest, tip: o.tip ? { who: by, t: o.tip } : null, v: o.t || null, d: !!o.d, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; });
   if (c === 'tired') ex = ex.slice(0, Math.max(2, ex.length - 1)).map(e => ({ ...e, sets: e.sets.slice(0, Math.max(2, e.sets.length - 1)) }));
   if (c === 'short') { const side = ex.find(e => EX[e.id].mus.includes('delt-side')) || (() => { const pl = plannedFor('slr', 3); return { id: 'slr', n: 3, rest: 75, sets: pl.reps.map(r => ({ w: pl.w, r, done: false })) }; })(); ex = [ex[0], side].filter((e, i, a) => a.indexOf(e) === i).map(e => ({ ...e, rest: 75, sets: e.sets.slice(0, 3) })); }
   if (c === 'good') { const s = ex.find(e => EX[e.id].mus.includes('delt-side')); if (s) { const l = s.sets[s.sets.length - 1]; s.sets.push({ w: l.w, r: l.r, done: false, bonus: true }); } }
