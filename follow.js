@@ -58,6 +58,38 @@ function fwDone(vid, key) {
   if (t) { F.added.push({ key, cr: t.cr, name: t.by, at: Date.now(), vid, title: v ? v.title : t.ko }); F.added = F.added.slice(-20); }
 }
 
+/* ---------- 1122 MJ '뒤에서 알아서 학습': 누르면 서버 대기열에 넣고 끝 → 맥 일꾼(~/bin/fqlearn)이 학습 → 다음에 앱을 열면 저장 ----------
+   F.jobs [{id,name,cr,urls,at}] 기다리는 것 · F.ack [id] 저장 끝나 서버에서 지울 것. 서버에 못 닿으면 false → 예전처럼 화면에서 학습 */
+async function lqAdd(name, urls, cr) {
+  if (!bkOn() || !navigator.onLine) return false;
+  try {
+    const j = await bkCall({ kind: 'learnAdd', job: { name, cr, urls, prompt: vidPrompt() } }), F = FW();
+    F.jobs = (F.jobs || []).concat({ id: j.id, name, cr, urls, at: Date.now() }); save(); lqTimer(); return true;
+  } catch (e) { return false; }
+}
+let lqBusy = false, lqT = null;
+const lqTimer = () => { clearInterval(lqT); lqT = (FW().jobs || []).length ? setInterval(() => document.visibilityState === 'visible' && lqPoll(), 60e3) : null; };
+async function lqPoll() {
+  const F = FW(); if (lqBusy || !bkOn() || !(F.jobs || []).length && !(F.ack || []).length) return lqTimer();
+  lqBusy = true;
+  try {
+    const ack = (F.ack || []).slice(), j = await bkCall({ kind: 'learnGet', ids: (F.jobs || []).map(x => x.id), ack });
+    F.ack = (F.ack || []).filter(id => !ack.includes(id));
+    let n = 0; const msgs = [];
+    (j.jobs || []).forEach(r => {
+      const job = F.jobs.find(x => x.id === r.id); if (!job || r.st === 'q') return;
+      if (r.st === 'done') {
+        CR_DRAFT = { name: job.name, out: r.out || [], errs: r.errs || [], cr: job.cr && CREATORS.some(c => c.id === job.cr) ? job.cr : null };
+        const k = crSave(true); n += k || 0; if (!k) msgs.push(`${job.name}: 영상에서 운동을 찾지 못했어요`);
+      } else msgs.push(`${job.name}: ${(r.errs || []).join(' / ') || '학습하지 못했어요'}`);
+      F.jobs = F.jobs.filter(x => x.id !== r.id); F.ack = (F.ack || []).concat(r.id);
+    });
+    if (n || msgs.length) { save(); SFX.pr && n && SFX.pr(); R[TAB] && R[TAB]();
+      toast(n ? `<span>새 루틴 ${n}개 추가됨 · 봐볼 영상에서 보기</span>` : `<span>${esc(msgs[0].slice(0, 80))}</span>`, 5000); }
+  } catch (e) {} finally { lqBusy = false; lqTimer(); }
+}
+const lqPending = vid => (FW().jobs || []).some(j => j.urls.some(u => ytId(u) === vid));
+
 /* ---------- 운동 탭 "봐볼 영상" ---------- */
 const FW_PART = [['back', /등|광배|풀업|로우|턱걸이/], ['chest', /가슴|벤치|체스트|푸시업/], ['shoulder', /어깨|삼각|숄더|레이즈/], ['arms', /팔|이두|삼두|암/], ['legs', /하체|스쿼트|다리|레그|런지/]];
 const fwPart = t => (FW_PART.find(([, re]) => re.test(t || '')) || [])[0];
@@ -66,12 +98,13 @@ let fwMore = false, fwHid = null;
 function fwCard(part, attrs = '') {
   const F = DB.follow; if (!F) return '';
   const add = F.added.filter(x => x.vid && !x.seen && TPL[x.key]), q = F.queue.slice().sort((a, b) => (fwPart(b.title) === part) - (fwPart(a.title) === part));
-  const all = add.map(x => ({ x, added: 1 })).concat(q.map(x => ({ x }))); if (!all.length) return '';
+  const pend = (F.jobs || []).flatMap(j => j.urls.map(u => ({ vid: ytId(u), title: `${j.name} 영상`, name: j.name, cr: j.cr }))).filter(p => !q.some(x => x.vid === p.vid));
+  const all = pend.map(x => ({ x })).concat(add.map(x => ({ x, added: 1 })), q.map(x => ({ x }))); if (!all.length) return '';
   return `<section class="tile card-pad fw2" ${attrs} aria-labelledby="fwH2"><div class="card-h"><h2 class="fq-t-heading" id="fwH2">봐볼 영상</h2><span class="fq-t-caption">롤모델 새 영상</span></div>
     <ul class="fw-list">${all.slice(0, fwMore ? 10 : 3).map(({ x, added }) => `<li class="fwi">
       <a class="fwi-v" href="${ytWatch(x.vid)}" target="_blank" rel="noopener">${`<span class="vthumb vthumb--fw">${avatar(CREATORS.find(c => c.id === x.cr), 'av')}<img src="https://i.ytimg.com/vi/${esc(x.vid)}/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"></span>`}<span class="fwi-t"><b>${esc(x.title)}</b><small>${esc(x.name)}${x.pub ? ' · ' + ago(x.pub) : ''}</small></span></a>
-      <div class="fwi-a">${added ? `<span class="chip cy">${ico('check', '')}다음 주 ${PART_NAME[partOf(x.key)]} 첫날에 넣었어요</span><button class="linkbtn ink" data-act="fwView" data-t="${x.key}">보기</button>`
-        : `${x.ref ? `<span class="chip cy">${ico('check', '')}${PART_NAME[x.ref]}날 영상에 저장</span>` : ''}${DB.settings.gkey ? `<button class="fq-btn fq-btn--secondary fq-btn--sm" data-act="fwLearnOne" data-v="${esc(x.vid)}">${ico('plus', 'ico--16')}내 루틴에 넣기</button>`
+      <div class="fwi-a">${lqPending(x.vid) && !added ? `<span class="chip">${ico('refresh', '')}학습 대기 중 · 다 되면 알려 드려요</span>` : added ? `<span class="chip gd">새로 추가됨</span><span class="chip cy">${ico('check', '')}다음 주 ${PART_NAME[partOf(x.key)]} 첫날에 넣었어요</span><button class="linkbtn ink" data-act="fwView" data-t="${x.key}">보기</button>`
+        : `${x.ref ? `<span class="chip cy">${ico('check', '')}${PART_NAME[x.ref]}날 영상에 저장</span>` : ''}${DB.settings.gkey || bkOn() ? `<button class="fq-btn fq-btn--secondary fq-btn--sm" data-act="fwLearnOne" data-v="${esc(x.vid)}">${ico('plus', 'ico--16')}내 루틴에 넣기</button>`
           : x.ref ? '' : `<button class="fq-btn fq-btn--secondary fq-btn--sm" data-act="fwRef" data-v="${esc(x.vid)}" data-p="${fwPart(x.title) || part || 'full'}">${ico('bookmark', 'ico--16')}${PART_NAME[fwPart(x.title) || part || 'full']}날 영상에 저장</button>`}<button class="linkbtn" data-act="fwHide" data-v="${esc(x.vid)}">관심 없음</button>`}</div></li>`).join('')}</ul>
     ${all.length > 3 ? `<button class="linkbtn ink" data-act="fwMore">${fwMore ? '접기' : `더 보기 (${all.length - 3})`}</button>` : ''}</section>`;
 }
@@ -118,7 +151,9 @@ const FW_ACTS = {
   fwRef: a => { const F = FW(), v = F.queue.find(x => x.vid === a.dataset.v); if (!v) return; const part = a.dataset.p;
     v.ref = part; F.refs = (F.refs || []).filter(r => r.vid !== v.vid).concat({ vid: v.vid, title: v.title, cr: v.cr, name: v.name, part, at: Date.now() }).slice(-12); save(); R.work();
     toast(`<span>${PART_NAME[part]}날 "오늘 볼 영상"에 넣었어요</span>`, 4000); },
-  fwLearnOne: a => { const v = FW().queue.find(x => x.vid === a.dataset.v); if (v) crAddSheet('', { name: v.name, url: ytWatch(v.vid), cr: v.cr }); },
+  fwLearnOne: async a => { const v = FW().queue.find(x => x.vid === a.dataset.v); if (!v) return;   // 1122 누르면 바로 대기열 (화면 안 켜 둬도 됨) · 못 닿으면 예전 학습 창
+    a.disabled = true; if (await lqAdd(v.name, [ytWatch(v.vid)], v.cr)) { R.work(); return toast('<span>학습 대기 중 · 다 되면 알려 드려요</span><span class="sub">앱을 닫아도 돼요</span>', 4500); }
+    a.disabled = false; crAddSheet('', { name: v.name, url: ytWatch(v.vid), cr: v.cr }); },
   fwHide: a => { const F = FW(), i = F.queue.findIndex(v => v.vid === a.dataset.v); if (i < 0) return; fwHid = { i, v: F.queue[i] }; F.queue.splice(i, 1); save(); R.work();   // 이미 seen 에 있어서 다시 안 옴
     toast('<span>숨겼어요</span><button data-act="fwUndo">되돌리기</button>', 5000); },
   fwUndo: () => { if (!fwHid) return; const F = FW(); F.queue.splice(fwHid.i, 0, fwHid.v); fwHid = null; save(); $('#toast').innerHTML = ''; if (TAB === 'work') R.work(); },

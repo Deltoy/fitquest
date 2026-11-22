@@ -1103,7 +1103,8 @@ async function gemCall(key, parts, errMsg) {
       body: JSON.stringify({ contents: [{ parts }], generationConfig: { response_mime_type: 'application/json', temperature: .2 } }) });
     const j = await r.json().catch(() => ({})), em = (j.error && j.error.message) || '';
     if (r.status === 404 || (r.status === 400 && /not (found|supported)|is not available|unsupported model/i.test(em))) { lastErr = `${m} 없음`; continue; }   // 이 키로 없는 모델 → 다음(낮은) 모델
-    if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? (em || errMsg).slice(0, 120) : r.status === 429 ? '무료 사용량을 넘었어요. 잠시 후 다시' : em || r.status);
+    if (r.status === 429 || r.status >= 500) { lastErr = r.status === 429 ? '무료 사용량을 넘었어요. 잠시 후 다시' : '제미나이가 바빠요. 잠시 후 다시'; continue; }   // 1122 503 '높은 수요' → 다음 모델
+    if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? (em || errMsg).slice(0, 120) : em || r.status);
     try { localStorage.setItem('fq.gmodelOK', m); } catch (e) {}
     const txt = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
     return JSON.parse(txt.replace(/^```json|```$/g, ''));
@@ -1356,7 +1357,7 @@ function crPickSheet() {
 /* ---------- 유튜버 추가 (BYO): 제미나이가 유튜브 링크를 직접 보고 루틴으로 정리 — 영상은 내려받지 않음 ---------- */
 let CR_PRE = null; // { name, url, cr } — 새 영상 카드에서 열면 채워 둠
 function crAddSheet(msg = '', pre) {
-  const has = !!DB.settings.gkey; if (pre !== undefined) CR_PRE = pre;
+  const has = !!DB.settings.gkey || bkOn(); if (pre !== undefined) CR_PRE = pre;   // 1122 백업 서버가 있으면 키 없이도 (서버가 학습)
   const P = CR_PRE || {};
   // 키가 없으면 링크 칸·꺼진 버튼 대신 키 넣는 칸 하나 (넣으면 바로 이 화면이 열림)
   if (!has) return sheet(`<div class="row row--between"><h2 class="fq-t-title">내 유튜버 추가</h2><button class="fq-btn fq-btn--icon" data-act="close" aria-label="닫기">${ico('x')}</button></div>
@@ -1370,16 +1371,17 @@ function crAddSheet(msg = '', pre) {
     <label class="stack" for="crUrls" style="gap:6px"><span class="fq-t-label">루틴 영상 링크 (한 줄에 하나, 최대 5개)</span><textarea id="crUrls" class="inp" rows="4" style="padding:12px;min-height:110px" placeholder="https://youtu.be/…">${esc(P.url || '')}</textarea></label>
     ${msg ? `<p class="fq-t-body err">${esc(msg)}</p>` : ''}
     <button class="fq-btn fq-btn--lg fq-btn--signal fq-btn--block" data-act="crLearn">학습 시작</button>
-    <p class="note" style="margin:0">영상 1개에 30초~1분 걸려요. 영상에 없는 세트·횟수는 앱 기본값으로 채워요.</p>`);
+    <p class="note" style="margin:0">${bkOn() ? '뒤에서 학습해요. 앱을 닫아도 다 되면 알려 드려요.' : '영상 1개에 30초~1분 걸려요.'} 영상에 없는 세트·횟수는 앱 기본값으로 채워요.</p>`);
 }
 const ytId = u => { const m = String(u).match(/(?:youtu\.be\/|v=|shorts\/|live\/)([\w-]{11})/); return m ? m[1] : null; };
-async function geminiVideo(url) {
-  const key = DB.settings.gkey.trim(), cat = Object.entries(EX).filter(([k]) => !k.startsWith('X')).map(([k, e]) => `${k}=${e.n}`).join(', ');
+function vidPrompt() {
+  const cat = Object.entries(EX).filter(([k]) => !k.startsWith('X')).map(([k, e]) => `${k}=${e.n}`).join(', ');
   const prompt = `이 유튜브 운동 영상을 보고 영상 속 운동 루틴을 정리해 줘. 영상에서 실제로 말하거나 화면에 보인 것만 쓰고, 없으면 null. JSON만 출력:
 {"title":"짧은 루틴 이름(한국어, 20자 이내)","part":"back|chest|shoulder|arms|legs|full 중 하나","exercises":[{"exId":"아래 목록의 id 중 같은 운동이면 그 id, 없으면 null","name":"운동 이름(한국어)","sets":정수|null,"reps":[최소,최대]|null,"rest":초|null,"tip":"영상에서 강조한 자세 팁 한 문장(한국어, 60자 이내)|null","t":"그 운동이 처음 나오는 시각 MM:SS|null","conf":"high|med|low"}],"style":["이 사람 운동 방식 특징 3개(한국어 짧게)"],"diet":["식단 관련 조언이 있으면 최대 2개, 없으면 빈 배열"]}
 운동 목록(id=이름): ${cat}`;
-  return gemCall(key, [{ file_data: { file_uri: url } }, { text: prompt }], '키나 링크를 확인해 주세요');
+  return prompt;
 }
+const geminiVideo = url => gemCall(DB.settings.gkey.trim(), [{ file_data: { file_uri: url } }, { text: vidPrompt() }], '키나 링크를 확인해 주세요');
 const PART_OK = ['back', 'chest', 'shoulder', 'arms', 'legs', 'full'];
 const PART_MUS = { back: ['lats'], chest: ['chest'], shoulder: ['delt-side'], arms: ['biceps'], legs: ['quads'], full: ['quads'] };
 let CR_DRAFT = null;
@@ -1389,6 +1391,9 @@ async function crLearn() {
   if (!urls.length) return crAddSheet('유튜브 링크를 한 개 이상 넣어 주세요.');
   const today = dayKey(), used = (DB.flags['cradd_' + today] || 0);
   if (used >= 3) return crAddSheet('오늘은 유튜버를 3명까지 추가했어요. 내일 다시 해 주세요.');
+  const cr = CR_PRE && CR_PRE.name === name && CREATORS.some(c => c.id === CR_PRE.cr) ? CR_PRE.cr : null;
+  if (await lqAdd(name, urls, cr)) { DB.flags['cradd_' + today] = used + 1; save(); CR_PRE = null; closeSheet(); R[TAB] && R[TAB](); return toast('<span>학습 대기 중 · 다 되면 알려 드려요</span><span class="sub">앱을 닫아도 돼요</span>', 4500); }
+  if (!DB.settings.gkey) return crAddSheet('서버에 연결하지 못했어요. 잠시 후 다시 해 주세요.');
   sheet(`<h2 class="fq-t-title">${esc(name)} 학습 중…</h2><p class="fq-t-body" id="crProg" style="margin:0">영상 0 / ${urls.length}</p><p class="note" style="margin:0">화면을 켜 둔 채로 기다려 주세요.</p>`);
   const out = [], errs = [];
   for (let i = 0; i < urls.length; i++) {
@@ -1396,7 +1401,7 @@ async function crLearn() {
     const pg = $('#crProg'); if (pg) pg.textContent = `영상 ${i + 1} / ${urls.length}`;
   }
   if (!out.length) return crAddSheet(errs.join(' / ') || '학습하지 못했어요.');
-  CR_DRAFT = { name, out, errs, cr: CR_PRE && CR_PRE.name === name && CREATORS.some(c => c.id === CR_PRE.cr) ? CR_PRE.cr : null };
+  CR_DRAFT = { name, out, errs, cr };
   crReview();
 }
 function crReview() {
@@ -1426,16 +1431,18 @@ function crTpl(name, d, url, extra = {}) {
   c.tpls[key] = { code: PART_NAME[part] || '맞춤', ko: `${name} · ${String(d.title || '루틴').slice(0, 20)}`, by: name, video: url, pro: 1, user: 1, parts: [part === 'full' ? 'legs' : part], ex, ...extra };
   return key;
 }
-function crSave() {
+function crSave(auto) {
   const { name, out, cr } = CR_DRAFT, tpls = [], styles = [], diets = [], keyOf = {};
   out.forEach(({ d, url }) => {
     const key = crTpl(name, d, url, cr ? { cr, from: ytId(url), at: Date.now(), day: dayKey() } : {}); if (!key) return;
     tpls.push(key); keyOf[url] = key; (d.style || []).slice(0, 3).forEach(x => styles.push(String(x).slice(0, 60))); (d.diet || []).slice(0, 2).forEach(x => diets.push(String(x).slice(0, 60)));
   });
-  if (!tpls.length) return crAddSheet('영상에서 운동을 찾지 못했어요. 루틴 영상 링크인지 확인해 주세요.');
+  if (!tpls.length) { if (auto) { CR_DRAFT = null; return 0; } return crAddSheet('영상에서 운동을 찾지 못했어요. 루틴 영상 링크인지 확인해 주세요.'); }
   const c = DB.custom;
   if (cr) out.forEach(({ url }) => fwDone(ytId(url), keyOf[url]));   // 기존 유튜버에 붙임 (봐볼 영상에서 넣기)
-  else { const cid = 'u_' + uid(); c.creators.push({ id: cid, name, ch: '', tag: '내가 추가', body: `영상 ${out.length}개로 학습한 ${name} 스타일`, mark: name, style: [...new Set(styles)].slice(0, 4), diet: [...new Set(diets)].slice(0, 3), tpls, videos: out.length, user: 1 }); DB.profile.creators = (DB.profile.creators || []).concat(cid); }
+  else { const cid = 'u_' + uid(); c.creators.push({ id: cid, name, ch: '', tag: '내가 추가', body: `영상 ${out.length}개로 학습한 ${name} 스타일`, mark: name, style: [...new Set(styles)].slice(0, 4), diet: [...new Set(diets)].slice(0, 3), tpls, videos: out.length, user: 1 }); DB.profile.creators = (DB.profile.creators || []).concat(cid);
+    if (auto) { const F = FW(); out.forEach(({ url, d }) => keyOf[url] && F.added.push({ key: keyOf[url], cr: cid, name, at: Date.now(), vid: ytId(url), title: String(d.title || name).slice(0, 80) })); F.added = F.added.slice(-20); } }
+  if (auto) { mergeCustom(); CR_DRAFT = null; return tpls.length; }
   DB.flags['cradd_' + dayKey()] = (DB.flags['cradd_' + dayKey()] || 0) + 1;
   mergeCustom(); save(); CR_DRAFT = null; CR_PRE = null; closeSheet(); SFX.pr(); R[TAB] && R[TAB]();
   toast(cr ? `<span>내 루틴에 넣었어요 · 다음 주 ${PART_NAME[partOf(tpls[0])]}날에 들어가요</span>` : `<span>${esc(name)} 루틴 ${tpls.length}개를 로테이션에 넣었어요</span>`, 4000);
@@ -2216,7 +2223,7 @@ function applyTheme() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'tiName' && !e.isComposing) $('[data-act=textSave]').click(); });   // 글로 기록: 엔터 = 기록하기
 $('#lvl').addEventListener('click', e => { if (e.target === $('#lvl')) $('#lvl').close(); });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); fwAuto(); fillPending(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && DB.profile && !DB.flags.obDraft && TAB !== 'logger') { settleStreak(); R[TAB] && R[TAB](); bkAuto(); fwAuto(); lqPoll(); fillPending(); } if (document.visibilityState === 'visible' && TAB === 'logger') keepAwake(true); });
 
 /* ================= boot ================= */
 Object.keys(R).forEach(k => { const f = R[k]; R[k] = (...a) => { const r = f(...a); flow(); return r; }; });   // 그릴 때마다 두 줄 다시 나눔
@@ -2224,4 +2231,4 @@ $('#lvl-coach').innerHTML = COACH_SVG;
 applyTheme();
 if (!DB.profile || DB.flags.obDraft) { DB.flags.obDraft = false; go('onb'); }
 else { if (!DB.profile.creators) { DB.profile.creators = ['idohwang']; save(); } if (!DB.rot) { DB.rot = rotFromDays(Object.keys(DB.schedule).map(Number)); save(); } fixOldPostpone(); settleStreak();
-  if (DB.live && DB.live.q && DB.live.day === dayKey()) { W = DB.live; go('logger'); toast('<span>하던 운동을 이어서 해요</span>'); } else { delete DB.live; go('home'); } loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); fillPending(); }); }
+  if (DB.live && DB.live.q && DB.live.day === dayKey()) { W = DB.live; go('logger'); toast('<span>하던 운동을 이어서 해요</span>'); } else { delete DB.live; go('home'); } loadPhotos().then(() => { if (TAB === 'home') R.home(); bkAuto(); fwAuto(); lqPoll(); fillPending(); }); }
